@@ -1936,3 +1936,487 @@ undeclared-edge derivation (§A2) and the contact block's decision URL (§B1) �
 `work/service-mesh-roadmap-1.0.md`. **No Cloud Service spec change is required by anything in this
 block**; §A2 is served entirely by `mesh.md` §4.1/§4.2 as they already stand, and §B removes a surface
 the spec never carried. The one approved spec change remains R1 §5.6's `placement.environment`.
+
+---
+
+## 2026-08-16 (later still) — PRODUCT REFINEMENT 3: breaking changes and contract drift
+
+Input: `work/mesh-feedback-round3-2026-08-16.md` (all eight personas, one question — *can you tell what
+changed, and whether it breaks you?* — over a purpose-built drift estate), plus two direct maintainer
+observations from a live AWS deployment of the .NET mesh example: that drift is flagged, unclickable
+and unexplained, and that the service page "could do with some boxes."
+
+This block **promotes** the roadmap's mid-term *Phase 4 field-level compatibility* item (`:686`,
+`:836`) into the next shipping wave, and **corrects the evidence pack on two load-bearing points**
+(§C1.3, §C2.2). It does not rewrite the R1 or R2 backlogs; both stand, and §C7 says where this wave
+sits relative to them.
+
+Everything asserted about current behaviour was checked in source before it entered a ranking —
+`benzene-dotnet` (`Benzene.Schema.OpenApi/Compatibility`, `Benzene.Mesh.Aggregator`,
+`Benzene.Mesh.Contracts`, every `.csproj` in the aggregator's closure), `benzene-ui` `3a61f05`,
+`benzene-typescript`, `benzene-go`, `benzene-python`, and `docs/specification/mesh.md`. Where I found
+the pack wrong, §C1 and §C2 say so; the pack's own five discarded harness artifacts stay discarded and
+none of them appears in the backlog.
+
+### §C1 — The reframe: detection ships; what is missing is a wire, a screen, and a *pair*
+
+**The maintainer asked for a capability that already exists.** `Benzene.Schema.OpenApi/Compatibility`
+is a complete, direction-aware, field-level engine: `SchemaChange` carries `Kind`, `Direction`,
+`Topic`, `Path` (`order:create.request.customerId`), `Description` and `Compatibility`;
+`SchemaCompatibilityRules.DefaultFor` encodes the producer/consumer asymmetry;
+`SchemaCompatibilityReport` rolls up to `Overall` / `HasBreakingChanges`. **No `Benzene.Mesh.*`
+project references it** — verified again this round. The product's answer has existed as a
+fully-formed C# type and has never been connected to a screen.
+
+Worth recording because it validates the engine's design: the maintainer's own stated intuition —
+*"if a consumer consumes a subset, that's likely to not be a breaking change; whereas if they're
+trying to consume something that no longer exists, that is the sign of a breaking change"* — **is
+`SchemaCompatibilityRules.DefaultFor` verbatim.** `PropertyRemoved` is `Breaking` on Response/Event
+(the consumer may read the removed field) and `Warning` on Request (the service ignores a field the
+client still sends). The rule table already thinks the way the maintainer thinks. That is not a
+coincidence to gloss over — it is the reason this is a *wiring* job and not a research job.
+
+**So the scoping consequence, stated plainly: this is not a detection feature, it is a
+presentation-and-plumbing feature, and it must be scoped and estimated as one.** Roughly one week of
+aggregator work and two of UI, not a quarter. Any plan that reads as "build breaking-change analysis"
+is mis-specified. Three sub-rulings follow.
+
+**§C1.1 — What the mesh computes today is a different diff, and it is structurally incapable of
+answering the question.** `MeshAggregator.DiffTopicEntry` (`MeshAggregator.cs:567`) keys on
+`(Topic, Version)` and compares canonicalised **strings**. Two consequences, both confirmed:
+
+- it compares *v2 today against v2 yesterday*, never *v2 against v1* — so the user's actual question
+  ("does the new version break my consumers?") has no code path at all; and
+- `"Payload schema changed (request)"` is not a terse summary of a known delta, it is the complete
+  extent of what a string comparison can know.
+
+**§C1.2 — The engine's entry points do not fit, and the gap is small and specific.**
+`SchemaCompatibilityComparer.Compare` takes two `EventServiceDocument`s and indexes requests by
+`RequestKey` = `$"{Topic}@{Version}"` (`SchemaCompatibilityComparer.cs:205`). Pointed at one document
+across two versions it would emit `TopicAdded`/`TopicRemoved` per version, not property diffs. The
+recursive worker that actually does the job — `CompareSchemas`, lines 106-177 — is `private`, operates
+on `OpenApiSchema`, and needs nothing but `Type`, `Format`, `Properties`, `Required`, `Items`. The
+mesh holds `System.Text.Json.Nodes.JsonObject` with `$ref`s **already inlined** (`MeshTopicEntry`'s
+own remarks), so it does not even need the `Resolve` step. **A narrower, public, schema-pair entry
+point is required, and it is a small additive change.**
+
+**§C1.3 — CORRECTION to the pack: the aggregator does *not* already carry comparable dependency
+weight, and the proposed resolution needs amending.** The pack ruled *"compute in
+`Benzene.Mesh.Aggregator`, emit a thin serialisable result into `Mesh.Contracts`"* on the premise
+that the aggregator "already carries a comparable dependency weight." Verified against every
+`.csproj` in its closure — `Benzene.Mesh.Contracts`, `Benzene.Abstractions.MessageHandlers`,
+`Benzene.Results`, `Benzene.Core.MessageHandlers`, `Benzene.Http`, and everything they reference:
+**`Benzene.Mesh.Aggregator` has zero third-party `PackageReference`s, transitively.**
+`Benzene.Schema.OpenApi` would add five, including `Swashbuckle.AspNetCore.SwaggerGen` — an ASP.NET
+Core Swagger generator — to a component that runs in Lambda and Functions hosts.
+
+**Ruling: the second half of the pack's resolution is APPROVED, the first half is AMENDED.**
+
+- **APPROVED, unchanged:** the computation lives aggregator-side, and `Mesh.Contracts` receives a
+  **thin serialisable mirror** — five scalar strings per change (`kind`, `direction`, `path`,
+  `description`, `compatibility`) with no reference to the engine. `Mesh.Contracts` keeps its single
+  `Benzene.HealthChecks.Core` reference. This is right and is not re-opened.
+- **AMENDED:** `Benzene.Mesh.Aggregator` **must not reference `Benzene.Schema.OpenApi`.** Two shapes
+  are viable; the choice is an implementation call, but the invariant is not:
+  1. *(preferred)* extract the taxonomy and the rules — `SchemaChangeKind`, `SchemaDirection`,
+     `ChangeCompatibility`, `SchemaCompatibilityRules`, `SchemaChange`, `SchemaCompatibilityReport`
+     — plus a `JsonObject`-level walker into a new **dependency-free `Benzene.Schema.Compatibility`**;
+     `Benzene.Schema.OpenApi/Compatibility` keeps its entire public API and becomes an adapter over
+     it. The aggregator references only the new package.
+  2. *(fallback)* extract the taxonomy and rules only; the aggregator carries its own ~120-line
+     `JsonObject` walker.
+- **The invariant, which is the part that matters: one rules table, one taxonomy, one verdict.** Two
+  walkers are tolerable; two rule tables are not, because a verdict that differs between the CI gate
+  and the mesh screen destroys both. If shape 2 is chosen, a test must run both walkers over the same
+  schema pair and assert identical change sets.
+- **This also buys portability, which shape 1 gets for free.** A verdict that lives inside an
+  OpenAPI-and-Swashbuckle .NET package cannot be mirrored by the TypeScript aggregator, which also
+  builds `topics.json`. A JSON-Schema-level walker can.
+
+### §C2 — Temporal drift vs cross-version compatibility: there are *three* diffs, not two, and the middle one is far cheaper than the pack thought
+
+**§C2.1 — Cross-version compatibility (v2 against v1, inside one snapshot). SHIP FIRST, ALONE.**
+Both versions' schemas are already in `topics.json`, in the same document, in the same run
+(`MeshTopicEntry.RequestSchema` / `ResponseSchema` / `MessageSchema`, `$ref`s inlined). No history, no
+storage decision, no wire-shape change beyond the result field. **This is the half the users want:**
+not one of the eight personas asked how a topic differed from yesterday; every one asked whether the
+new version breaks the old consumers.
+
+*Which of the maintainer's words this answers:* **"whether or not it's a breaking change or not"** —
+completely, and this is the only diff with a consumer on the other side of it.
+
+**§C2.2 — CORRECTION to the pack: field-level *temporal* drift on topics costs almost nothing
+either.** The pack ruled temporal drift expensive because `MeshServiceSnapshot` carries `SpecJson`,
+`SpecHash` and `PreviousSpecHash` and **no `PreviousSpecJson`** (confirmed, line by line). That is
+true — **and it is about the wrong artifact.** `ApplyCatalogDiffAsync` (`MeshAggregator.cs:~520`)
+already does `await _store.TryReadAsync("topics.json")` and deserialises the **previous catalog**,
+so `previous.RequestSchema` is a live `JsonObject` **on the exact line that currently performs
+string equality**. Both sides of a field-level temporal diff are in memory, today, at the point of
+the comparison. Zero wire change, zero storage change, zero new dependency beyond §C1.3's — the same
+engine call, on a different pair.
+
+*Which of the maintainer's words this answers:* **"when there is drift, it doesn't tell you what the
+drift is"** — at the level a reader acts on, which is a topic and a field.
+
+And it yields a class this product should own outright and nothing else can compute: **a payload
+schema that changed *under the same version number*.** No version bump, no compatibility panel, no
+consumer warned. That is the most dangerous change shape in the estate and it falls out of §C2.2 for
+free. It gets its own class, ranked above `Breaking`.
+
+**§C2.3 — Service-level spec drift substance (`PreviousSpecJson`). REJECT for this wave, with a
+revisit trigger.** This is the expensive one the pack correctly priced: a `Mesh.Contracts` wire
+change, a retention decision, roughly a doubling of snapshot artifact size, and a mirror obligation.
+It is also the one with the **worst insight-per-byte** in the set, because once §C2.2 exists the
+service-level `DRIFT` badge is re-derivable as a *rollup of its own topics' field-level changes*, and
+the residual — a spec that changed with no payload schema change — is honestly describable in one
+sentence without carrying a second copy of every spec (§C4.4). Measured against §A4's standing bar —
+*does it derive, or does it demand?* — §C2.1 and §C2.2 derive; this demands.
+**Revisit trigger, written down so this is a decision and not a refusal:** if adopters report the
+residual case (spec moved, no topic schema moved) is frequent *and* material, revisit — and even then
+prefer storing a canonical *topic-projection* of the previous spec over the whole document.
+
+**Sequencing, then: C2.1 → C2.2 → (not C2.3).** C2.1 and C2.2 share the engine, the result type and
+most of the UI; C2.1 ships alone because it is the question that was asked, and C2.2 follows in the
+next aggregator PR. **The rollup in §C2.3 is what finally joins the two halves the pack found were
+never joined** — service-level `contractDrift` and topic-level `changes`, different code paths,
+different pages, different vocabularies, counts that disagree (**1** vs **4**), no route between
+them. After C2.2 they are one derivation and cannot disagree.
+
+### §C3 — The severity question: mesh ships a classification, and a verdict that is always attributed
+
+The engine gives one scalar. The pack's *"Where personas disagree"* section shows six roles with six
+non-nesting definitions of "breaking", and — decisively — **the two changes the engine ranks lowest
+are the two that most alarmed the BA and the security reviewer**: `PropertyRemoved` on a request is
+`Warning` (`address.line2` — *"parcels to blocks of flats with no flat number"*), and a rename is
+mechanically `PropertyRemoved` + `PropertyAdded`, each individually unremarkable, while every control
+keyed on the old field name silently stops firing.
+
+**Ruling: both, in a fixed order of prominence, and the order is the ruling.**
+
+1. **The classification is primary.** `Kind` + `Direction` + `Path` — *which named field, which
+   direction, added/removed/renamed/retyped*. This is the one layer all eight personas agreed on,
+   because each role derives its own consequence from it, and it is the layer that does not have to
+   be right about anyone's definition of "breaking". It already exists on `SchemaChange` in exactly
+   this shape.
+2. **The verdict is secondary and always attributed.** Never a bare `Breaking`; always *"Breaking, by
+   Benzene's default rules"*, with the rule for that kind+direction available one affordance deep.
+   This is not decoration: `SchemaCompatibilityRules` is explicitly user-configurable and ships a
+   `Strict()` alternative, so **the verdict is a function of a rule table, not a fact about the
+   world.** Saying so converts an argument into a setting.
+3. **The estate rollup is a count by class, never a single tick.** `3 breaking · 1 warning · 2
+   compatible · 4 not compared`. A green estate-level all-clear is forbidden (§C5).
+
+**What it must never claim** — and these go in the product copy, not just this document:
+
+- Never **"safe"**, **"no breaking changes"**, or **"compatible"** unqualified. The verdict's scope is
+  *structural, schema-only, within this estate*.
+- Never that a change **will** break a named consumer. Mesh knows who is on which version
+  (`MeshTopicVersionCompatibility`) and what changed; it does **not** know which fields a consumer
+  reads. Joining those into "this breaks `orders-api`" is a claim it has not earned. **REJECTED:
+  per-consumer impact prediction.**
+- Never contradict the four things it structurally cannot see, which get one human sentence on every
+  compatibility surface, in the §A3 voice the personas already praised:
+  > *"This compares published payload schemas only. It cannot see upcasters, what a field means, or
+  > consumers outside this estate — a change marked compatible can still break something."*
+- **`TypeChanged` stops the walk.** `SchemaCompatibilityComparer.cs:119` returns early on a type
+  change (*"fundamentally different types — no point diffing their members"*), so a type change on an
+  object **hides every change beneath it**. The UI must say so at that node — *"the type changed
+  here, so fields beneath it were not compared"* — or the count is a floor presented as a total.
+
+**Rename gets a labelled hypothesis, not a Kind.** The engine has no rename concept and should not
+grow one — inferring intent from a coincidence is exactly the §5.3 trap. But a `PropertyRemoved` and a
+`PropertyAdded` at the same parent path with identical type and format is a cheap, honest pairing:
+render them together, badge it **"possible rename"**, keep both underlying changes visible, and do
+not let it alter the verdict. UI-side, zero wire cost.
+
+### §C4 — The UI design
+
+The chain every persona found broken: **estate says drift → which service → which topic → which
+version → which field → breaking or not.** Each hop below is named with what it shows, what is
+clickable, and where the click goes.
+
+**§C4.0 — The change ledger: a new *view*, no new data object.** The architect asked for a
+severity-ranked estate ledger. **Ruling: a new route and a new page, backed entirely by a selector
+over `topics[].compatibility`.** No new artifact, no new store slice, no new aggregator output beyond
+the field §C1.3 already approves. It is a route rather than a filter on `TopicCatalog` for two
+reasons: the catalogue is keyed on `(topic, version)` while a change is about a *pair* of versions,
+and the catalogue is already seven columns wide. It follows the IA the architect already praised —
+*"a queue, not a canvas"* — and reuses the existing "see all N →" section-head pattern
+(`FleetPage.tsx:82`, `#issue/all`), so it costs the navigation model nothing new.
+
+**§C4.1 — Estate page (`#fleet`). Two changes.**
+
+- **The `Contract drift` tile is re-based and made navigable.** Today `summary.drift`
+  (`selectors.ts:62-67`) counts **services** whose spec hash moved; the topic-level `changes` count is
+  a different number on a different page — which is why the personas saw **1** and **4**. One
+  definition, one number: the tile becomes **`CONTRACT CHANGES`**, valued as the count of `(topic,
+  version)` entries carrying at least one change, `rag: red` when any is breaking, `amber` otherwise.
+  After §C2.3's rollup the service badge is derived from the same set and cannot disagree.
+- **`EstateStat` gains `onClick?: () => void`.** This is a change to a primitive shared by all five
+  tiles, and the pack is right that it needs care — but the BA clicking a dead `DRIFT` badge four
+  times establishes that the *reverse* defect is worse. Rule: a tile with `onClick` renders as
+  `<button class="bz-stat">` with real hover/focus/cursor affordances; a tile without one stays a
+  `<div>` and gains nothing. No tile becomes falsely clickable. Destination: `#changes`.
+- **A `Contract changes` preview section**, between `Needs attention` and `Services`, showing the top
+  five changes ranked (unversioned-change → breaking → warning), each row deep-linking to its topic
+  at its version, with `see all N →` to `#changes`.
+
+**§C4.2 — NEW: the Changes page (`#changes`).** *"What moved in this estate, and does any of it break
+someone?"* — architect, delivery owner, QA, release morning.
+
+- Head: **Contract changes.** Lede: *"What changed in the estate's payload contracts, and whether it
+  breaks a consumer."* Provenance line directly beneath, always: *"Comparing each topic's newest
+  published version against its previous one, in the catalogue published at `<generatedAtUtc>`."*
+- Filters: **class** (unversioned change / breaking / warning / compatible / not compared), **side**
+  (request / response / message), **service**, and free text matching **field paths** — which is also
+  the cheapest partial answer to R2.10 (`email` currently returns nothing while `customerEmail` is a
+  field on two topics). Default: unversioned + breaking + warning.
+- Rows, grouped by topic then version pair, one row per `SchemaChange`:
+
+  `[BREAKING]  orders:create   v1 → v2   request   customerId   Property 'customerId' was removed`
+
+  Field path in monospace with the topic prefix stripped. The class badge carries a glyph, never
+  colour alone. The topic name links to `#topic/orders:create@v2`.
+- **Three distinct empty states, and they are the point (§C5):** nothing changed / not computed /
+  filtered to nothing. They are never the same string.
+- The **"Since the previous snapshot"** toggle appears **only when §C2.2 has shipped**. Until then
+  there is no toggle — an advertised non-affordance is an outcome-0 violation (R1 §2).
+
+**§C4.3 — Topic page: the version dimension, and the centrepiece.**
+
+- **Route.** `#topic/<topic>` (newest version) and `#topic/<topic>@<version>` (specific). Parse on the
+  last `@`. Precedent exists: `#test/<service>/<topic>` already parses a compound key
+  (`routing.ts:31-48`), so this is not a new routing concept.
+- **`selectTopic` stops returning the first match.** `topics.find(t => t.topic === topic)`
+  (`selectors.ts:296`) returns the *lowest* version, because the aggregator orders `ThenBy(Version)`.
+  The security reviewer's finding is the decisive one: a DPIA driven off `#topic/shipping:book`
+  records that the flow carries `address.line2`, untrue at v2 — *"a data map that is confidently
+  wrong is more dangerous than no map, because it gets signed."* Default to the **newest** version;
+  render a **version switcher** in the page head; every catalogue row links to its own version.
+  `selectTopicEntries` (`selectors.ts:307`) already returns every version and is currently used by
+  one selector.
+- **NEW section `Changed from v1`, placed directly above `Payload`** — above traffic, because it is
+  the deciding content on this page.
+  - Header line: `2 breaking · 1 warning · 1 compatible` as glyph-bearing chips, plus a `compare
+    with ▾` selector when three or more versions exist.
+  - The change list, one row per `SchemaChange`, same shape as §C4.2.
+  - **And the highest-value render in this whole design: the `Payload` schema tree is annotated in
+    place.** `SchemaTree` gains per-node markers keyed on `SchemaChange.Path` — **removed** (rendered
+    from the baseline, struck through), **added**, **now required**, **type changed (was
+    `integer`)**, **not compared below here**. This is the direct answer to the maintainer's *"it's
+    difficult to envisage where the drift is and exactly what the drift is"*: the drift is shown
+    **on the contract itself**, at the field, not in a list beside it. Everything else in this design
+    routes a reader to this view.
+- **The existing `Changes` section (`TopicPage.tsx:144-149`) is kept and relabelled `Since the
+  previous snapshot`.** It is currently dead code for every changed topic — v1 carries `changes: []`
+  and v2 has no reachable page — and it becomes live the moment the route lands. Relabelling is
+  mandatory: a reader must never confuse *"changed against v1"* with *"changed since yesterday"*.
+- **`VersionCompatibility` stays exactly where it is and keeps its caveat.** It was the most-praised
+  surface of round 2 and it answers a different question well (*is anyone still on the old
+  version?*). It gains only the §C5 third arm.
+
+**§C4.4 — Service page: the drift line becomes a finding instead of a checksum.**
+
+- The head `drift` badge becomes clickable → `#changes` filtered to this service.
+- `ServiceAbout`'s drift row (`ServiceAbout.tsx:36-43`) stops leading with the hash pair. Copy:
+  `Contract drift — 3 changes across 2 topics, 1 breaking · view changes`. When the spec moved but no
+  payload schema did: *"The published spec changed, but no payload schema changed."* The two hashes
+  survive as detail text one affordance deep — they are a fine audit token and a category error as a
+  finding. The delivery owner's line stands: *"not a number I would defend, a number I would be
+  laughed at for showing."*
+
+**§C4.5 — Value page: get the best string in the product out of a tooltip.** `RetirementRow.tsx:37`
+renders change descriptions as `<Chip title={change.description}>` — hover-only, unscreenshottable,
+unlinkable, invisible to a keyboard user and to a projector, on the one page six personas
+independently named the best thing in the product. The chips become visible text with a class badge,
+linking to the topic at its version. Half a day.
+
+**§C4.6 — What I am NOT building.**
+
+- **No side-by-side raw JSON diff.** Two JSON blobs is the hash pair one level up: it re-delegates
+  the cognitive load the maintainer explicitly asked the tool to carry.
+- **No git-style patch view**, no unified diff, no line numbers. The unit is a *field*, not a line.
+- **No per-consumer impact prediction** (§C3).
+- **No breaking-change gate, alert, or release block.** The engine already ships
+  `SchemaCompatibility.EnsureBackwardCompatible` for CI — that is the right home, in the service's own
+  test suite. Mesh reporting what is, and CI enforcing what must be, are different products; merging
+  them takes mesh across boundary §4.1 by a new door.
+- **No rename as an engine `SchemaChangeKind`** (§C3).
+- **No `PreviousSpecJson`** (§C2.3).
+- **No new backend, no new endpoint, no external request.** Verified against the constraint: every
+  screen above is a render over `topics.json` plus one new hash route. **The self-contained /
+  no-CDN / no-build / statically-hostable floor is untouched by this entire wave** — which is worth
+  stating because it is the first wave in three rounds where that was in no doubt.
+
+### §C5 — The honesty rules, and the third state
+
+Round 3's closing finding is that this product's first obligation here is **never to state a verdict
+it did not earn**. The live instance is `MeshTopicVersionCompatibility.IsCompatible =>
+ProducedNotConsumed.Length == 0` — verified — which returns `true` for a topic with **no in-estate
+producer**, because an empty set has nothing left over. That is the shape of every HTTP-fronted
+topic, and in the round-3 estate it fired on `orders:create` (a renamed required field plus a new
+required field) and `orders:get-all` (a deleted response field): **the two most dangerous changes got
+the all-clear.** The boolean is not wrong — it is *vacuously true*, and the UI renders vacuous truth
+as reassurance.
+
+**The third state is named `not compared`.** It is never `ok`, never a green tick, never blank, and —
+this is the structural part — **it is a value on the wire, not an absence.**
+`MeshTopicCompatibility.Overall` is one of `compatible` / `warning` / `breaking` / `not-compared`,
+with a `notComparedReason`. That is §A3's "typed absence at the store boundary" applied to a verdict:
+one decision made once, rather than a judgement call at every render site.
+
+Copy, per cause — each one a human sentence, in the voice four personas already singled out:
+
+| Cause | Copy |
+|---|---|
+| Only one version published | *"Only one version of this topic is published, so there is nothing to compare."* |
+| A side's schema is absent on one version | *"No request schema is published at v1, so the request side was not compared."* |
+| `TypeChanged` stopped the walk | *"The type changed here, so fields beneath it were not compared."* |
+| Aggregator did not publish comparisons | *"This estate's aggregator did not publish contract comparisons, so no verdict is available."* — **never** "no changes" |
+| No in-estate producer (the `isCompatible` fix) | *"No service in this estate declares producing this topic, so there is nothing to reconcile. Its producers may be outside the estate — a website, an app, or a partner."* |
+
+**The `isCompatible` fix is UI-side and costs nothing.** `VersionCompatibility.tsx` renders the third
+arm whenever `producedVersions.length === 0`, instead of *"Every version produced in the fleet has a
+matching consumer."* No wire change: the boolean is correctly named for what it computes, and the
+defect is the sentence wrapped around it. `MeshTopicVersionCompatibility`'s doc comment gains one line
+naming the vacuous case, in the same wave, so the next reader of the type is not misled either.
+The file's own comment (`VersionCompatibility.tsx:27-28`) already states the principle — *"painting
+'compatible' over a check nobody ran would be worse than silence"* — and guards only the **absent**
+entry. This extends the existing guard by one condition; it does not introduce a new idea.
+
+**And the estate tile obeys the same rule.** If `compatibility` is absent from the artifact, the tile
+shows `—` and reads `CONTRACT CHANGES · not computed`. A `0` there would be the R1 §0.5 defect
+("absence rendered as good news") landing on the exact question the maintainer asked about.
+
+### §C6 — The service-page grouping: in scope, and here is the grouping
+
+**Ruling: IN SCOPE for this wave, bounded to a regrouping — not a redesign.** It would be defensible
+to file it separately, and I am not doing so, because all three costs the pack locates land **on this
+round's question**: the contract material is split by ~450px of liveness telemetry; `Contract drift`
+renders in the same typographic weight as `Snapshot taken` directly above it (*"the one section that
+decides a release blocker should not be indistinguishable from a timestamp"*); and six peer headings
+made the BA read `shipping:book v2` as a *call* rather than something the service **produces** — *"a
+meaningfully different statement."* A reader who cannot find the contract on the service page cannot
+enter the chain in §C4 at all. Verified: `ServicePage.tsx` renders **eight sibling `<section>`s** with
+bare `<h3>`s and no wrapper; only Issues and Discussion land in visible cards, which several personas
+read as *"the only real content."*
+
+Note the contrast three personas drew unprompted: **the estate page already groups into cards and is
+genuinely scannable** — *"the estate page reads like a product, the service page reads like a data
+dump."* This is not a missing design language. It is one page that never got it.
+
+**The grouping — five cards, in this order:**
+
+1. **Contract** — description, service version, contract-change summary, `Consumes`, `Produces`.
+2. **Calls** — `Outbound`, `Inbound`. Deliberately its own card rather than merged with Contract:
+   the BA's error was reading a *produced topic* as a *call*, which merging would entrench.
+3. **State** — status, health checks, live heartbeat, feed health, **and `Snapshot taken`, which moves
+   here from About** — it is a liveness fact, not a contract fact, and its adjacency to `Contract
+   drift` is what made the drift line read as a timestamp.
+4. **Traffic** — usage, flows.
+5. **Issues** — unchanged; already a card.
+
+**Two supporting rules.** A `Card` primitive (`<section class="bz-card">` + `h3` title + optional
+actions slot), reusing the existing surface/border/radius/shadow token set that `.bz-stat` and the
+service cards already use — the design language exists, it is only unapplied. And the heading
+hierarchy: **card title = `h3`, subsections inside a card = `h4`.** Once the cards are visually
+bounded, six peers become two groups of two, which is exactly the maintainer's *"things that go
+together naturally to the eye appear to go together."* Within **Contract**, the change line gets its
+own emphasis treatment with a class badge — it is the line that decides a release.
+
+**Sequencing note:** §B removes the Discussion section from this page. Do the grouping **after or
+within** the §B removal wave, or the card work is redone. Eight sections become seven.
+
+### §C7 — Ranked backlog
+
+Sizing is rough and assumes the §C1 reframe (plumbing, not research). Repo tags: **[ui]**
+`benzene-ui`; **[agg]** `benzene-dotnet` aggregator/schema packages; **[wire]** `Mesh.Contracts`,
+therefore mirrored by the TypeScript port; **[spec]** `docs/specification/**` — **there are none**
+(§C8).
+
+**Wave C1 — "say what changed, and whether it breaks." The shipping unit.**
+
+| # | Item | Repo | Size |
+|---|---|---|---|
+| C1.1 | **Narrow schema-pair entry point + taxonomy extracted to a dependency-free home** (§C1.2, §C1.3) | [agg] | 2–3 d |
+| C1.2 | **Cross-version compatibility computed in `MeshAggregator`** — newest version against its predecessor, per topic (§C2.1) | [agg] | 2 d |
+| C1.3 | **`MeshTopicCompatibility` + `MeshSchemaChange` result types**, loose-string convention per `MeshTopicChangeKind`, `Overall` including `not-compared` (§C5) | [wire] | 0.5 d + 0.5 d TS mirror |
+| C1.4 | **Fixture uplift** — the demo estate carries versions, a real skew and every verdict class. **Hard prerequisite:** `benzene-ui` generates its types from `contracts/artifacts/*` (`generate-contracts.mjs:148-163`), so the UI type does not exist until the fixture does. Continues R1 §5.9 / §A1 | [ui] | 1 d |
+| C1.5 | **Versioned topic route + newest-by-default + version switcher** (§C4.3). Already promoted to R1 by §A1; delivers standalone value the day it lands | [ui] | 1 d |
+| C1.6 | **Third state, everywhere** — `not compared` copy, the `isCompatible` vacuous-truth arm, the scope sentence, the `TypeChanged` stop marker (§C5). **Gate: nothing else in C1 ships without this** | [ui] | 1 d |
+| C1.7 | **`Changed from v1` section + annotated `SchemaTree`** (§C4.3). **The centrepiece** | [ui] | 2–3 d |
+| C1.8 | **`#changes` ledger + navigable estate tile + estate preview section** (§C4.1, §C4.2) | [ui] | 3 d |
+| C1.9 | **Service-page grouping into five cards** (§C6) — after/with §B | [ui] | 1.5 d |
+| C1.10 | **`RetirementRow` chips out of the tooltip** (§C4.5) | [ui] | 0.5 d |
+
+**Wave C2 — "what changed since last run."**
+
+| # | Item | Repo | Size |
+|---|---|---|---|
+| C2.1 | **`DiffTopicEntry` calls the engine instead of string equality** (§C2.2) — field-level temporal drift, plus the **changed-without-a-version-bump** class ranked above `breaking` | [agg] | 1.5 d |
+| C2.2 | **`MeshTopicChange` gains optional `direction` / `path` / `compatibility`** — additive, older readers still render `description` | [wire] | 0.5 d + TS mirror |
+| C2.3 | **`Since the previous snapshot` section + ledger mode toggle** (§C4.3) | [ui] | 1 d |
+| C2.4 | **Service `contractDrift` re-derived as a rollup of its topics' changes**; hash demoted to detail (§C2.3, §C4.4). This is the item that makes **1** and **4** the same number | [agg] | 1 d |
+| C2.5 | **Possible-rename pairing**, labelled as a hypothesis, verdict unchanged (§C3) | [ui] | 0.5 d |
+
+**Deferred, with reasons**
+
+- **`PreviousSpecJson` / service-spec field-level temporal drift** (§C2.3) — worst insight-per-byte in
+  the set; superseded by C2.4's rollup for the case that matters. Revisit trigger recorded.
+- **Go and Python parity — nothing to do, and this is verified, not assumed.** Neither port builds a
+  topic catalogue: `benzene-go` has `mesh` + `meshd` (a collector with `FleetView` / `TopicSummary`
+  read models, no `topics.json`), and `benzene-python`'s `benzene-mesh` is descriptor/collector-side
+  only. The mirror obligation is **.NET and TypeScript, two ports, not four.**
+
+**Rejected, so it is not re-asked**
+
+- Per-consumer impact prediction (§C3) · rename as an engine `SchemaChangeKind` (§C3) · a
+  breaking-change gate/alert/release-block in mesh (§C4.6, boundary §4.1) · side-by-side raw JSON or
+  git-style diff (§C4.6) · `Benzene.Mesh.Aggregator` referencing `Benzene.Schema.OpenApi` (§C1.3) ·
+  any compatibility field on the ServiceDescriptor or in the Cloud Service Profile (§C8).
+
+### §C8 — Spec impact: none, and here is why that is a finding rather than a relief
+
+**No `docs/specification/**` change. No conformance-fixture change. No new obligation on any profiled
+service. No new signal from anywhere.** Grounds, checked rather than assumed:
+
+- `mesh.md` **§9** states outright that the aggregator's `manifest.json` / `services/*.json` artifacts
+  and the Mesh UI are *"collector-side idioms this contract deliberately does not constrain."*
+  `topics.json` is an aggregator artifact; its shape is not spec-pinned. Same ground R1 §5.1 stood on
+  for the usage-coverage declaration.
+- Every input already exists: the per-version payload schemas are in `MeshTopicEntry` with `$ref`s
+  inlined, and the previous catalogue is already read back by `ApplyCatalogDiffAsync`.
+- The engine, the taxonomy and the rule table already ship in `Benzene.Schema.OpenApi`.
+
+Measured against §A4's standing bar — *insight-per-byte-of-spec* — **this is the best item either
+this round or the two before it produced.** Version compatibility was the exemplar: maximum insight,
+zero spec cost. Field-level compatibility is the same trade at a larger payoff, and it lands on the
+question every one of eight personas asked and none could answer. The roadmap's Phase 4 note was
+right twice (`:686`, `:836`); round 3 supplies the evidence to promote it, and this block does.
+
+### §C9 — Status honesty, updated
+
+- **Shipped and verified:** the compatibility engine itself (`Benzene.Schema.OpenApi/Compatibility` —
+  nine types, direction-aware rules, field-level paths, a CI gate); `VERSION COMPATIBILITY` as a
+  *topology* reconciliation; `MeshTopicChange` run-over-run detection at string granularity.
+- **Shipped and never connected:** the engine is referenced by **no `Benzene.Mesh.*` project**. This
+  is a worse status than "not built" (§A4.3) — it is a shipped differentiator with no screen.
+- **Shipped but vacuously true:** `MeshTopicVersionCompatibility.IsCompatible` on a topic with no
+  in-estate producer (§C5). Fires on exactly the HTTP-fronted topics whose callers are outside the
+  collector's vision.
+- **Shipped but dead code:** `TopicPage.tsx:144-149`'s `Changes` section — real, visible, correct, and
+  unreachable for every changed topic because `selectTopic` returns v1 (§C4.3).
+- **Shipped but incapable:** `DiffTopicEntry`'s canonicalised string equality — `"Payload schema
+  changed (request)"` is not an abbreviation, it is the ceiling.
+- **Shipped but unverified against a real backend:** the Tempo adapter's metric and label names remain
+  **documented convention, never checked against a live Tempo instance.** Restated for the third
+  refinement running, because it keeps needing restating.
+- **Not built:** everything in §C7.
+
+Cross-reference: the data-layer halves — C1.1/C1.2/C1.3 and C2.1/C2.2/C2.4 — belong in
+`work/service-mesh-roadmap-1.0.md` (benzene-dotnet), against its **Phase 4 field-level
+compatibility** item, which this block promotes out of "mid term" and into the next wave. The UI
+halves sit against R1/R2 in this document: **C1.5 and C1.6 are R1 items** (a reachable version and an
+unearned verdict are both absence-honesty), **C1.7 and C1.8 are the substance R2.9 was always
+reaching for**, and §C6's grouping is new. **The R1 STOP list still holds** — none of this is a new
+estate surface; `#changes` is a ranked view over data the estate already publishes.
