@@ -22,10 +22,6 @@ Round 5 is `work/mesh-feedback-round5-2026-08-16.md`. The design block it fed is
   claim single-commit attribution the way round 5 could. Freeze it next time, and batch the fixes
   until every persona has reported.
 
-> **Status: four of six reports in.** The QA and platform-engineer runs were still going when this
-> was written, and their rows below are therefore blank. Everything else here is complete and
-> verified; this file is updated rather than replaced when they land.
-
 ## The headline
 
 Round 5's central finding was that **the badge marked the party that had finished, not the party
@@ -40,8 +36,8 @@ The movement on the standing verdicts:
 | Developer (`billing-api`) | "the natural first click tells him he has nothing to do" · **MAYBE** | First click leads with `OUTSTANDING · 2 contract moves` · **YES** |
 | Production support | 45s to diagnosis, then ~2 min recovering from a badge pointing the wrong way | 65s to the same diagnosis **with the direction already correct** · runbook **YES**, upgraded from landing-page-only |
 | Delivery owner | PARTIAL — "the batching and sequencing are mine" | **PARTIAL, strongly improved** — ~70% of the batching is the product's · **YES, unreservedly** |
-| QA | SOLVED on reading / PARTIAL on proving | *pending — see the status note above* |
-| Platform engineer | **NO** on release morning | *pending — see the status note above* |
+| QA | SOLVED on reading / PARTIAL on proving | **YES for reading, NO for proving** — would not sign off; see the harness adjudication below |
+| Platform engineer | **NO** on release morning | **MAYBE**, and "YES, I'd open it again" — blocked on one defect, since fixed |
 
 The delivery owner's summary is the one worth keeping: *"for the first time the numbers reconcile
 against each other, which means I can quote one."* Round 5's unanimous complaint was that mesh's
@@ -132,7 +128,38 @@ semantics four inches apart. A service's own topic list only ever contains versi
 **declares** — so a verdict badge there always marks work it has already done. It now renders as a
 neutral chip that keeps the fact and loses the alarm.
 
-### 7. The estate tile mixed two denominators
+### 7. A version heading sat above another version's numbers
+
+The most damaging defect of the round, found by the platform engineer, and the one an operator would
+have acted on. The topic page defaults to the newest version when none is pinned, but the traffic
+selectors keyed off the version in the URL — which on that same arrival is null — so they merged
+every version and printed the old one's numbers under the new one's heading.
+
+> *"`order:placed` **v2 has carried zero messages**. The live plane says `invocations: 0`. The heading
+> says v2, the schema panel says v2, the compatibility panel says v2 — and the traffic strip merges
+> v1+v2 and prints v1's clean 9.8k under it. … 'v2 is deployed and flowing cleanly with zero errors'
+> is what that page says, and it is false."*
+
+Every in-product link pins the version, so it was reachable only by bookmark, typed URL, pasted link
+or runbook step — *"which is how I reach things"*. Two tests had encoded the merge as correct
+behaviour and were rewritten: summing across services is right, summing across versions is not.
+Fixed in `a75e310`, along with three in the same family — a latency figure printed for a version that
+carried nothing, the breach check running on only one of the two arms (so the mirror-image outage
+kept the calmest label in the vocabulary), and a failed fetch rendering as a statement about the
+estate.
+
+That last one is worth stating on its own. `catalogSlice` collapsed a failed read into `null` with a
+`.catch(() => null)`, so a 404 on `topics.json` was indistinguishable from an empty catalogue and the
+page said *"the aggregator has run but no service declared one"*:
+
+> *"I go looking for a registration problem in five services instead of a 403 on one URL … This is
+> one distinction — fetch failed vs fetch succeeded and was empty — thrown away in one `.catch`, and
+> it costs the product its credibility on the exact axis it markets itself on."*
+
+The live plane had said *"unreachable — no successful poll yet; retrying"* since round 2. The static
+half now meets the same standard, and names the artifact.
+
+### 8. The estate tile mixed two denominators
 
 `9 / CONTRACT CHANGES / 4 awaiting a move` parses as four of the nine. It is not — 9 counts field
 changes, 4 counts topics — and clicking the 9 lands on a page headed `6 rollouts`. The first number
@@ -159,6 +186,44 @@ the tile's value is untouched.
 - **Retirement intent.** *"the entire model hinges on a date only the other team knows, which is
   nowhere in the product"* (developer). Mesh has no future tense by design; this is the cost of that
   ruling, stated plainly for the first time.
+
+## The harness manufactured a finding again, and it was the round's headline
+
+The QA engineer's verdict was **"yes for reading, no for proving"**, and they would not sign the
+release off:
+
+> *"I have nine screenshots that all say ACCEPTED, one of which I obtained by sending to a service
+> that does not exist … the product currently makes it easier to produce convincing false evidence
+> than true evidence."*
+
+**Substantially my harness, not the product.** Verified in source before adjudicating:
+`MeshDispatchMessageHandler` returns `not-found` for an unregistered service and otherwise serialises
+the target's own `MeshDispatchResult`, and `MessageComposer` already renders that status and colours
+the badge red when it is not ok. My stub collector returned a hardcoded `accepted` for every dispatch
+and echoed the request back as the response body — so the persona was never able to see the correct
+behaviour, and reasoned impeccably from what they were shown.
+
+Same for the `spec` link 404 they have now reported in **three consecutive rounds**: the product links
+to `mesh-spec-ui.html`, which `MeshSpecUiMiddleware` serves in a real .NET deployment and my harness
+did not. I should have adjudicated that the first time it was raised.
+
+**That is three harness-authored findings across rounds 5 and 6** — the `annotations.json` key that
+white-screened the product, the topology field names that made every edge read unmeasured, and now
+the dispatch stub. The pattern is that the harness is written to be *good enough to click through*
+rather than to be faithful, and every time it diverges the round pays for it in a persona's headline.
+
+The stub now mirrors the real handler: unknown service 404s, and a topic no service declares at the
+requested version returns `no-handler` rather than green. Verified end to end before re-running. A
+focused QA re-run against the corrected harness is in flight; its result is appended below when it
+lands, because a verdict formed against a lying harness cannot be left standing as the round's
+conclusion either way.
+
+What was **genuinely** the product in QA's report, and is fixed in `98cbd1d`: a Test Console deep
+link — the URL the page's own header invites you to bookmark for a runbook — loaded with no version
+and no payload and would happily send an empty unversioned message; "compose a message" from a v1
+page opened at v2; the response panel survived edits to the request, so a screenshot showed a green
+v2 result beside a v1 request; and `#test/does-not-exist/<topic>` rendered a working, sendable
+console, the one place a bad URL produced fake evidence instead of an honest empty state.
 
 ## Findings recorded but not acted on
 
