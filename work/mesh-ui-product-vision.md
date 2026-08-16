@@ -949,3 +949,442 @@ nothing, because "everything is new" and "the page just opened" are the same pic
 Worth noting how the defect surfaced. It was not found by a test or a review of the store — it was
 found by asking what the animation would actually fire on. **A feature nobody could build on top of
 was the evidence that the thing underneath was not running.**
+
+---
+
+## 2026-08-16 — PRODUCT REFINEMENT on the first user-feedback round
+
+Input: `work/mesh-feedback-round-2026-08-16.md` (eight personas, `work/mesh-user-personas.md`, harness
+built from `benzene-ui` `3a61f05`). This block **deviates from** the "two audiences" framing above and
+**re-ranks** the six outcomes. It does not rewrite them; read them as history, and this as what
+replaced them.
+
+Everything below that asserts current behaviour was checked in source before it entered the backlog.
+Where the evidence pack is wrong, §0 says so — the pack will be read again and must not be believed
+uncritically.
+
+### §0 — Corrections to the evidence pack (verified in source; re-scope, don't delete)
+
+The round found real defects. It also mis-scoped four findings, two of them the round's own
+headlines. Ranking by user harm requires fixing the scope first.
+
+1. **Ownership is NOT absent from the model.** `MeshServiceRegistryEntry.OwningTeam` →
+   `MeshManifestEntry.OwningTeam` exists (`Benzene.Mesh.Contracts/MeshManifestEntry.cs:61`,
+   populated at `Benzene.Mesh.Aggregator/MeshAggregator.cs:89`) and **the UI already renders it**
+   (`ServiceCard.tsx:67`, `ServicePage.tsx:70`). It is absent from
+   `benzene-ui/contracts/artifacts/manifest.json` — the fixture the round ran on. Only
+   `manifest.minimal.json` carries it. Re-scoped: from *"missing capability"* to *"missing from the
+   demo estate, and one free-text string is too thin to answer 'who do I wake'."* Still a top-three
+   backlog item; a different item than the one reported.
+2. **Version skew is SHIPPED, not missing.** Theme 4 — the round's "sharpest single finding" — is
+   largely a fixture artifact. `MeshTopicVersionCompatibility` (produced/consumed/producedNotConsumed,
+   with the upcaster caveat written into the type), the `VersionCompatibility` component, the
+   `selectVersionCompatibility` selector and `contracts/artifacts/topics.versioned.json` all exist —
+   and that fixture *literally encodes* `payment:capture` produced at v2, consumed at v1, exactly the
+   go/no-go the developer said the product couldn't show. The round ran against `topics.json`, where
+   every domain topic has `version: ""` and there is no `versionCompatibility` block. Re-scoped: from
+   *SEVERE product gap* to *SEVERE demo-surface gap*, plus one real, small reconciliation gap (the
+   live plane carries `"version": "1"` while the declared plane renders `—`; declared-blank should
+   defer to live-with-provenance, not to punctuation). **This is the largest re-ranking in the round.**
+3. **`missingFeeds` is rendered — on one surface of five.** `TopicLiveStrip.tsx:98` renders it as
+   *"not supplied by this plane: …"*, which is why a DOM search for the string "missing" found
+   nothing. Service-level `missingFeeds` (`shipping-api: [health, traces]`) is genuinely rendered
+   nowhere. Re-scoped: from *"the mesh knows its blind spots and never says"* to *"it says so once,
+   in words nobody searches for, on the one surface where the reader already suspected."* The
+   severity is unchanged; the fix is smaller than reported.
+4. **The window picker is a control-honesty defect, not a data gap.** The wire self-describes
+   (`window.countsWindowed: false` + `countsSince`) and the store already reads it
+   (`selectors.ts:932`). The caption is *honest*; the picker sitting above it is not. No data
+   requirement, no spec question — the fix is that a control which cannot govern the numbers must
+   say so or not be offered.
+
+Confirmed exactly as reported, and it is the round's most important finding:
+
+5. **The Value page manufactures deletion evidence from an absent row.** Verified in
+   `benzene-ui/src/store/selectors.ts` — `feedWired` is `s.catalog.usage != null` (line 646: *the
+   artifact exists at all*), and `totalFor()` (line 663) sums matching rows, so a topic with **zero
+   rows** yields `0`, which line 675 turns into the evidence string *"no traffic observed while the
+   usage feed is wired."* Estate-scoped evidence rendered as a topic-scoped claim. `MeshUsage`
+   carries no coverage declaration, so the aggregator cannot currently distinguish the two either.
+   **Ranked #1 in this refinement**, above everything, because it is the only finding that can
+   authorise an irreversible production action from data that does not exist.
+
+### §1 — The audience model: two audiences is retired
+
+**Deviation.** "The two audiences" (Developers / Product owners) is withdrawn as a prioritisation
+model. It survives only as a *readership floor*, restated and widened in §1.3.
+
+It failed for a specific reason worth recording: it assumed each audience brings one job. Eight roles
+brought four, they collided across job titles (the architect and the delivery owner wanted the same
+retirement evidence; the developer and the QA wanted the same schema constraints), and — decisively —
+**the product's worst failures were not any audience's job. They were a property all eight needed and
+none of them got.** A model that cannot express "the thing that hurt everyone" is the wrong model.
+
+#### §1.1 Four jobs, replacing two audiences
+
+Each job names the decision it unblocks. Ranked by how badly the round showed them served.
+
+| Job | Bringers | The decision | Round verdict |
+|---|---|---|---|
+| **Decide the estate's future** | delivery owner, architect, security reviewer, PO | retire / invest / approve / sign off | **actively unsafe** (§0.5) |
+| **Change safely** | developer, QA, architect | ship or hold this payload change; who do I tell | **half-served** — precise blast radius, no contact, no diff substance |
+| **Comprehend** | BA, architect, joining developer | what does this system already do, before I write a requirement | **structurally served, semantically empty** |
+| **Attribute** | production support, platform engineer | is it us or them; whose is this | **served at the seam, correctly narrow** |
+
+#### §1.2 The guarantee that outranks all four: provenance
+
+Every number, every empty state, every green tile states what it was derived from and what it could
+not see. This is not a feature; it is the precondition for all four jobs, and the round is unanimous
+evidence for it: Theme 1 (absence as good news), Theme 7 (numbers disagreeing), Theme 8 (an inert
+control), Theme 9 (two clocks), Theme 11 (unstated scope of claim) are all one defect wearing five
+costumes. It is also **already normative in the specification** — `mesh.md` §2 says of `degraded`
+that *"an empty array asserts 'this service calls nothing,' which a port that cannot yet know that
+has no right to assert."* The spec has the discipline. The product drops it at the render.
+
+Standing rule, effective now: **no surface may present an absence as a measurement, and no claim may
+be rendered at a wider scope than its evidence.**
+
+#### §1.3 The readership floor (widened)
+
+No view may require reading C#. **Widened by this round:** no view may require knowing Benzene's
+internal vocabulary either. The BA logged *plane*, *reserved*, *raw (benzene-message)*, *exemplar
+traces*, and *collector / aggregator / usage feed* — *"three words for what I think is one thing"* —
+as blockers, and broke her producer/consumer mental model on `producers: none`. Implementation
+vocabulary on a reader-facing surface is the same defect as a stack trace on a landing page
+(`System.TimeoutException` was the round's most prominent landing-page text).
+
+#### §1.4 Two roles are served as guests, deliberately
+
+**Production support and QA are not first-class users of this product and will not be optimised for.**
+Their own verdicts say so — *"YES, second tab, not first"* and *"YES for reading, NO for testing."*
+Mesh serves them **only at the contract seam**: who else is on this topic, what shape is the payload,
+what version. Their tools stay PagerDuty, Splunk, Postman, the CI suite. This is a ranking decision
+with teeth — it is why the Test Console does not get assertions (§4) and why the flow drill-down does
+not become a trace viewer (§5.7).
+
+#### §1.5 One role the vision never named: the security reviewer
+
+New first-class audience, with a requirement none of the others have: **the product must evidence its
+own controls.** Their meta-finding — *"a control I cannot verify from the product is a control the
+next reviewer will not credit"* — is a product requirement, not a security chore. `Benzene.Mesh.Dispatch`
+has genuinely good controls (default-deny in Production, unset environment treated as Production,
+three independent opt-ins, registry-bounded targeting, a confirmation that resets after every send —
+all verified in `MeshDispatchGate.cs` / `Extensions.cs`) and **not one of them is visible from the UI.**
+
+### §2 — The six outcomes, re-scored
+
+| # | Outcome | Verdict |
+|---|---|---|
+| 0 | **Know what this view cannot see** | **NEW — added as a precondition, not a seventh item.** Nothing above it ships until it holds on that surface. |
+| 1 | Understand the domain | **Claimed, hollow.** Structure real; meaning absent. No topic has a description; one of three services has a sentence; search matches names only, so `email` returns "no match" while `customerEmail` is a field on two topics. Outcome 1 already promised *ownership* — hollow per §0.1. |
+| 2 | See the message flows | **Met as a map, hollow as a path.** The map is the thing nobody else's tool has. The instance-level drill-down is *advertised and absent* — "7 events" that is not a link, unclickable exemplar trace ids, `#trace/<id>` silently bouncing to fleet. An advertised non-affordance is an outcome-0 violation, not a missing feature. |
+| 3 | Spot the issues | **Met, and the strongest surface in the product.** The only thing the architect said survives forty services — *"because it's a queue, not a canvas."* Protect it. |
+| 4 | See usage | **Claimed, unsafe.** Two planes, two windows, two vocabularies, one inert control. `412 failed` beside `×486`; `observed 0` directly above `5,207 calls`. Delivery owner: *"a dashboard I have to caveat is a dashboard I don't open."* |
+| 5 | Judge value | **Claimed, dangerous.** §0.5. |
+| 6 | Discuss it | **Met, and undervalued — the surprise of the round.** Priya's one comment distinguishing expected drift (`PAY-118`) from the real issue *"carries more contract-health signal than every automated indicator on the page combined"* (architect). Outcome 6 was sequenced last and lowest; it out-performed four automated outcomes. **Promoted**: annotations are not decoration, they are the estate's only channel for human judgement the contract cannot derive — which is also where §5.3 sends data classification. |
+
+Nothing is missing from the list. Outcome 0 is added, outcome 6 is promoted, and outcome 4's "trends
+over time" half is deferred (§6) rather than pursued.
+
+### §3 — Contradictions, resolved rather than averaged
+
+**3.1 The Value page: "epistemic honesty" (architect) vs "manufactures a deletion" (platform engineer).**
+The platform engineer wins outright; the architect was right about the *principle* and wrong about
+this *instance*. The string is honest about the feed and dishonest about the topic. **Resolution: a
+claim's scope must match its evidence's scope.** "The feed is wired" is estate-scoped; "no traffic
+observed" is topic-scoped; joining them asserts per-topic coverage the artifact never carried. Three
+states, not two — *covered and measured zero* / *not covered by any feed* / *no feed at all* — and
+only the first is retirement evidence. The second moves the row to **Verify externally (amber)**,
+which is what that tier is for. The UI-only half ships in R1; the artifact half (§5.1) follows. The
+counter-evidence the round flagged as worth protecting — the strapline downgrade, `errors unknown`
+instead of `0.0%` — is the correct behaviour generalised, not an exception.
+
+**3.2 Dispatch: "protect these controls" (security) vs "I can't test with it" (QA) vs the console's own
+"bookmark this as a production runbook step".** Security's posture wins outright, and the runbook copy
+is **withdrawn, not reconciled** — it contradicts `MeshDispatchGate.IsAllowed` (`!IsProduction ||
+AllowInProduction`) in the same product. Both cannot be right; the gate is right. QA's ask is granted
+at the *contract* level only: show the declared response schema and return `x-correlation-id`. It is
+refused at the *harness* level: no assertions, no collections, no CI. See §1.4.
+
+**3.3 "Screenshot only, won't drive it live" (architect) vs "yes, live, over a stakeholder's shoulder"
+(BA, delivery owner).** Not a contradiction — it is the clock. A 31-day-old snapshot with no age, no
+warning and no styling is what makes a live demo unsafe. Resolution: snapshot age is ranked in R1
+above almost everything, because it is cheap and it converts a MAYBE into a YES.
+
+**3.4 "The empty topology reads as decoupling" (platform engineer) vs "the graph dies at node six"
+(architect).** Both true, pulling opposite ways. Resolution: **the node-link graph is not the scaling
+answer and will not be made into one.** Fix its empty state now (honesty); cap it as a small-estate
+affordance. The surfaces that scale are the catalog table (faceting, pagination, *"every topic with
+more than one producer"*) and the issue queue. This is a deliberate under-investment in the most
+demo-friendly widget in the product.
+
+**3.5 "Show me more" (all eight) vs "stay small" (all eight).** Resolved by §4.
+
+### §4 — What mesh will NOT do (explicit product position)
+
+The personas drew this boundary unprompted and near-unanimously. It is now a product position, and it
+bounds the backlog.
+
+**The seam mesh owns:** *what this estate declares, what is actually running, and whether they match* —
+because mesh is the only thing that knows what a topic, a payload and a version are.
+
+Mesh will not become:
+
+1. **A monitoring system.** Platform engineer: *"the moment there's a chart with a threshold on it,
+   mesh is a worse Grafana and I'll stop trusting both."* Derived rule: **no chart with a threshold
+   on it, ever.** No alerting, no paging, no time-series exploration.
+2. **An incident tool.** Lifecycle, comms and the rota stay in PagerDuty. Mesh names the contract
+   facts an incident needs; it does not run the incident.
+3. **A test runner.** No assertions, no collections, no CI integration, no test-case management.
+4. **The authority on who may call what.** Security reviewer: *"Mesh should tell me a route exists;
+   it should not become the authority on who may use it."* This also rules out mesh-side policy,
+   allow-lists and per-caller entitlement views.
+5. **The keeper of intent or target state.** ADRs, the *why*, and the 18-month picture stay with the
+   architect. Mesh reports what is, never what was meant.
+6. **A trace or log store.** *(Added by this refinement, and it is the non-obvious one.)* The round's
+   most-requested feature — one real example of a failure — will **not** be built as a trace viewer.
+   Three personas left for Splunk/CloudWatch at exactly that point, and the honest constraint is that
+   the live plane's `traces[]` carries summary fields only. Mesh's answer is a **hand-off**: a
+   copyable correlation id and an optional configured deep link out. Building the viewer would take
+   mesh across boundary 1 by a different door.
+
+**The Test Console is demoted** from headline capability to non-production diagnostic. It produced four
+of the round's seven shipped-code defects, its copy contradicts its own gate, and it dispatches to the
+wrong service (§5.8). It shipped on 2026-08-15/16 while outcome 0 was still unbuilt — a feature that
+reaches into running services landed before the product could say what it could not see. Sequencing
+lesson, recorded: **provenance is not a polish phase.**
+
+### §5 — Decision-framework rulings on the major asks
+
+Spec-coverage summary: **one spec addition approved, two rejected, one deferred.** Every other ask is
+served from signal the estate already emits or from aggregator-side derivation.
+
+**5.1 Absence honesty (Themes 1, 8, 9, 11) — APPROVE, top of the backlog.**
+*Job:* all four. *Data:* on the wire today — `missingFeeds` and `degraded` (mesh.md §2/§6),
+`window.countsWindowed`/`countsSince`, `snapshotAtUtc`. **No spec change; this is implementing honesty
+the spec already mandates.** One genuine gap: `MeshUsage` has no per-topic *coverage* declaration, so
+"the feed didn't cover this topic" is currently underivable. Ruling: **derive in the aggregator, not
+from services** — `usage.json` gains a coverage/scope statement per source. That is an aggregator
+artifact (`mesh.md` §9 explicitly leaves the aggregator's artifacts unconstrained), **not** a Cloud
+Service spec change and not a conformance-fixture change. Until it lands, the UI must say *"not
+present in the usage feed"* and must not tier on it.
+
+**5.2 Ownership metadata — the first big spec question. REJECT the spec addition; APPROVE a registry widening.**
+*Job:* all four; #1 ask for three personas. Production support: *"the single gap between mesh being a
+nice tool and mesh being* the *tool."*
+- **Ruling: ownership does NOT go into the ServiceDescriptor or the Cloud Service Profile.** Ownership
+  is organisational and deployment truth, not service self-description. A service cannot derive its
+  own on-call rota from its handler registry, and R5's whole principle is *"the spec is true because
+  it is derived"* — putting `owner` in a derived document buys a hand-maintained string in the one
+  document whose value is that nothing in it is hand-maintained. It also decays faster than services
+  redeploy. Widening `mesh.md` §2 here would be the least taut change available: every port, every
+  language, every profiled service pays, for a field that is wrong the week after a reorg.
+- **Approved instead:** widen the **mesh registry** — already operator-supplied, already outside the
+  spec — from a single `OwningTeam` string to a capped **contact block**: team, contact URI
+  (channel/email), repo URL, runbook URL. Four optional fields, no rota schema, no schedule, no paging
+  integration (boundary §4.2). Populate it from the `Benzene.Mesh.Discovery.*` providers where the
+  answer already lives — AWS tags, Azure tags, Kubernetes labels.
+- **Industry bar:** Backstage already owns exactly this problem at 3,000+ companies, with ownership
+  declared in-repo and harvested. Mesh **federates** ownership; it does not become a catalog. The
+  differentiator is that mesh can attach a contact to a *topic-level* blast radius, which Backstage
+  cannot compute — and that only works if the contact is cheap to import, not another thing to author.
+- **And render what already exists.** Per §0.1 the string is plumbed end to end and invisible only
+  because the demo fixture omits it.
+
+**5.3 Field-level data classification — the second big spec question. REJECT as a normative spec addition.**
+*Job:* decide (security sign-off), comprehend (BA).
+- **Ruling: no `pii` / `classification` field in `contract-document.md` or the Cloud Service Profile.**
+  Four reasons, stated so this is not re-litigated: (i) **it is already expressible** — the document's
+  schemas are OpenAPI 3.0 Schema Objects, so `description`, `title` and `x-` vendor extensions are
+  legal today; making a taxonomy normative buys nothing a convention can't. (ii) **There is no neutral
+  vocabulary** — PII / PCI / PHI / GDPR special category are jurisdiction- and organisation-specific;
+  pinning one in a conformance fixture would be the least defensible thing in the spec. (iii) **An
+  optional, hand-maintained classification is wrong exactly when it matters**, and a reviewer who
+  cannot trust it is worse off than one reading field names — which is the §1.2 defect in a new
+  costume. (iv) **The reviewer did not ask for it.** Their sign-off was YES WITH CONDITIONS and none of
+  the three conditions was classification; all three were mesh-side (§5.6).
+- **Also rejected: inferring classification from `format`.** A guessed PII flag that is absent for an
+  unformatted `customerEmail` field is precisely "absence renders as good news." If we cannot be sure,
+  we show the field name and let the human decide.
+- **Approved instead:** ship the honest derived half the reviewer already praised — the
+  contract-derived data-flow map, which fields cross which topic to which service — completed by
+  §5.4's dropped constraints. Then treat classification as an **annotation** (outcome 6): human,
+  org-specific, revisable, attached to an entity, correctable when wrong. That is what the P6
+  vessel is for, it costs the spec nothing, and it puts the assertion where it can be argued with.
+- **Revisit trigger, written down so it is a decision and not a refusal:** if three independent
+  adopters need machine-readable classification to gate a pipeline, revisit — as an `x-` convention
+  documented in `contract-document.md` as *tolerated, non-normative*. Never a MUST.
+
+**5.4 Payload constraints dropped (Theme 5) — APPROVE, no data work at all.**
+*Job:* change safely (QA's negative cases, developer's validation errors). Verified: `SchemaTree.tsx`
+renders name / type / format / required / enum and silently drops `pattern`, `minimum`, `maximum`,
+`minLength`, `maxLength` — while `orders:create`'s artifact carries `pattern: ^[A-Z]{3}-[0-9]{4}$` and
+`quantity` 1–99, **and the usage feed counts 94 validation errors on that topic**. The developer's line
+stands as written: *"the UI is hiding the cause of the failures it's counting."* Everything needed is
+already in `topics.json`. Pure render fix, highest insight-per-line-of-code in the round.
+
+**5.5 Drift and mismatch substance (Theme 3) — APPROVE, derived in the aggregator.**
+*Job:* change safely. A hash pair is *"a change-detection primitive presented as a finding"*; a bare
+`schemaMismatch: bool` *"is a rumour with a border-radius."* Half of this is already shipped and
+unrendered on the round's fixture — `MeshTopicChange{kind, description}` gives topic-level "what
+changed". The remaining half is real: the aggregator holds **both consumers' inlined schemas** at the
+moment it sets the boolean, so it can emit the differing paths and does not. Ruling: **derive it in
+the aggregator**; `topics.json` gains mismatch detail. No spec change, no fixture change, no new signal
+from any service. This was parked as a P5 "nice-to-have"; the round promotes it — QA is being asked to
+sign off a story whose downstream break the tool flags and refuses to describe.
+
+**5.6 Security conditions — APPROVE all three blocking conditions; one spec line; two explicit refusals.**
+*Job:* decide (sign-off). All verified in `Benzene.Mesh.Dispatch` source.
+- **Audit trail — APPROVE.** Zero logging in the package, confirmed across all seven files. A real
+  `payment:capture` for `amount: 99999` leaves no record outside the browser. Log service, topic,
+  caller identity as the edge presents it, and outcome, at the handler.
+- **Data-egress framing — APPROVE as documentation.** `HttpMeshServiceDispatcher.DispatchAsync`
+  returns the target's body verbatim and headers pass through unmodified; the console renders it. So
+  dispatch is a read primitive as much as a write one, from inside the perimeter, at the service's own
+  privilege. This goes in the package `CLAUDE.md` and the deployment posture, plainly. **Refused:
+  response-body redaction** — mesh cannot know what to redact, and pretending it can is §5.3's trap.
+- **Environment identification — APPROVE, and this is the one spec change this round buys.**
+  `placement` is on the wire and typed in the UI (`generated.ts:179`) and rendered nowhere; the fleet
+  fixture carries `placement.environment` while `mesh.md` §2 documents only `placement.cloud` and
+  `placement.region`. Dev and prod meshes being pixel-identical is a safety property, not cosmetics.
+  **Approved spec change:** document `placement.environment` as OPTIONAL alongside `cloud`/`region`,
+  under the same rule as `region` — *emitted only when the platform documents a way to know it; a port
+  MUST NOT guess.* One line in `mesh.md` §2. It pays rent immediately, the field already flows, and
+  spec + conformance fixtures + reference implementation move together as always.
+- **REFUSED: a separate path/method for dispatch** so read-only access can be enforced by proxy, WAF or
+  IAM route policy. It contradicts Cloud Service Profile **R4** — one wire-envelope endpoint is the
+  surface generic tooling uses to reach any service without knowing its transport. Splitting it to
+  make a WAF rule expressible would trade a spec invariant for a control the gate already provides.
+- **DEFERRED: server-side topic validation** against the target's declared contract. Real (the
+  dropdowns are client-side, so the reachable set is the service's whole routing table), but it would
+  give `Benzene.Mesh.Dispatch` a dependency on the aggregator's catalog — a dependency-discipline cost
+  for a risk the gate plus the non-production default already bound. Documented as a known limit in
+  the package doc rather than silently omitted.
+
+**5.7 The flow dead-end (Theme 6) — SPLIT: approve the hand-off, reject the viewer.** Per §4.6. The
+removal of the fake drill-down affordances is R1 work (it is an outcome-0 violation, not a feature
+request); the correlation-id copy and the configured deep-link out are R4.
+
+**5.8 Recently-shipped defects — these are DEFECTS, not refinement items,** with two exceptions.
+Straight fixes, ranked by harm: (1) `ComposePage` resolving the target from a topic's **producers**
+when dispatch invokes a **consumer's** handler — verified against `selectProducerServicesForTopic`;
+composing from `payment:capture` silently sends to `orders-api`, and *"a tester following the obvious
+path tests the wrong service and never knows"*; (2) `routing.ts:92` using `history.replaceState`
+exclusively, so Back ejects to `about:blank` — *"at 3am back is muscle memory"*; (3) the response panel
+discarding `x-correlation-id`, the one field that makes a send traceable; (4) `toHash` returning
+`#fleet` for a partially-filled console while the console's own copy promises the selection is in the
+URL; (5) the mobile issue headline rendering one character per line — the product's single most
+valuable element, on the device a PagerDuty link is opened on. **The two exceptions that are product
+positions, not bugs:** the runbook copy (§3.2 — withdrawn) and bad routes silently rendering the fleet
+page while leaving the bogus URL in the bar (§1.2 — a wrong page presented as a right one).
+
+**5.9 The demo fixture is a product surface — APPROVE as a first-class deliverable.**
+Two of the round's four headline findings were fixture artifacts (§0.1, §0.2), and both hid a
+*differentiator*: the version-skew view no competitor can compute, and the ownership field that is the
+#1 ask. An evaluator's estate is the fixture. Rule: **the default `contracts/artifacts/*` fixture must
+exercise every honesty channel and every differentiator** — versions and a real skew, ownership and
+contacts, `missingFeeds` on a service, a `degraded` descriptor, a topic genuinely uncovered by the
+usage feed, and schema constraints. Cheap; directly on the industry-bar criterion.
+
+### §6 — Sequenced backlog
+
+Each item: the question, for whom, the data. **Gated** marks items waiting on data that does not exist
+yet.
+
+**R1 — "the absence release." One theme: no surface presents absence as evidence.** Nothing else ships
+until this does.
+
+1. **Usage coverage three-state + Value-page evidence correction.** *"Can I defend retiring
+   `order:legacy-export`?"* — delivery owner, PO, architect. Data: today's rows for the UI half;
+   §5.1's coverage declaration for the artifact half. **Ranked #1 in the product.**
+2. **Render `missingFeeds` / `degraded` on every surface that makes a claim** — green service cards,
+   service pages, fleet tiles. *"Is this healthy, or unwatched?"* — platform engineer, production
+   support. Data: on the wire today.
+3. **Snapshot age, prominent and loud past a threshold**, and the two clocks reconciled (declared
+   `generatedAtUtc` vs live `generatedAt`). *"How old is what I'm looking at?"* — everyone. Data: today.
+4. **The window control governs the numbers, or says it can't** (`countsWindowed: false`). *"What
+   period is this?"* — delivery owner, production support. Data: today.
+5. **Empty states that distinguish "no feed" from "no coupling"** — the topology panel, *"Declares no
+   outbound calls"* (which `mesh.md` §2's `degraded: ["outbound-registry"]` already distinguishes and
+   the UI does not), and the removal of advertised non-affordances (`#trace/<id>`, "7 events", bad
+   routes rendering fleet). *"Is this estate decoupled, or unobserved?"* — architect, platform engineer.
+6. **Scope-of-claim statements** — *"no consumers **declared in this estate**"*. Delivery owner:
+   *"I'd rather be told the limit than infer it."* Data: none needed.
+7. **Defect batch §5.8**, ComposePage inversion first.
+
+**R2 — "make the contract legible."**
+
+8. **Schema constraints rendered** (§5.4), and the response contract shown or its absence stated.
+   *"What negative tests do I write / why is my message rejected?"* — QA, developer. Data: today.
+9. **Mismatch substance from the aggregator** (§5.5). *"What exactly differs between these two
+   consumers?"* — QA, developer, architect. Data: aggregator-derived, no spec change.
+10. **Search over descriptions and field names.** *"Does a notification capability already exist?"* —
+    BA. Today `email` returns "no match" while `customerEmail` is a field on two topics, and she
+    nearly wrote a false negative — *"exactly the answer that gets a duplicate built."* Data: today.
+11. **Version reconciliation** — a blank declared version defers to the live plane's version with
+    provenance, never to `—` (§0.2). Data: today.
+12. **Fixture uplift** (§5.9).
+
+**R3 — "who, and where."**
+
+13. **Registry contact block + discovery-provider population** (§5.2). *"Who do I tell / who do I
+    wake?"* — all four jobs. Data: mesh registry, no spec change.
+14. **Environment badge**, plus the approved one-line `placement.environment` spec addition (§5.6).
+    *"Am I looking at production?"* — security, platform engineer.
+15. **Dispatch audit trail + egress posture documented** (§5.6). *"Can I evidence this control?"* —
+    security.
+
+**R4 — "meaning, and the hand-off."**
+
+16. **Topic and field descriptions rendered.** *"What does this system do, in English?"* — BA,
+    delivery owner. **Gated** on the ports deriving `description` into the Contract Document's schema
+    objects (legal today, populated by nobody). Data requirement filed on the .NET port; no spec
+    change (§5.3 reasoning applies — schema-level `description` is already legal).
+17. **Correlation-id copy + optional configured deep link out** to the trace backend (§4.6). *"Show me
+    one real example of this failure"* — developer, production support, QA.
+18. **Vocabulary pass + glossary affordance** — *plane*, *reserved*, *raw (benzene-message)*,
+    *exemplar traces*, and one word for collector/aggregator/usage feed (§1.3).
+
+**Deliberately deferred** *(each with its reason, so deferral is a decision)*
+
+- **Usage history / trends over time** (outcome 4's second half): gated on a store mesh does not have,
+  gated behind R1's coverage work, and one step from boundary §4.1. Not before both.
+- **A topic-level `description` field in `contract-document.md`**: the schema's own `description` is
+  usually the same sentence; a second place to say it is how specs bloat. Revisit only if R4.16 lands
+  and the schema-level answer demonstrably isn't enough.
+- **Server-side dispatch topic validation** (§5.6): dependency discipline.
+- **Node-link graph scaling beyond small estates** (§3.4): the table and the queue scale; the canvas
+  does not. Indefinite.
+- **Threaded replies / resolution states on annotations**: still parked — but note outcome 6's
+  promotion (§2), which raises the priority of everything else in that surface, starting with making
+  the write path available in more deployments than the one the round saw (read-only).
+
+**Rejected** *(with the reason, so it is not re-asked)*
+
+- **Field-level data classification as a normative spec field** (§5.3), and inferred classification.
+- **Ownership / rota in the ServiceDescriptor** (§5.2) — federate, don't own.
+- **A trace or log viewer in mesh** (§4.6).
+- **Any chart with a threshold; any alerting or paging** (§4.1, §4.2).
+- **A separate HTTP path/method for dispatch** (§5.6) — contradicts R4.
+- **Assertions, test collections or CI integration in the Test Console** (§1.4, §4.3).
+- **Mesh as an authorization authority** (§4.4).
+- **Response-body redaction in dispatch** (§5.6).
+
+### §7 — Status honesty
+
+- **Shipped and verified:** the issue inbox; the topic catalog; `MeshTopicVersionCompatibility` and the
+  `VersionCompatibility` view; `MeshTopicChange` drift substance; annotations read+write; the dispatch
+  gate's controls; the 60-second artifact refresh.
+- **Shipped but not exercised by the round's estate:** version skew, ownership, `missingFeeds` beyond
+  the topic strip, drift substance — all present in code, all invisible in `contracts/artifacts/` (§5.9).
+- **Shipped but unverified against a real backend:** the Tempo adapter's metric and label names remain
+  **documented convention, never checked against a live Tempo instance** — unchanged by this round and
+  restated here because it keeps needing restating; the composite AWS/Azure usage-window behaviour is
+  API-shape-correct only.
+- **Not built:** usage coverage declaration; mismatch detail; the registry contact block; the
+  environment badge; the dispatch audit trail; topic descriptions; the trace hand-off.
+
+Cross-reference: the data-layer half of items 1, 9, 13 and 17 belongs in
+`work/service-mesh-roadmap-1.0.md`; the one approved spec change (§5.6, `placement.environment`) is a
+`docs/specification/mesh.md` §2 edit and moves with its conformance fixtures and the Go reference
+implementation, per the standing rule.

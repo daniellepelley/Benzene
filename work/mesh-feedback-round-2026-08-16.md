@@ -16,6 +16,34 @@ refinement it fed is in `work/mesh-ui-product-vision.md`.
   adding sign-out/refresh controls and, relevantly, replacing a raw `404 Not Found for
   manifest.json` with a real "No catalog yet" empty state. Findings below are against `3a61f05`.
 
+> **⚠ CORRECTED 2026-08-16 by the product refinement — read `work/mesh-ui-product-vision.md` §0
+> before quoting anything below.** The PO checked four headline findings against source and found
+> them mis-scoped. Two were caused by **this harness serving the base fixtures**, and they are the
+> round's two biggest claims:
+>
+> - **"Ownership is absent"** (5 personas, the #1 ask for three) — `MeshManifestEntry.OwningTeam`
+>   exists, the aggregator populates it, and `ServiceCard.tsx:67` / `ServicePage.tsx:70` already
+>   render it. It is absent from `contracts/artifacts/manifest.json`, the fixture served here.
+> - **"Version renders as an em-dash"** (the developer's "single worst thing I found") — version
+>   skew is **shipped**. `contracts/artifacts/topics.versioned.json` encodes exactly the case
+>   reported: `payment:capture` `producedVersions [v1,v2]` / `consumedVersions [v1]` /
+>   `producedNotConsumed [v2]` / `isCompatible: false`. The harness served the unversioned
+>   `topics.json`.
+> - **`missingFeeds` "rendered nowhere"** — it is rendered on one surface of five, as *"not supplied
+>   by this plane"*, which is why a DOM search for "missing" found nothing. The finding is
+>   *inconsistency*, not absence.
+> - **The inert window control** — a control-honesty defect, not a data gap: the wire already
+>   self-describes `countsWindowed: false` and the store already reads it.
+>
+> **Harness lesson**: `contracts/artifacts/` carries richer variants (`topics.versioned.json`,
+> `topics.liveness.json`, `topology.structural.json`, `fleet.windowed.json`, `manifest.minimal.json`)
+> that exist precisely to exercise these dimensions. Serving the base files understates the product
+> and sends personas hunting for capabilities that ship. Future rounds must state which fixture
+> variant each artifact was served from, and should run the richest ones by default.
+>
+> The rest of the pack stands. The #1 finding (the Value page manufacturing deletion evidence from an
+> absent row) was **confirmed exactly as reported** and ranked first in the product.
+
 ## Findings to DISCARD — harness artifacts, not product defects
 
 Recorded so they cannot leak into the backlog:

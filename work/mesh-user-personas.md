@@ -77,6 +77,17 @@ you, the raw artifacts the page reads are at `/manifest.json`, `/topics.json`, `
 **The data is canned.** It is shaped to be realistic and internally consistent, not observed from a
 live system. Judge the product, not the numbers.
 
+**Serve the richest fixtures, and say which.** `contracts/artifacts/` holds variants — `topics.json`
+*and* `topics.versioned.json` / `topics.liveness.json`, `topology.json` *and*
+`topology.structural.json`, `manifest.json` *and* `manifest.minimal.json`, `fleet.windowed.json`.
+They exist to exercise dimensions the base files leave empty. The first round (2026-08-16) served the
+base files and consequently sent five personas hunting for **ownership**, which the product renders
+when the field is present, and told a developer that **version skew** was unavailable when
+`topics.versioned.json` encodes precisely the producer-v2/consumer-v1 case he was looking for. Two of
+that round's biggest findings evaporated on review. Record which variant backed each artifact, and
+default to the richest — a persona cannot report on a capability the fixture never showed them, and
+"the product can't do X" is the most expensive kind of false finding.
+
 **Pin the round to a commit, and say so.** Record the `benzene-ui` commit the harness was built from
 before you start, and re-check it when the round ends. The UI moves fast enough that a round can be
 overtaken while it runs — the first round (2026-08-16) was built from `3a61f05` and two commits
