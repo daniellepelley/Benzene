@@ -199,6 +199,42 @@ retirement signal", plus the broken footnote), the **Topology** graph (the servi
 block is strictly better and has numbers), the **Live window** selector, **Recent flows** (rows are
 not clickable), and **Discussion** (read-only and empty on every page).
 
+## The fourth finding: three signals saying "I don't know", all rendering green
+
+The platform engineer's, and it is the same defect as the Value page one level up — which is why the
+two should be read as one thing. They put each of these on the wire through a proxy and watched it
+render.
+
+1. **Service-level `missingFeeds` is ignored entirely.** A service whose collector says
+   `missingFeeds: ["health","usage"]` renders *"Heartbeat healthy"*, *"9.8k messages observed"* with a
+   full breakdown, and *"● No issues observed for this service"* with a green dot. Three positive
+   assertions built on feeds the collector said it does not have. The mechanism **exists** one level
+   down: topic-level `missingFeeds` renders *"not supplied by this plane: usage"*.
+2. **The live plane's `health` field is not read at all.** `health: "unreachable"` renders `HEALTHY`.
+   The estate counters are fed only from `manifest.json` — 2h40m stale here — while the fresh feed
+   contradicting it is dropped.
+3. **The estate page carries no liveness.** Two never-heartbeated services render identically to one
+   that heartbeated 30 seconds ago, and the divergence banner fires only on `stale`, never on
+   `silent` — so with two silent services on screen it named the stale one and called it "silent".
+
+> *"The one failure mode I most need to catch on a rollout — I deployed the service, I forgot to wire
+> the mesh middleware — is the one you can only find by opening five service pages one at a time."*
+
+Their summary is the round's, and it generalises the Value-page finding exactly:
+
+> *"Stop letting the live plane's own admissions of ignorance render as green."*
+
+They also give the boundary argument for what to do about the KPI strip and the Live window:
+
+> *"The moment mesh renders a number that a monitoring tool renders better, it inherits the monitoring
+> tool's burden of proof — and right now it fails that burden. … My advice is not 'make them better'.
+> It is: either feed them properly from the live plane, or delete them. A dash is better than a wrong
+> zero, and no widget is better than a dash."*
+
+And they **withdrew a claim of their own from round 6** — that `lastSeen` was read by nothing. It
+drives the whole liveness model and works. Worth recording: the verify-before-ranking discipline is
+now being applied by the personas to their own prior reports.
+
 ## Verdicts
 
 | Persona | Round 6 | Round 7 |
@@ -206,3 +242,6 @@ not clickable), and **Discussion** (read-only and empty on every page).
 | Architect | LIVE, with one page they would not open | **LIVE for `#changes` and the `GAP LIVE NOW` card; SCREENSHOT ONLY for the rest** — because the meaning is in tooltips and *"I cannot hover in a room"* |
 | Developer | YES | **YES, Monday morning** — and would come back mid-week if an obligation said whether it was bleeding |
 | Production support | runbook YES | **YES, with two DO-NOTs in the runbook** — do not read the Calls percentages, do not use the Live window |
+| Delivery owner | YES unreservedly | **YES for Rollouts; would not open the Value page again** until it stops calling a 100%-failing topic "actively used" |
+| QA | would not sign off | **Would not sign off — but for four evidenced reasons rather than a feeling**, which they called a real product win. YES for the contract surfaces, before writing a single test case |
+| Platform engineer | MAYBE | **Split, explicitly: YES for "what contract state is this estate in and who owes what"; NO for "is everything up"** — adoption MAYBE, one change from YES |
