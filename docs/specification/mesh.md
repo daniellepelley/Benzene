@@ -316,6 +316,12 @@ transport (transport-bindings.md):
   is the declared contract, not a summary of traffic. Trace parentage (§3) MUST NOT be used to admit
   an edge into this graph, add a consumer/provider the descriptor didn't declare, or remove one it
   did — its role is §4.2, entirely separate from graph membership.
+- **Graph membership is by `service`, not by `(service, serviceVersion)`.** A topic's providers and
+  consumers name services; two live versions of one service both declaring a topic contribute one
+  edge, not two. The catalog keys by version so that registrations don't overwrite each other
+  (above); the graph answers "who talks to whom", a question about services, and duplicating a node
+  per version would answer it worse. The per-version breakdown belongs to the service view, where
+  the versions are the subject rather than the noise.
 
 Sender behavior (normative for ports): trace export MUST be asynchronous, non-blocking, and
 lossy under backpressure — a full buffer drops events, a failed send drops the batch, and no

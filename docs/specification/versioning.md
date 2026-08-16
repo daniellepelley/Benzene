@@ -12,9 +12,10 @@ overloads (`MessageVersionHeaders.Default`). HTTP apps opt into the `/v{version}
 `examples/Mesh` (payments-api: `/v1`|`/v2` routes + response downcast) and `examples/K8sMesh`
 (orders→payments: v1 request upcast to a single v2 handler over the envelope).
 
-**§5 (Mechanism C — side-by-side service versions) is proposed, not implemented.** It needs a third
-identity layer in the mesh (§5.5) and version-aware outbound routing (§5.4), neither of which any
-port has today; the §1 axes table marks it accordingly.
+**§5 (Mechanism C — side-by-side service versions) is specified, not implemented.** Its identity
+layer is now part of the mesh model (mesh.md §2.4, and §5.5 below), pinned by
+`conformance/mesh-service-version-cases.json`; what remains unbuilt is any collector honoring it and
+the version-aware outbound routing of §5.4. The §1 axes table marks it accordingly.
 
 ## 1. Purpose and scope
 
@@ -33,7 +34,7 @@ the third is *across* deployments:
 |---|---|---|---|
 | **Handler version** | "Which implementation of this topic's behavior runs?" | Within a service | Shipped: `(topic, version)` → handler, `[Message(topic, version)]`, `IVersionSelector` (core-concepts.md §2, §9) — §3 |
 | **Payload schema version** | "What shape is this request/response wire payload?" | Within a service | Shipped: schema casting — §4 |
-| **Service version** | "Which immutable release of this service is serving this?" | Across deployments of one service | **Proposed** — §5 |
+| **Service version** | "Which immutable release of this service is serving this?" | Across deployments of one service | **Specified, unimplemented**: identity in mesh.md §2.4, routing still open — §5 |
 
 The third is the layer beneath a service's *name*: a name identifies which service, a service
 version identifies **which release of it is running**. It is what makes two deliberately co-deployed
@@ -479,9 +480,9 @@ still serve them, rather than silently landing on the newest.
 
 ### 5.5 What this requires of the mesh *(normative changes to mesh.md)*
 
-Mechanism C cannot be adopted without three amendments to mesh.md, listed here so they can be made
-as one deliberate cross-language pass rather than piecemeal. **They are not yet made**, and no port
-implements them today:
+Mechanism C cannot be adopted without three amendments to mesh.md. **They are now made** — the
+identity layer is part of the mesh model, pinned by `conformance/mesh-service-version-cases.json` —
+but **no port implements them yet**, so this remains a proposal until at least one collector does:
 
 1. **§4 — the collector keys the catalog by `(service, serviceVersion)`, not `service`.**
    Re-registration replaces wholesale *within a version*, not across the service. Without this, v2
@@ -498,11 +499,12 @@ A collector that has not adopted these degrades predictably rather than dangerou
 repeated re-registration of one service whose contract keeps changing, which is exactly today's
 behavior — wrong, but not new.
 
-Two presentation consequences worth settling in the same pass: a topic's producer/consumer graph
-(mesh.md §4) gains multiple nodes per service name, and a reader almost always wants the
-service-level view by default with the version breakdown on demand; and "which versions of this
-service are live, and which is taking traffic" becomes the natural place to *observe* a cutover,
-even though the cutover itself is a routing change the mesh does not perform.
+One presentation consequence was settled in the same pass and one is still open. Settled: a topic's
+producer/consumer graph stays keyed by service name, not by `(service, serviceVersion)` — two live
+versions both declaring a topic contribute one edge, and the version breakdown lives on the service
+view (mesh.md §4). Open: "which versions of this service are live, and which is taking traffic" is
+the natural place to *observe* a cutover, but nothing yet renders it — and the cutover itself is a
+routing change the mesh does not perform.
 
 ### 5.6 Degradation
 
