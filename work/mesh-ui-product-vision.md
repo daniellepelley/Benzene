@@ -2587,3 +2587,650 @@ checkout artifact to a finding is the round-1 mistake.)
   obligation is **three ports carrying a catalogue, of which two get parity in-wave and one gets
   deliberate degradation**; and Python's missing versioned catalogue is a new, separately-filed
   parity gap that removes the product's best surface from an entire port.
+
+## 2026-08-16 (round 5) — PRODUCT REFINEMENT 4: what needs to be deployed, and what has to go out together
+
+Input: the maintainer's question — *"what needs to be deployed to keep the system working? Sometimes
+you have to do combined deployments… understanding what needs to be deployed, and whether the right
+things have been deployed, and whether the contracts are working, is something the software industry
+finds difficult"* — plus a purpose-built five-scenario deploy estate (producer ahead / consumer ahead
+and broken / a part-done three-service chain / already done / versioned out), the coordinator's
+source-verified groundwork, and five persona reports (architect, developer, platform engineer,
+production support, QA). The delivery owner was still running when this was written; §D11 names the
+two rulings their evidence could move.
+
+Wave C1 has shipped. This block is the next wave, and it is **§C's own pattern reappearing one level
+up**: the two halves of the answer both ship, are computed two lines apart, and never meet.
+
+Everything asserted about current behaviour was checked in source before it entered a ranking —
+`benzene-ui` at `09564b4`, `benzene-dotnet` at `5182c88`, and `docs/specification/mesh.md`. Where the
+groundwork or a persona is wrong, §D0 says so; three of the corrections are mine to make against
+material I was handed as settled.
+
+### §D0 — Verification, including two corrections to the groundwork and one to a persona
+
+**Confirmed, in source, exactly as reported:**
+
+- **Attribution points at whoever finished.** `selectAllChanges` (`selectors.ts:506-529`) builds
+  `services` from the producers and consumers **of the entry carrying the change** — the v2 entry
+  (`:511-514`). On `payment:capture` that entry has `producers:[orders-api]`, `consumers:[]`, so the
+  breaking chip renders under `orders-api`, who did the work, and `payments-api`, who owes it, renders
+  clean. The architect and the developer reached this independently and both are right.
+- **The blocker cannot select itself.** `ChangesPage.tsx:41` builds the service filter as
+  `[...new Set(changes.flatMap(c => c.services))]` — services that appear on a *changed* entry.
+  `billing-api` appears on `order:placed` **v1** and `invoice:raise` **v1** only, so it is absent from
+  the list. `selectServiceChangeSummary` (`selectors.ts:579-595`) has the same shape, and returns
+  `0 topics / 0 changes / 0 breaking` for the one service blocking a three-service chain. The
+  developer's conclusion — *"I would have concluded I had nothing to do"* — is not a misreading; it is
+  what the selector says.
+- **The cry-wolf is real, and I can price it exactly.** `shipping:book` v2 removes `address.line2`
+  from an event → one `propertyRemoved` → `breaking`. It renders as **one ledger row with three
+  service chips**, and as a `1 breaking` line on **three separate service pages** (orders, payments,
+  shipping all participate). Both sides declare both versions, so `producedNotConsumed` is empty and
+  **no deployment is owed by anybody**. The architect's *"the best-engineered topic in the estate is
+  the reddest thing on screen"* stands; the mechanism is three service pages plus three chips, not
+  three ledger rows, and it matters that the count is stated correctly.
+- **The version-skew half has no estate-level surface at all.** `selectVersionCompatibility`
+  (`selectors.ts:450-453`) is consumed by exactly one caller, `TopicPage.tsx:42`, rendered at `:161`.
+  The topology reconciliation — the panel §A4 calls the product's best surface — is reachable only by
+  someone who already suspects which topic to open.
+- **QA's banner finding.** `VersionCompatibility.tsx` uses one sentence for two structurally opposite
+  situations. *"Confirm an upcaster on the consumer bridges it"* is right for `payment:capture` and
+  actively misleading for `inventory:reserve`, where the unhandled version is the **older** one and
+  there is no consumer at that version to hold an upcaster. Two independent confirmations —
+  computation and reading.
+- **QA's "observed handlers" finding, and it is worse than reported.** `TopicLiveStrip.tsx:78-84`
+  labels the chips `observed handlers` with a tooltip that asserts *"observed, not declared"*. The
+  data is `live.services`, which is `rows.flatMap(r => r.consumers)` (`selectors.ts:1208`) — and
+  `FleetViewTopicsItem.consumers` comes from `MeshCollectorStore.Register(descriptor)`
+  (`MeshCollectorStore.cs:95-118`), a **registration**. The collector's own comment
+  (`MeshCollectorStore.cs:29-37`, `:450-467`) says the observed signals are *"layered on the declared
+  graph, NEVER fed back into it."* The genuinely observed per-edge signal exists — `ProviderActivity`
+  / `ConsumerActivity` (`Views.cs:96-104`) — and the UI shows the wrong one under the right label.
+
+**§D0.1 — CORRECTION to the groundwork §3: "not started" is not a rollout state, because it is not
+observable.** `BuildTopicCatalog` (`MeshAggregator.cs:432-461`) populates `byTopic` **only** from what
+services declare. A (topic, version) exists in the catalogue if and only if at least one service
+declares producing or handling it. So *"newest version declared by nobody"* describes an entry that
+cannot exist. The platform engineer's rule — *unstarted and non-existent are the same picture to a
+contract aggregator* — is not a caveat on the state table, it deletes a row from it. Dropped.
+
+**§D0.2 — CORRECTION to the groundwork §3: "broken" over-claims, and the escape hatch it misses is the
+same one the maintainer named.** The groundwork's `broken` state reads *"Messages are being emitted
+that nothing can read. Live now."* For `payment:capture` and `order:placed` that is **not proven**:
+`orders-api` declares producing **both** v1 and v2. A producer declaring two versions may be
+dual-publishing every event on both (nothing is lost) or running a split fleet (v2 messages are
+unread), and **mesh cannot tell which** — the same class of blindness as the upcaster caveat, on the
+other side of the wire, and it has never been written down. Mesh may state the *constraint* ("v2 is
+produced and no service in this estate handles it"); it may not state the *consequence* ("messages are
+being lost").
+There is one case where the strong claim **is** earned, and the fixture contains it: when the produced
+and consumed version sets are **disjoint**, no version that anybody sends is handled by anybody, and no
+dual-publish story rescues it. `inventory:reserve` — produced `[v1]`, consumed `[v2]` — is that case.
+It gets its own flag (§D2), and it is the only place the product is allowed to be categorical.
+
+**§D0.3 — CORRECTION to a persona: `requiredPropertyAdded` on an event is *not* a verdict pointing the
+wrong way, and the rules table must not be touched.** The developer is right that `invoice:raise` v2
+adds a required `taxJurisdiction` and scores `compatible` while `billing-api` plainly has work to do.
+But `SchemaCompatibilityRules.DefaultFor` answers exactly one question — *does v2 break a reader still
+on v1?* — and for an added field on an event the answer is genuinely no. The verdict is right; the
+**subject** of the verdict was never printed. Two consequences, and they are the shape of this whole
+wave:
+- The copy names the subject: *"compatible **for readers still on v1**"*, never a bare `compatible`.
+- **An obligation is not derived from the verdict.** `invoice:raise` is `compatible` **and** carries an
+  outstanding obligation on `billing-api`. If obligation were a function of severity this case would
+  vanish, which is precisely how a half-migration ships.
+**REJECTED: changing the rule table.** It is shared with `SchemaCompatibility.EnsureBackwardCompatible`
+in services' own CI (§C4.6); making an additive event field `breaking` would fail every safe build in
+the estate, and would break the §C1.3 invariant — *one rules table, one taxonomy, one verdict* — for a
+problem that is a missing concept, not a wrong number.
+
+### §D1 — The reframe: nothing here needs new data, and the missing thing is a *join plus a noun*
+
+`MeshAggregator.BuildTopicCatalog` computes both halves and returns them in one statement:
+
+```
+470:  var versionCompatibility = BuildVersionCompatibility(byTopic);          // WHO is on which version
+472:  return new MeshTopicCatalog(_clock(), ApplyCrossVersionCompatibility(topics),   // WHETHER it matters
+                                  versionCompatibility: versionCompatibility);
+```
+
+`BuildVersionCompatibility` (`:614-647`) knows `producedVersions`, `consumedVersions`,
+`producedNotConsumed`, `consumedNotProduced`. `ApplyCrossVersionCompatibility` (`:494-526`) knows, per
+version pair, which field moved on which side and how it classifies. **Neither reads the other**, and
+they land on different screens: the first on one panel on one page, the second in the `#changes`
+ledger. Every question in this round is their join.
+
+**So scope this honestly, because the temptation is to scope it as a release-management feature and it
+is not one.** What is missing is:
+
+1. a **noun** — the product has changes and it has version skew, and it has no word for *"a named
+   service owes a deploy"*;
+2. a **direction** — attribution currently points at whoever finished (§D0);
+3. a **join** — severity × topology, which is what separates a live gap from a managed migration.
+
+All three are computable from `topics.json` as it stands today. **No `Mesh.Contracts` change, no wire
+change, no cross-language mirror, no spec change** — see §D10. Two-and-a-bit weeks of UI work, not a
+quarter, and any plan that reads as "build deployment coordination" is mis-specified in the same way
+§C1 was.
+
+**And be honest about which half of the maintainer's question this answers.** The question has a
+preventive half (*plan the combined deployment before it goes out*) and a verification half (*did the
+right things go out, and are the contracts working?*). **Mesh has no future tense** — no pipeline, no
+release train, no what-is-in-flight (§4.5: *mesh reports what is, never what was meant*). It owns the
+verification half completely, and the preventive half only in the retrospective form that turns out to
+be the useful one anyway: *"this breaking change has no overlap version on either side, so the two
+deploys are locked to each other."* That is a fact about declarations, available the moment the first
+side ships, and it is what a team needs before the second one does.
+
+### §D2 — The model
+
+Five nouns. They are precise because the whole failure mode of this area is imprecision.
+
+**§D2.1 — Owner and adapter, derived from `direction`, which is already on every change.**
+`SchemaCompatibilityRules.DefaultFor`'s doc comment states the asymmetry the whole model rests on:
+*"the client produces requests and consumes responses and events (both are produced by the service)."*
+Per side of a topic, one party **owns** the shape and the other must **adapt** to it:
+
+| Change direction | Owns the shape | Must adapt | In mesh's own vocabulary |
+|---|---|---|---|
+| `request` | the handler | the caller | owner = `consumers`, adapter = `producers` |
+| `response` | the handler | the caller | owner = `consumers`, adapter = `producers` |
+| `event` | the emitter | the reader | owner = `producers`, adapter = `consumers` |
+
+Note what falls out and is worth stating because it is counter-intuitive: on a request/response topic
+the **caller** adapts to both sides; only on an event does the handler adapt. Mesh's `producers` /
+`consumers` therefore do **not** map onto owner/adapter — which is exactly why reading the two panels
+by eye gets it backwards, and why this has to be computed.
+
+**§D2.2 — Obligation.** A `(service, topic, baseline → current)` triple: a named service declares the
+baseline version and not the current one, in a role that has to move for the rollout to finish. Two
+kinds, and the distinction is the difference between a page and an outage:
+
+- **catch-up** — the owner declares the current version, the adapter does not. The gap is live now.
+- **completion** — the adapter declares the current version, the owner does not. Nothing is broken;
+  the rollout is unfinished, and the remaining deploy is the safe one.
+
+An obligation is **per service and per topic**, never rolled into one per service. `billing-api` has
+two, on two topics, in two roles; collapsing them to "billing-api has work" is the platform engineer's
+*"the second obligation on a service I've already ticked off — which is precisely how you ship a
+half-migration."*
+
+**§D2.3 — Rollout state**, per topic version-pair, derived from the two declared version sets plus the
+direction. Replaces the groundwork's table, minus the row §D0.1 deletes:
+
+| State | Condition | The five scenarios |
+|---|---|---|
+| **complete** | every declared version is covered on both sides | D `notification:send`, E `shipping:book` |
+| **awaiting adapter** | owner declares current, adapter does not | A `payment:capture`, B `inventory:reserve`, C `order:placed` |
+| **awaiting owner** | adapter declares current, owner does not | C `invoice:raise` |
+| **unattributable** | one side has no in-estate service at *any* version | — (§D3) |
+| **not compared** | versions are uncovered and the schemas could not be compared | — |
+
+Plus two flags, which carry the severity the state deliberately does not:
+
+- **`disjoint`** — produced ∩ consumed = ∅. The only categorical claim mesh may make (§D0.2). `B`.
+- **`overlapRetained`** — the adapter declares the baseline **and** the current version. The lockstep
+  is dissolved. `D`, `E`.
+
+**§D2.4 — Coordination set, and the ruling that keeps it useful.** The groundwork §7b computed
+coupling as connected components over services and got `{billing, ledger, orders, payments, shipping}`
+— the whole estate, technically true and useless, because one hub merges every set.
+**RULING: mesh does not compute a transitive coordination set, at any scope.** A coordination set is
+**scoped to one uncovered version**: the party that has moved and the party that owes. Two services,
+named, with an ordering constraint between them. Where a service appears in several, that is visible
+because it is listed in several — and *that* is the release finding, arrived at by the reader in one
+glance rather than asserted by a closure algorithm that cannot distinguish a hub from a chain.
+
+**§D2.5 — "An obligation propagates" vs "a deploy propagates". This is the load-bearing distinction
+and the product must express it.** The architect is right and the fixture is built to prove it.
+`billing-api` must move because `order:placed` v2 is breaking. Billing's move changes `invoice:raise`
+— so `ledger-api` had to *build* a v2 handler: **the obligation propagated**. But `invoice:raise` v2
+is **`compatible`**, so a v1 reader is unharmed and `ledger-api` does **not** have to redeploy in the
+same window; it could have gone before, after, or (as it did) already. **The deploy did not
+propagate.**
+
+> **"Three services in one release train" is true. "Three services must ship together" is false.**
+
+The product expresses this by never drawing a chain and never using the phrase *"must ship together"*.
+It renders **per-hop constraints**, and a hop only carries a constraint when its own verdict is
+breaking and its own overlap is absent. A reader who sees `orders → billing` locked and
+`billing → ledger` unlocked has the right picture, and it is the picture mesh can actually defend.
+Two services locked on a hop with no overlap on either side are, for release purposes, one service —
+that architectural finding survives §7b intact; what does not survive is unioning the hops.
+
+### §D3 — Direction of attribution: the badge marks the late party
+
+**RULING: a *change* is a property of a version pair; an *obligation* is a property of a service. They
+are different objects and they are attributed differently.**
+
+- A **change** keeps its current home: it belongs to `(topic, baseline → current)` and is shown on the
+  topic page and in the field-level ledger. Nothing about §C's field-level design changes.
+- An **obligation** is attributed to the **outstanding** party — the adapter on a catch-up, the owner
+  on a completion — computed per §D2.1. It is the thing that appears on a service page, in an estate
+  count, and as the noun in every constraint sentence.
+
+Concretely, `selectAllChanges` stops emitting one undifferentiated `services: string[]` and emits two
+labelled sets drawn from **both** entries of the pair, not just the current one:
+
+- **`moved`** — services declaring the current version. Rendered plainly, never with a severity badge.
+  Doing the work is not a defect.
+- **`outstanding`** — services declaring the baseline and not the current, in the role that must move.
+  This is the set the badge attaches to, the set the estate counts, and the set the service filter is
+  built from — which is the direct fix for `billing-api` being unselectable (`ChangesPage.tsx:41`).
+
+Check against all five scenarios: A `outstanding: payments-api`; B `outstanding: orders-api` (the
+adapter is the *caller* on a request-direction change — the case the naive rule gets backwards);
+C `outstanding: billing-api` on both `order:placed` (catch-up) and `invoice:raise` (completion);
+D and E `outstanding: ∅`.
+
+**§D3.1 — When the late party is outside the estate.** If the adapting side has **no in-estate service
+at any version**, mesh has nobody to name and must say so rather than fall silent or blame the mover.
+State `unattributable`; copy, in the §C5 voice and as the exact twin of the existing `NO_PRODUCER_COPY`
+third arm:
+
+> *"No service in this estate handles `payment:capture` at any version, so nobody here can be named as
+> owing this move. Its handlers may be outside the estate — a website, an app, or a partner."*
+
+No badge on anyone, no obligation counted, and — this is the part that matters — **the topic still
+appears in the rollout list**, greyed, with that sentence. An uncovered version whose other end is
+invisible is a bigger risk than one whose other end is named, and dropping it because it cannot be
+attributed would be §C5's "absence rendered as good news" arriving through a new door.
+
+**§D3.2 — Attribution is by declaration, not authorship, and that limit is now smaller than it was.**
+§C10.4 recorded that .NET attributes by *participation* and cannot say whose declaration moved.
+Obligation attribution is a genuine improvement on this and should be recognised as one: it is not
+"who touched it", but it *is* "who is structurally on the wrong side of it right now", which is the
+question a release manager asks. The authorship gap remains open and the Python per-provider
+projection remains the shape to copy if it ever needs closing.
+
+### §D4 — The overlap window: the maintainer's escape hatch, and the biggest cry-wolf risk in the product
+
+The maintainer's own framing — *"there is versioning, which can obviously provide a solution to this,
+but that may not always be a simple solution"* — is the whole of this section. A tool that cannot see
+the escape hatch punishes the teams that used it.
+
+**An overlap window is a version range both sides declare simultaneously.** Its presence is what turns
+two locked deploys into two independent ones. Mesh sees it directly, in `MeshTopicVersionCompatibility`:
+
+| Signal | Reading |
+|---|---|
+| adapter declares baseline **and** current | overlap retained — the deploys are **not** locked |
+| `producedNotConsumed` empty | every version anyone sends has a handler — no catch-up owed |
+| `consumedNotProduced` non-empty | a handler waiting on a producer — a completion, not a break |
+| produced ∩ consumed = ∅ | disjoint — the one categorical claim (§D0.2) |
+
+**RULING: severity in every rollout surface is a function of the join, never of the verdict alone.**
+
+- `breaking` **+ uncovered version** → cliff edge. Red. An obligation is named.
+- `breaking` **+ fully covered, overlap retained** → **managed migration**. Explicitly its own class,
+  and it is **not** amber-by-omission — it renders with a positive label: *"breaking, and versioned
+  out: both sides run both versions, so no deployment is coupled to this."* `shipping:book` should be
+  the calmest row on the page, and a reader who has just done a hard migration properly should see the
+  product say so.
+- `compatible` **+ uncovered version** → completion outstanding. Amber. `invoice:raise`.
+- `notCompared` **+ uncovered version** → amber, never red: a version is uncovered and mesh could not
+  read the schemas. Never a breaking claim from a comparison that did not run (§C5).
+
+**The estate tile re-bases its colour on the same join.** `FleetPage.tsx:71-82` currently sets
+`rag: red` when any change is breaking, which paints the estate red for a finished migration. New
+rule: **red iff at least one obligation is outstanding on a breaking, uncovered version; amber
+otherwise.** The tile's *value* does not change — §C4.1 bought "one definition, one number" at real
+cost and it is not being re-litigated — only what makes it red. On the round-5 estate this is the
+difference between "three breaking changes" and "three deploys owed, one of them a live gap", at the
+top of the first screen anybody opens.
+
+### §D5 — Ordering: mesh states the constraint and never the plan
+
+The platform engineer's line is the ruling: ***"Mesh should give me the constraint graph, never the
+plan."*** `inventory:reserve` was deployed in the wrong order and that inversion **is** the outage; a
+tool that lists services without ordering them is not merely incomplete, it can send someone to
+deploy in the order that causes the incident.
+
+**RULING: mesh states ordering, as a per-hop constraint sentence, derived from §D2.1's direction rule.
+It never produces a sequence, a plan, a schedule, or a first/second/third list.**
+
+The sentence has one grammar and one shape — *X must ⟨move⟩ before Y ⟨moves⟩* — and it is always about
+the **two ends of one topic**:
+
+- A `payment:capture` — *"`payments-api` must handle `payment:capture` v2 before `orders-api` stops
+  producing v1. `orders-api` already produces v2."*
+- B `inventory:reserve` — *"`orders-api` must send `inventory:reserve` v2 before `shipping-api` stops
+  handling v1 — and `shipping-api` no longer handles v1. Nothing in this estate handles the only
+  version being sent."* (The `disjoint` flag is what earns the second sentence.)
+- C `order:placed` — *"`billing-api` must handle `order:placed` v2 before `orders-api` stops producing
+  v1. `orders-api` already produces v2."*
+- C `invoice:raise` — *"`ledger-api` already handles `invoice:raise` v2, so `billing-api` can move
+  whenever it is ready."*
+- E `shipping:book` — no constraint sentence at all. There is nothing to order.
+
+Three of the five were deployed in the order the constraint forbids, which is realistic and is the
+product's best argument for stating it.
+
+**What the sentence never contains:** a time, a build, a train, a ticket, an owner's rota, the word
+*"first"* as an instruction, or the word *"safe"*. It is a statement about two declarations that is
+equally true at 2pm with nobody paged — which is also §D8's test for whether a surface has crossed
+into monitoring.
+
+### §D6 — Declared / registered / observed: three facts, three sources, one label — and the deploy-landed question
+
+QA's third ask generalises, and I am taking it as a rule rather than a fix, in the §C5 tradition:
+decided once, in one place, not per render site.
+
+**THE RULE: declared, registered and observed are three different statements about a service, they
+come from three different feeds, and no surface may print one under another's label.**
+
+| Fact | Source | What it means | Verified |
+|---|---|---|---|
+| **declared** | `topics.json`, from polling each service's spec endpoint | the instance that answered the poll says it has this handler | `HttpMeshServiceSource` |
+| **registered** | `FleetView.topics[].consumers` / `.providers` | a running instance told the collector its descriptor | `MeshCollectorStore.cs:95-118` |
+| **observed** | `consumerActivity` / `providerActivity`, invocations | traffic actually crossed this edge | `Views.cs:96-104`; `MeshCollectorStore.cs:450-467` |
+
+`TopicLiveStrip.tsx:78-84` prints **registered** under the word **observed**, with a tooltip insisting
+it is not declared, directly beneath `observed 0`. The genuinely observed field is already on the wire
+and already projected into the catalogue (`selectors.ts:956-967` uses it on the Value page). Fixing the
+label is half a day; **adopting the rule** is what stops it recurring, and it is worth the same
+treatment as the third state because a deployment surface that blurs these three is worthless: the
+entire question *"has the right thing been deployed?"* lives in the gaps between them.
+
+**§D6.1 — The deploy-landed question has a real answer already on the wire, and nothing reads it.**
+This is the round's find. `docs/specification/mesh.md` **§2.2** requires that *"two instances of the
+same build MUST hash identically"* and that the hash changes when the contract changes; **§5** requires
+that a heartbeat whose `descriptorHash` differs from the registered descriptor's *"MUST"* be surfaced.
+The .NET collector implements it per instance — `InstanceView.DescriptorHash` and `HashMatches`
+(`Views.cs:188-198`, `MeshCollectorStore.cs:337-340`). Therefore:
+
+> **N instances reporting M distinct descriptor hashes, M > 1, means a rollout is in flight in that
+> service, right now.**
+
+The UI has never asked. `meshApi.ts:222` issues **only** `benzene:mesh:query:fleet`;
+`benzene:mesh:query:service`, which carries `instances[]`, is never called. So the single most direct
+answer to *"has it actually gone out?"* is spec-mandated, implemented, and unread.
+
+**Scope it tightly, and the caveat is not optional.** The hash covers the *contract* — identity,
+placement, topics, produces, schemas, `serviceVersion` (§2.2). Two builds that differ in
+non-contract code hash identically. So this reports **contract-relevant rollout progress**, not deploy
+progress, which is the correct scope for this product and must be said in the copy. Second caveat, and
+it applies to the whole wave: `Register` is last-writer-wins (`MeshCollectorStore.cs:100-118`), and the
+aggregator's spec poll reaches whichever instance the load balancer chose. **The catalogue answers for
+the instance that answered**, and during a rollout consecutive runs can legitimately disagree. That
+sentence belongs on the rollout surface, permanently.
+
+**§D6.2 — REJECTED for this wave: the Test Console's version dispatch.** QA is right that the version
+selector never reaches the wire and that the response carries no version, no handler and no trace id,
+so every *"v2 verified"* line is an inference. That is a real gap and it is a **dispatch/console** gap,
+not a coordination-model gap. Two reasons to keep it out: the Test Console is already **demoted** to
+non-production diagnostic (§5, R1) and pulling it into the wave's headline would quietly re-promote it;
+and it produced four of round 1's seven shipped-code defects, so it earns its own scoped pass rather
+than a ride on someone else's. **Filed, not absorbed.** The console offering `payments-api` a v2 topic
+the same build says nobody handles is a *catalogue-awareness* bug in the console's topic list and is
+small — it goes on that separate pass, at the top of it.
+
+### §D7 — Where it lives
+
+Four surfaces, of which **one is new and it is a mode, not a route**. The R1 STOP list holds: this
+wave adds no new estate surface.
+
+**§D7.1 — `#changes` gains a **Rollouts** mode, and it becomes the default.** The page's two grains are
+genuinely different objects — a *change* is a field, a *rollout* is a topic — and they are the same
+evidence, so two routes would split it. One route, two modes, a switch in the head.
+
+- **Rollouts (default).** One row per topic version-pair with a rollout state, ranked:
+  `disjoint` → catch-up outstanding on breaking → catch-up outstanding on warning → completion
+  outstanding → not compared → complete. Each row: topic and version pair, state chip, the §D5
+  constraint sentence in full, `moved:` and `outstanding:` as two labelled service groups, and the
+  verdict chip with its §C3 attribution. `shipping:book` renders in the **complete / versioned out**
+  group with its positive label. Filters: state, service (built from `moved ∪ outstanding`, which is
+  the fix), and free text.
+- **Changes.** The existing field-level ledger, unchanged except for §D3's two service groups
+  replacing the single chip list.
+- Empty states stay three-way and gain a fourth on the Rollouts mode: *nothing in flight* / *not
+  computed* (§C10.3's capability-outranks-content rule applies unchanged) / *filtered to nothing* /
+  *every topic in this estate publishes one version, so there is nothing to roll out*.
+
+**§D7.2 — Service page: a new `Outstanding` block inside the `Contract` card. This is the developer's
+#1 ask and the highest-value item in the wave.** The service page must answer *"what does this release
+require of me?"* without the reader knowing which topic to suspect. Inside the existing `Contract`
+card (§C6's five-card grouping stays exactly as it is), above `Consumes` / `Produces`:
+
+```
+OUTSTANDING · 2 contract moves
+  order:placed    v1 → v2   handle v2      breaking   orders-api already produces v2
+  invoice:raise   v1 → v2   produce v2     compatible ledger-api already handles v2
+```
+
+Each row is one obligation: the topic, the version pair, **the verb** (`handle v2` / `produce v2` /
+`send v2` / `stop sending v1`), the verdict with its subject named (§D0.3), and who is already on the
+other side. Clicking opens the topic at the current version.
+The **three** empty states are mandatory and they are not the same sentence: *"Nothing outstanding —
+every version this service declares is covered on both sides"* / *"This estate's aggregator does not
+publish contract comparisons"* / *"This service declares one version of every topic it touches."*
+On the round-5 estate, `billing-api`'s page goes from showing nothing to showing exactly the two rows
+that make it the blocker — and the `Contract` card is already the first card on the page (§C6), so
+that is where an owner's eye lands.
+
+**§D7.3 — Estate page: the preview section becomes rollout-first, and the tile re-bases (§D4).** The
+`Contract changes` section (`FleetPage.tsx:127-167`) keeps its position — deliberately **below**
+`Needs attention`, for the 3am reason §C4.1 records — and shows the top five **rollouts** ranked by
+§D7.1's order rather than the top five field changes, with `see all N →` into Rollouts mode. A field
+diff is not an estate-level object; a topic mid-migration with a named blocker is.
+Note it does **not** go into `Needs attention`: that section is gated on `liveAvailable` and fed by the
+collector's issue feed (`FleetPage.tsx:98`), and a contract obligation is derivable with **zero
+telemetry**. Putting it there would make the wave's headline vanish for every estate without a
+collector — and would quietly make it an incident surface (§4.2).
+
+**§D7.4 — Topic page: the version-compatibility banner branches, and the rollout state joins it.**
+`VersionCompatibility.tsx` grows a fourth and fifth arm so one sentence stops serving two opposite
+situations (QA, §D0):
+
+| Situation | Copy |
+|---|---|
+| newest version unhandled (`A`, `C`) | *"…no service handles it at that version. Confirm an upcaster on the consumer bridges it."* — unchanged, and correct here |
+| an **older** version unhandled (`B`) | *"`shipping-api` no longer handles v1, and `orders-api` still sends it. There is no consumer at v1 to hold an upcaster — the move is producer-side."* |
+| handled, produced by nobody | *"`ledger-api` handles v2 and no service produces it — a rollout waiting on its producer, or a handler left behind. Mesh cannot tell which."* |
+| covered with overlap, breaking | *"Both sides run both versions. This change is breaking and has been versioned out; no deployment is coupled to it."* |
+| no in-estate producer | `NO_PRODUCER_COPY`, unchanged (§C5) |
+
+The rollout state chip and the §D5 constraint sentence render at the top of this panel — it is where a
+reader who has arrived at a topic is already looking, and it costs no new section.
+
+**§D7.5 — Optional, collector-gated: instance rollout agreement (§D6.1).** On the service page's
+`State` card: *"5 instances, 2 contract builds — a rollout is in flight."* Degrades to absence when no
+collector is wired, per §6 of the spec. Ranked last in the wave and separable; see §D10.
+
+### §D8 — Honesty rules, in the §C5 tradition
+
+Nine, and the first four are the ones a reader of this product will test hardest.
+
+1. **Never "safe", never "ready", never "clear to deploy."** The product states which versions are
+   covered and which are not; it does not certify a release. `compatible` keeps its §C3 attribution
+   *and* gains its subject: *"compatible for readers still on v1."*
+2. **Never "not started."** Unstarted and non-existent are the same picture to a contract aggregator
+   (§D0.1). There is no such state and no such copy.
+3. **Never "scheduled", "planned", "in the next release", or any future tense.** Mesh has no pipeline
+   (§4.5). The only tense available is present indicative about declarations.
+4. **Never "messages are being lost"** unless the version sets are disjoint (§D0.2). A producer
+   declaring two versions may be dual-publishing, and mesh cannot see which. This is a **new** named
+   blind spot, sitting beside the upcaster caveat, and it goes in the scope sentence:
+   > *"This compares declared payload versions and schemas only. It cannot see upcasters, whether a
+   > producer emits both versions of every message, or services outside this estate."*
+5. **Never claim a deploy landed.** The catalogue answers for the instance that answered the poll
+   (§D6.1). Even the descriptor-hash signal reports *contract* agreement across instances, not deploy
+   completion.
+6. **Never blame the mover.** A service that has moved to the current version is rendered plainly and
+   never carries a severity badge. Doing the work is not a defect (§D3).
+7. **Never a chain, never "must ship together" across a compatible hop** (§D2.5). Per-hop constraints
+   only.
+8. **Never print registered as observed, or declared as either** (§D6).
+9. **Never green at estate level.** Standing rule from §C3, restated because a rollout screen with
+   nothing outstanding is the most tempting place in the product to draw a tick. The empty state is a
+   sentence naming what was checked, not a tick.
+
+### §D9 — What I am NOT building
+
+- **No deployment plan, ordering list, or release sequence** (§D5). Constraints between two named
+  ends, never a sequence across the estate.
+- **No transitive coordination set / connected-component closure** (§D2.4). It collapses to the estate
+  on any real topology and stops being advice.
+- **No release-train, ticket, build, environment or pipeline concept.** Mesh has no future tense
+  (§4.5), and the moment it acquires one it is a worse Backstage and a worse Argo simultaneously.
+- **No change to `SchemaCompatibilityRules`** (§D0.3).
+- **No promotion of an obligation to an alert, a gate, or a block** (§C4.6, boundary §4.1). The
+  estate tile going red is the strongest expression available and that is deliberate.
+- **No inference that `order:placed`'s new `taxJurisdiction` is why `invoice:raise` needs one.** The
+  field names match; inferring the causal chain from a coincidence is exactly the §C3 rename trap.
+  The product renders both obligations on `billing-api`'s page **adjacent**, and the reader makes the
+  connection in two seconds. That division of labour is the ruling, not a limitation.
+- **No new backend, no new endpoint, no external request** for §D7.1–§D7.4. Every one of those is a
+  render over `topics.json`. **The self-contained / no-CDN / no-build / statically-hostable floor is
+  untouched by the whole of the ranked wave**; §D7.5 is the only collector-gated item and it degrades
+  to absence, as §6 of the spec requires.
+- **No Test Console work in this wave** (§D6.2).
+
+### §D10 — Ranked backlog, and the wire/spec answer
+
+Repo tags: **[ui]** `benzene-ui`; **[agg]** `benzene-dotnet` aggregator; **[wire]** `Mesh.Contracts`,
+mirrored by the TypeScript port; **[spec]** `docs/specification/**`; **[coll]** collector read model
+(.NET + Go), which §D10.2 shows is *not* a spec change.
+
+**The explicit answer to the question asked: no `Mesh.Contracts` change and therefore no cross-language
+mirror for items D1–D8.** Every input is already in `topics.json` — per-entry `producers`, `consumers`,
+`version`, and `compatibility.baselineVersion` / `.overall` / `.changes[].direction` — and
+`versionCompatibility` beside it. The derivation is a **selector**, and putting it aggregator-side
+would buy nothing and cost a wire field, a TypeScript arm, and a Python degradation path. The §C1.3
+precedent does not apply: that put the *rules table* aggregator-side because a verdict that differs
+between CI and mesh destroys both. Obligation has no CI counterpart and no second consumer. Measured
+against §A4's standing bar — *does it derive, or does it demand?* — **it derives, entirely.**
+
+**Wave D — "who owes a deploy, and what is locked to what."**
+
+| # | Item | Repo | Size |
+|---|---|---|---|
+| D1 | **`selectRollouts`** — the join: per topic version-pair, owner/adapter by direction, rollout state, `disjoint` / `overlapRetained` flags, obligations with named services (§D2). The whole model, one memoised selector, plus its tests over all five scenarios | [ui] | 2 d |
+| D2 | **Attribution split** — `selectAllChanges` emits `moved` / `outstanding` from both entries of the pair; ledger renders two labelled groups; the service filter is rebuilt from the union (§D3). **Fixes the badge pointing at the wrong party and `billing-api` being unselectable** | [ui] | 1 d |
+| D3 | **Service page `Outstanding` block** inside the `Contract` card, with its three empty states (§D7.2). **The developer's #1 ask; highest value per day in the wave** | [ui] | 1.5 d |
+| D4 | **Honesty pass** — the scope sentence gains the dual-publish blind spot; verdict copy gains its subject; the "instance that answered" line; no-future-tense audit of every string in the wave (§D8). **Gate: nothing else in D ships without this**, per the C1.6 precedent | [ui] | 1 d |
+| D5 | **Rollouts mode on `#changes`** — ranking, filters, four empty states, mode switch (§D7.1) | [ui] | 2 d |
+| D6 | **`VersionCompatibility` branches** — the older-version arm, the awaiting-producer arm, the versioned-out arm, plus the state chip and constraint sentence (§D7.4). Independently valuable the day it lands; fixes advice QA called backwards | [ui] | 1 d |
+| D7 | **Estate re-base** — tile `rag` from the join, preview section becomes rollout-first (§D4, §D7.3). **This is the item that stops the estate page calling a finished migration an emergency** | [ui] | 0.5 d |
+| D8 | **Declared / registered / observed rule** — `TopicLiveStrip` reads `consumerActivity` instead of `consumers`, relabels, and the three-fact vocabulary is written once and applied (§D6) | [ui] | 1 d |
+| D9 | **Fixture uplift** — the round-5 deploy estate becomes a shipped fixture variant (`topics.rollout.json`), so all five scenarios are in CI and in the evaluator's first-run estate. Continues R1 §5.9 / C1.4 | [ui] | 0.5 d |
+
+**Wave D-opt — "did it actually land", collector-gated.**
+
+| # | Item | Repo | Size |
+|---|---|---|---|
+| D10 | **Distinct-descriptor-hash rollup on `FleetView.services[]`** — the collector already has it per instance; exposing a count on the fleet view avoids N per-service queries (§D6.1) | [coll] | 1 d .NET + 1 d Go |
+| D11 | **Instance rollout agreement on the service `State` card**, with the contract-only caveat (§D7.5) | [ui] | 1 d |
+
+**Wave D total: 10.5 d [ui], zero [agg], zero [wire], zero [spec].** D-opt adds 3 d across two
+collector ports and is separable in full.
+
+**Filed separately, not absorbed:** the Test Console pass (version dispatch reaching the wire,
+response carrying version/handler/trace id, catalogue-aware topic list) — §D6.2.
+
+**Rejected, so it is not re-asked:** a deployment plan or ordering sequence · transitive coordination
+sets · any release-train / pipeline / environment concept in mesh · changing
+`SchemaCompatibilityRules` for `requiredPropertyAdded` on events · promoting an obligation to an alert
+or a gate · inferring the `taxJurisdiction` causal chain · a `Mesh.Contracts` field for any of it.
+
+**§D10.1 — Spec impact: none, and for the third wave running that is the finding.** No
+`docs/specification/**` change, no conformance-fixture change, no new obligation on any profiled
+service, no new signal from anywhere. The Cloud Service Profile already carries every input:
+per-topic versions and payload schemas (§2), the declared graph (§4), the declared-vs-observed split
+(§4.2), and — for D-opt — the per-instance `descriptorHash` that §2.2 already makes normative and §5
+already requires collectors to surface. **The deployment-coordination question, which the maintainer
+names as one the industry finds hard, is answerable with zero widening of the service's obligations.**
+Against §A4's insight-per-byte-of-spec bar this is the best trade in the document, because the spec
+cost is not merely small — it is zero, twice over: nothing added, and nothing that would have to be
+added later.
+
+**§D10.2 — D-opt is a collector read-model change, not a spec change, and the distinction is written
+down in the spec itself.** `mesh.md:271-275`: *"Query read models (`benzene:mesh:query:*`) … are
+deliberately not part of this contract yet: they are one collector's read models, and join the spec if
+a second collector or third-party view needs them pinned."* Adding a hash-agreement rollup to
+`FleetView` is therefore free of spec process — **and** it is exactly the trigger condition that
+sentence describes. If D-opt ships and a second collector implements it, `benzene:mesh:query:fleet`
+has earned pinning, and that is a deliberate, separately-taken decision rather than a drift. Recorded
+now so it is not discovered later. Same §C10.5 discipline: one working implementation, then the
+convention, then the mirrors.
+
+### §D11 — Status honesty, and what the outstanding reports could move
+
+- **Shipped and verified:** Wave C1 in full — the field-level classifier, `MeshTopicCompatibility` on
+  the wire, the `#changes` ledger, the versioned topic route, the third state, the five-card service
+  page. Round 5 exercised all of it against a five-scenario estate and none of it fell over.
+- **Shipped and computed two lines apart, still never joined:** `BuildVersionCompatibility` and
+  `ApplyCrossVersionCompatibility` (`MeshAggregator.cs:470-472`). This is the second consecutive round
+  in which the product's answer already existed in two pieces. Worth naming as a pattern: **the
+  recurring defect in this codebase is not missing capability, it is unjoined capability.**
+- **Shipped and pointing the wrong way:** change attribution (`selectors.ts:506-529`) marks whoever
+  finished. Not a cosmetic defect — it is a correct computation of the wrong set.
+- **Shipped, spec-mandated, and never read:** per-instance `descriptorHash` / `hashMatches`
+  (`Views.cs:188-198`), required by `mesh.md` §2.2/§5, implemented in the collector, and unreachable
+  because `meshApi.ts:222` issues one query. **A worse status than "not built"** (§A4.3), and the
+  second instance of that status in three rounds.
+- **Shipped with the wrong label:** `TopicLiveStrip`'s `observed handlers` are registrations
+  (§D6), rendered under a tooltip that denies it.
+- **Shipped but unverified against a real backend:** the Tempo adapter's metric and label names remain
+  **documented convention, never checked against a live Tempo instance.** Fourth refinement running.
+- **Not built:** everything in §D10.
+
+**Where the two outstanding reports could change a ruling.** Design proceeded from five reports; the
+delivery owner and any further QA evidence bear on exactly two decisions:
+
+- **§D2.4 / §D2.5 — the refusal to draw a chain.** A delivery owner may want the transitive picture
+  precisely because a release train *is* their unit of work. I would hold the line — the closure
+  collapses to the estate (§7b), and the honest object is a per-hop constraint — but if they can show
+  a bounded, non-collapsing grouping that survives a hub service, this is the ruling to revisit. It
+  would be a UI grouping over D1's output, not a change to the model.
+- **§D6.2 — the Test Console deferral.** If a delivery owner's sign-off genuinely depends on
+  demonstrating a contract at a version, the console pass moves up rather than out. Note the scope
+  would still be dispatch-and-response, not this wave's model.
+
+Cross-reference: **there is no data-layer half this time**, which is itself the headline — nothing in
+Wave D belongs in `work/service-mesh-roadmap-1.0.md` except D-opt (D10), which sits against the
+collector read models beside §C10.1's still-open Python versioned-catalogue parity gap. The UI halves
+sit against R1/R2 here: **D4 is an R1 item** (absence and over-claim honesty), **D2 and D3 are defect
+repairs to Wave C1** rather than new scope, and **D1/D5/D6/D7 are the substance §A4 was pointing at
+when it named VERSION COMPATIBILITY the surface no competitor can compute** — the join is what makes
+that true, because a service map can show who calls whom and a catalogue can show what changed, and
+neither can tell you who owes a deploy.
+
+---
+
+## 2026-08-16 — WAVE D SHIPPED
+
+Implemented against §D10 immediately after the design block, in `benzene-ui` at `main`. Recorded here
+so the vision document and the code do not drift; round 6's re-test verdicts are in
+`work/mesh-feedback-round6-2026-08-16.md`.
+
+| # | Item | Shipped as | Note |
+| --- | --- | --- | --- |
+| D1 | `selectRollouts` — the join | `src/store/rollouts.ts` + `selectRollouts` | 16 tests over all five scenarios, plus the constraint sentences asserted verbatim |
+| D2 | Attribution split | `LedgerChange.moved` / `.outstanding`, ledger groups, filter from the union | `selectServiceChangeSummary` gains `outstanding`, deliberately not derived from the change counts |
+| D3 | Service page `Outstanding` block | `src/components/sections/ServiceOutstanding.tsx` | Inside the `Contract` card, above `Consumes`/`Produces`; three empty states |
+| D4 | Honesty pass | `VerdictBadge` gains `baseline`; `copyHonesty.test.ts` | The audit is executable and covers generated sentences, not only constants |
+| D5 | Rollouts mode on `#changes` | `changeMode` in `viewSlice`, `RolloutList` | Default grain; four empty states; summary counts moves owed, not changes made |
+| D6 | `VersionCompatibility` branches | five arms + state chip + constraint + disjoint note | The older-version arm discriminates on the newest version IN PLAY, not the newest produced — see below |
+| D7 | Estate re-base | tile `rag` from the join, preview is rollout-first | |
+| D8 | Declared / registered / observed | `TopicLive.observedHandlers` + `activityWired` | Reads `consumerActivity`, the signal that was already on the wire and unread |
+| D9 | Fixture uplift | `contracts/artifacts/topics.rollout.json` + `scripts/compose-rollout-fixture.mjs` | A second estate, not a replacement: `topics.json` varies the verdict and cannot vary the rollout state |
+
+**Zero `[agg]`, zero `[wire]`, zero `[spec]`, exactly as §D10 predicted.** No `Mesh.Contracts` change,
+no cross-language mirror, no conformance-fixture change. Wave D-opt (the descriptor-hash rollup) is
+not started.
+
+**One correction to the design, found by implementing it.** §D7.4's older-version arm discriminates on
+whether the unhandled version is the newest. Written against the newest version *produced*, it gets
+the case backwards on precisely the shape it exists for: when the consumer has moved to v2 and the
+producer is still on v1, the newest produced version IS the unhandled one, and the reader lands back
+on the upcaster advice that has no consumer to hold it. It has to be the newest version in play across
+both sides. Caught by the fixture, not by review.
+
+**One defect found while verifying the wave, outside its scope and fixed with it.** `ServiceUsage`
+split statuses two ways, so a status outside Benzene's vocabulary counted as a failure with no
+disclosure — "9.8k messages observed · 9.8k failed" above a breakdown showing the same count under one
+non-failing status. The topic surface had been fixed for exactly this in the round-5 sweep and the
+service surface had not. That is the argument for §D6's rule-not-fix framing, arriving one wave early
+and from a different direction: the same defect, one render site over.
