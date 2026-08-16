@@ -77,6 +77,14 @@ you, the raw artifacts the page reads are at `/manifest.json`, `/topics.json`, `
 **The data is canned.** It is shaped to be realistic and internally consistent, not observed from a
 live system. Judge the product, not the numbers.
 
+**Pin the round to a commit, and say so.** Record the `benzene-ui` commit the harness was built from
+before you start, and re-check it when the round ends. The UI moves fast enough that a round can be
+overtaken while it runs — the first round (2026-08-16) was built from `3a61f05` and two commits
+landed during it, one of which replaced a raw 404 with a real empty state, which is precisely the
+kind of thing a persona is looking for. Feedback that turns out to describe already-fixed behaviour
+is not wasted (it independently confirms the fix mattered), but it must be labelled as such rather
+than entering the backlog as new work.
+
 ## Reading source code
 
 This varies by persona and it matters:
