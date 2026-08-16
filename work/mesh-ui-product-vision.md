@@ -3234,3 +3234,551 @@ disclosure — "9.8k messages observed · 9.8k failed" above a breakdown showing
 non-failing status. The topic surface had been fixed for exactly this in the round-5 sweep and the
 service surface had not. That is the argument for §D6's rule-not-fix framing, arriving one wave early
 and from a different direction: the same defect, one render site over.
+
+---
+
+## 2026-08-16 (round 7) — PRODUCT REFINEMENT 5: what a number is worth, and how old it is
+
+Input: `work/mesh-feedback-round7-2026-08-16.md` (architect, developer, production support) plus the
+three reports that landed after it was written — QA, the delivery owner, and the platform engineer,
+whose report arrived last and reframed the round. First **open** round since round 2: every persona
+used the whole product for their own job and named the weakest thing in it.
+
+Everything asserted below about current behaviour was checked in `benzene-ui` at `22d87ad` (the
+frozen commit the round ran against), `benzene-dotnet` (`Benzene.Mesh.Dispatch`,
+`Benzene.Mesh.Collector`, `Benzene.Mesh.Contracts`, `Benzene.Mesh.Aggregator`) and
+`docs/specification/**`. §E0 says where a persona is wrong, where the round record is wrong, and
+where I was.
+
+### §E0 — Verification, including four corrections
+
+**Confirmed, and worse than reported.**
+
+- **The Value page counts failed calls as evidence of value.** `selectRetirementView`'s `totalFor`
+  (`selectors.ts:1089`) sums every usage row regardless of `status`, and `usageTotal > 0` short-circuits
+  to tier `ok` at `:1112` — *before* the zero-consumers branch at `:1114`. The delivery owner
+  under-reported it: `RetirementRow` also renders `entry.status` as a chip labelled *"Flagged by the
+  aggregator"*, and `inventory:reserve v1` (1 producer, 0 consumers) is `deprecation-candidate` by
+  `MeshAggregator.DetermineTopicStatus`. **So the row carries the aggregator's own retirement flag,
+  under a green heading that says there is no retirement signal.** The product overrides its own
+  verdict using traffic that is 100% failing. Nothing in `value.test.ts` pins this behaviour — it is
+  unspecified, not deliberate.
+- **The success/failure primitive already exists, one selector away.** `selectTrafficForTopic`
+  (`:309`) splits `success` / `failure` / `unrecognised` correctly via `isSuccessStatus` and
+  `isKnownStatus`. The Value page does not call it. Wave D's finding — *the recurring defect is
+  unjoined capability* — for the third consecutive round.
+- **Service-level `missingFeeds` is read in exactly zero places.** `missingFeeds` appears only against
+  `s.fleet.topics` (`:1393`, `:1584`). `FleetViewServicesItem.missingFeeds` is on the contract, on the
+  wire, and unread — so a collector saying *"I have no health or usage feed for billing-api"* produces
+  three positive assertions on that service's page. Topic-level does it correctly (*"not supplied by
+  this plane: usage"*). Same defect, one grain up.
+- **The live plane's `health` field is not read anywhere in the product.** Grepped across `src/`:
+  `FleetViewServicesItem.health` has no reader. The estate counters come from
+  `selectEstateSummary` over `s.estate.services` — `manifest.json` only. A fresh feed contradicting a
+  2h40m-stale manifest is dropped on the floor.
+- **The divergence banner cannot fire on a never-heartbeated service, by construction.**
+  `selectDivergences` (`:177`) requires `lastSeen !== undefined`, with a doc comment justifying it:
+  *"Never-reported is not a divergence — it is an unwired service, not a lying one."* The reasoning is
+  sound; the consequence is that the failure mode is reported nowhere. And the banner's copy —
+  *"declaring healthy but silent"* (`FleetPage.tsx:127`) — uses **silent** for what
+  `selectLiveness` calls **stale**, while the genuinely `silent` services are omitted. The product has
+  a three-state liveness vocabulary and the banner uses the wrong word from it.
+- **`usage.windowStartUtc` / `windowEndUtc` are read nowhere.** The window is in the same file as the
+  counts and the UI never renders it. The delivery owner's factor-of-twelve is resolvable from a field
+  already on the wire. `UsagePanel` currently says *"over the usage feed's own window"*, which is a
+  disclosure that discloses nothing.
+- **The discriminating collector error is captured and discarded.** `meshQuery` throws
+  `` `${topic} answered ${envelope.statusCode}` `` (`meshApi.ts:97`), `fleetSlice` stores it as
+  `state.error` (`:217`), and `selectFeedHealth` never reads it — every failure renders *"live plane
+  unreachable"*. So *"the collector answered `not-found`, i.e. you pointed at a service with no mesh
+  query handler"* is known, stored, and rendered as a network problem.
+- **`ComposeResult.headers` is parsed into the store and rendered nowhere.**
+  `MeshDispatchResult.Headers` is on the real .NET wire; `dispatchMessage` parses it;
+  `MessageComposer` renders only `statusCode` and `body`. QA's correlation-id ask needs **no backend
+  work at all**.
+- **The Test Console defaults to the oldest version and Compose to the newest.** `ComposePage`
+  resolves `versions.findIndex(arrivedAtVersion)` falling back to `versions.length - 1`;
+  `TestConsolePage` never passes `versionIndex`, so `composeOpened` defaults to `0`. The compose
+  slice's own doc comment condemns exactly this: *"Defaulting to 0 sent them to the OLDEST version's
+  skeleton."* The fix landed on Compose and not on the Console — **the third instance this round of a
+  Console/Compose divergence** (round 7 defect 7 was the second).
+- **The Transport selector cannot work, by design, not by omission.** `MeshDispatchRequest` has four
+  fields — `Service`, `Topic`, `Headers`, `Body` — and `MeshDispatchMessageHandler` selects its
+  dispatcher from `entry.Source` (the registry's discovery source), never from the caller. The
+  handler's own doc comment states the reason: it *"reuses the same access the aggregator already uses
+  … changing the payload, not the permission."* See §E5 — this is not a gap to fill.
+- **No print stylesheet exists.** `tokens.css:627` sets `.bz-app-head { position: sticky }` and there
+  is no `@media print` block in the file. Three personas' primary evidence path is a screenshot.
+- **`formatAge` exists (`:885`) and is used in four places, all of them the feed-health line** — i.e.
+  on the poller, and on nothing a decision rests on. `IssuePage.tsx:34` prints raw UTC with no age.
+
+**CORRECTION 1 — to the round-7 record, defect 3.** It states the `†` on `#value` has *"no footnote
+and no tooltip"*. There **is** a conditional `title` on the enclosing `bz-vd-usage` span
+(`RetirementRow.tsx`). The finding survives — the meaning is hover-only, which is defect 11's class
+and the architect's *"I cannot hover in a room"* — but it is a **visible-footnote** defect, not an
+absent-explanation defect, and the fix is the same shape as the rest of the title-attribute sweep.
+
+**CORRECTION 2 — to the delivery owner, on `payments-api` and `shipping:book`.** Their inference is
+unsupported by the feed they drew it from. `MeshUsageEntry`'s `service` is documented as **"the
+handling service"** — the usage feed counts *handling*, so it structurally cannot say who produced
+anything. `selectUsageForService` filters `e.service === service` accordingly. *"The usage feed
+reported nothing for this service"* is a statement about what that service **handled**, and reading it
+as evidence that a declared production is dormant is a category error. **Their question is right and
+important; their evidence cannot answer it.** The signal that can is
+`providerActivity[].lastObservedAt` — see §E6 and E17. The empty-state copy invited the misreading and
+is fixed as E15c.
+
+**CORRECTION 3 — to my own framing of the harness question.** See §E4: the stub is not defective and
+must not be "fixed."
+
+**CORRECTION 4 — a persona correcting themselves, recorded because it is the method working.** The
+platform engineer withdrew their own round-6 claim that `lastSeen` was read by nothing; it drives the
+entire liveness model. Verified — `selectLiveness`, `selectDivergences`, `selectIssues` all read it.
+The verify-before-ranking discipline is now being applied by personas to their own prior reports, and
+that is worth more than any single finding in the round.
+
+### §E1 — The reframe: one defect, six reports
+
+Production support and the architect reached it first — *"disciplined about qualifying its contract
+claims, and none of that discipline applied to its numbers."* The platform engineer reached the same
+place from the other end — *"stop letting the live plane's own admissions of ignorance render as
+green."* The delivery owner reached it from the Value page. **They are one defect, and it is not a
+missing feature.**
+
+> **The product repeatedly fetches a discriminating fact and renders an undiscriminating one.**
+
+Every finding in this round is an instance:
+
+| The discriminating fact, on the wire | What renders |
+| --- | --- |
+| `usage.entries[].status` (ok vs `no-handler`) | one summed total, tier `ok` |
+| `usage.windowStartUtc` / `windowEndUtc` | *"over the usage feed's own window"* |
+| `services[].missingFeeds: ["health","usage"]` | *"Heartbeat healthy"*, *"9.8k observed"*, *"No issues"* |
+| `services[].health: "unreachable"` | HEALTHY, from a 2h40m-old manifest |
+| `services[].lastSeen` absent (never heartbeated) | plain HEALTHY, pixel-identical to live |
+| `fleet.error: "…answered not-found"` | *"live plane unreachable"* |
+| `EdgeActivity.lastObservedAt` (a date) | a tri-state string, then a boolean |
+| `ComposeResult.headers` | not rendered |
+| `window.countsWindowed: false` | read once, on one surface |
+
+And the product **already owns the correct primitive** — the platform engineer named it independently
+and called it *"the pattern the whole product should follow"*: the Contract-changes tile renders
+`— / NOT COMPUTED` when the aggregator did not look, and `feedErrors` names the artifact and the
+error verbatim. That primitive sits **on the same component**, one tile away from `0 DEGRADED`.
+
+**So the ruling that governs this whole wave, stated once (§C5 tradition):**
+
+> **THE THIRD STATE IS NOT OPTIONAL AT ANY GRAIN.** Every figure in the product resolves to exactly
+> one of: *measured, with its window stated*; *measured as zero*; or *not measured*. A surface may
+> never render the third as either of the first two — and the rule applies to an absent **field** and
+> a declared-missing **feed** exactly as it already applies to an unreadable **artifact**.
+
+Executable, in the `copyHonesty.test.ts` tradition: a test that drives every surface with an artifact
+whose fields are absent and whose feeds are declared missing, and asserts no positive assertion
+renders. This is the wave's gate, per the C1.6/D4 precedent — nothing else in Wave E ships without it.
+
+### §E2 — RULING: the Value page, and the three green-when-ignorant signals, are ONE item
+
+The delivery owner and the platform engineer converged from opposite ends of the product onto
+*absence and failure rendered as good news, on the two surfaces a reader scans first*. They ship as
+one change because they are one rule (§E1), and splitting them would fix the instances and leave the
+rule unwritten — which is how the same defect arrived one render site over in Wave D.
+
+**§E2.1 — What usage means for a retirement decision. Ruling: only SUCCESSFUL usage is evidence of
+value.**
+
+A failing message is evidence of a *caller*, not of a *capability*. `inventory:reserve v1` with 2.2k
+messages of which 100% fail is not "actively used" — it is a broken integration that somebody should
+either fix or delete, and it is *more* interesting than a silent topic, not less. Three facts replace
+one number, each already computed by `selectTrafficForTopic`:
+
+- **`succeeded`** — the only figure that may hold a topic out of the candidate tier.
+- **`failed`** — counted and shown, **never protective**.
+- **`unrecognised`** — statuses in neither vocabulary. Also never protective, because it is an
+  assumption rather than a measurement (`selectors.ts:196-215` already says so) — but never damning
+  either.
+
+**Tiering, restated. Three tiers, not four** — the reader's model stays, the admission criteria change:
+
+| Condition | Tier | Evidence line |
+| --- | --- | --- |
+| `status === 'gap'` | verify | unchanged |
+| `succeeded > 0` and consumers declared | **ok** | unchanged |
+| `succeeded > 0` and **zero declared consumers** | **verify** | *"no declared consumers, but N messages succeeded — the handler is undeclared, or the feed is attributing to the wrong topic"* |
+| `succeeded === 0` and `failed > 0` | **verify** | *"N messages observed, none succeeded — a broken caller, not a live consumer. Fix or retire; do not count it as use."* |
+| only unrecognised traffic | **verify** | *"N messages in statuses this build does not recognise — not evidence either way"* |
+| no traffic, feed wired | candidate | unchanged |
+| no feed | ok | unchanged |
+
+`verify`'s sub-copy generalises from *"involves parties outside this fleet"* to **"the evidence does
+not support a retirement decision either way — go and look."** The zero-consumers-with-successful-
+traffic arm is a new insight and a genuinely mesh-shaped one: it is `mesh.md` §4.2's **undeclared**
+case (contract drift) surfacing on the Value page for free.
+
+**§E2.2 — The structural branch stops being short-circuited.** Structural and observed evidence are
+both computed, always, and both shown; the tier is decided last from the pair. The current
+`else if` chain throws away the structural finding the moment a count is non-zero, which is why the
+aggregator's `deprecation-candidate` chip ended up under a green heading.
+
+**Invariant, and it is executable: a row may never sit under a heading that contradicts the
+aggregator's own `status` chip on that row.** If the product overrides its own flag, it says why on
+the row. Test it.
+
+**§E2.3 — The three green-when-ignorant signals.** Same rule, estate grain:
+
+- **Service `missingFeeds` is honoured.** Every panel fed by a declared-missing feed renders the
+  third state naming the feed — the topic-level mechanism, lifted one level. A green *"No issues
+  observed for this service"* over `missingFeeds: ["health"]` is the single most dangerous sentence
+  found this round, because it is the sentence an on-call engineer stops reading at.
+- **The live plane's `health` is read.** Rule for the two planes, written once: **the live plane wins
+  for liveness, the manifest wins for declaration, and where they disagree the product shows the
+  disagreement rather than silently picking a winner.** That is what `selectDivergences` was invented
+  for — it is applied at one grain and needs to be the general rule.
+- **The estate page gets liveness, and a second, differently-named line.** `selectDivergences` keeps
+  its definition and its rationale — a never-heartbeated service is genuinely not *lying*. It is a
+  **coverage gap**, which is a different fact and gets its own line: *"2 services have never
+  heartbeated — the mesh reporting middleware may not be wired: promo-api, ledger-api."* And the
+  divergence banner's copy changes **silent** → **stale**, because the product's own three-state
+  vocabulary already reserves that word. The platform engineer's *"I deployed the service and forgot
+  to wire the middleware"* is the rollout failure mode mesh is best placed in the whole toolchain to
+  catch, and today it is findable only by opening five service pages one at a time.
+
+### §E3 — RULING: the KPI strip is FED; the Live window is RELOCATED, which is closer to deleted
+
+The platform engineer's boundary argument — *"the moment mesh renders a number a monitoring tool
+renders better, it inherits monitoring's burden of proof … either feed them properly or delete them;
+a dash is better than a wrong zero, and no widget is better than a dash"* — is accepted as a
+principle and produces two different answers, because the two widgets are not the same kind of thing.
+
+**The KPI strip: FEED it.** A count of services by status is a **contract fact about the estate**, not
+a monitoring metric — it is the one number on the strip nothing else in the toolchain has, because
+nothing else knows the declared estate. It is not mesh reaching for monitoring's job. What is wrong is
+sourcing: it reads a stale manifest while a fresh contradicting feed is discarded (§E2.3), and it
+asserts `0 DEGRADED / 0 UNREACHABLE` while the banner beneath says the plane is unreachable — with the
+correct primitive, `— / NOT COMPUTED`, already implemented one tile to the right. Fix the source,
+apply the primitive, keep the widget.
+
+**The Live window: TAKE IT OUT OF THE CHROME.** Four personas reported it independently across three
+rounds, and the platform engineer's detail is the one that decides it: *the topic page already prints
+"counts cover from 2026-08-15T12:00" and gets it exactly right; the page carrying the control is the
+one that doesn't.* Three of its four failures are failures of **placement**, not of implementation —
+it sits in the app header, above two pages that hardcode "last 24 hours", above usage figures that
+structurally cannot be re-windowed client-side, and above counts the plane itself declares it does not
+window. A global control over a non-global fact is a lie of placement.
+
+> **Ruling: a window control lives on the surface whose data it governs, beside that surface's own
+> window disclosure, or it does not exist.** The header loses the picker. The topic live strip and the
+> estate's flows section each gain one, each carrying `countsWindowed` / `countsSince` inline — which
+> is what the topic page already does, correctly, today.
+
+This is deliberately closer to "delete" than to "feed": the product ends the wave with **fewer
+controls and more stated windows**, and that is the right direction.
+
+### §E4 — ADJUDICATION: QA's validation finding is a harness artifact AND a product defect, and they are different defects
+
+**The harness is not broken and must not be "fixed."** Verified: payload validation in Benzene is
+**opt-in middleware** (`Benzene.FluentValidation`, `Benzene.DataAnnotations`, `Benzene.JsonSchema`).
+A real conforming service with no validation middleware registered behaves **exactly** as the stub
+did: a malformed body reaches the handler and the handler returns whatever it returns. The stub
+reproduced one of the two legal behaviours. **Adding validation to the stub would manufacture a
+confidence a real un-validated service would not produce** — the round-5 failure-3 defect with the
+sign flipped again. Recorded so it is not "corrected" next round.
+
+**The product defect is the sentence, and QA quoted it themselves.** `TestConsolePage`'s blurb asserts
+*"the same routing, **validation**, and handler a real transport would use."* Mesh does not know
+whether a target validates and cannot know — no field in the Cloud Service Profile carries "this
+service registers validation middleware," and **none should**: it is a per-deployment wiring fact with
+no consumer beyond one sentence. Fix the copy, not the spec.
+
+**And there is a real capability behind QA's actual job**, which is *"did the system reject my rubbish,
+or did nothing look at it?"* Mesh can distinguish those, from data it already holds: `topics.json`
+carries the payload schema the console seeded the body from. **Ruling: the console performs its own
+pre-send check against the declared schema, labelled as mesh's check, never the service's.** Four
+outcomes, all distinguishable, none of which exists today:
+
+1. mesh: no mismatch · service: `ok` → a clean pass.
+2. mesh: mismatch, named field · service: `validation-error` → **the tester's proof validation ran.**
+3. mesh: mismatch, named field · service: `ok` → **the service accepted a payload its own published
+   contract rejects.** This is the finding QA is really after, it is §A2's declared-vs-observed
+   pattern at the granularity of a single message, and nothing else in the estate can compute it.
+4. mesh: no mismatch · service: `validation-error` → the service enforces a rule its contract does not
+   publish. Also a mesh-shaped finding, and the one a schema-first team most wants.
+
+**Honesty rule, non-negotiable: the check reports findings only and never says "valid."** Its silent
+state reads *"mesh found no mismatch against the declared schema — it checks required fields, types
+and unknown properties at the declared depth, and it is not the service's validator."* A green tick
+here would be this round's defect in a new place.
+
+**Constraint check:** no dependency. `exampleFromSchema.ts` already walks these schemas in 73 lines;
+the schemas arrive with `$ref`s inlined (`MeshTopicEntry`'s own remarks). No ajv, no CDN, no build
+step. **Static floor untouched.**
+
+### §E5 — RULING: the Test Console produces an artifact, and stops offering a control it cannot honour
+
+**§E5.1 — The evidence block: APPROVED, essentially as QA specified it.** One block of selectable
+text beneath the response: UTC timestamp · resolved service + topic + version · the request body as
+sent (non-editable) · the status · the response headers verbatim. Every input exists — the only new
+state is a `sentAtUtc` stamped at `sendComposed.fulfilled`, one line. No persistence, no export
+format, no backend; a copy-to-clipboard button is additive and the **selectable text is the floor**,
+because it needs no API and survives a strict CSP.
+
+QA asked precisely, offered to do the pasting themselves, and said they would stop asking. That is the
+cheapest closure of a standing ask in seven rounds.
+
+**§E5.2 — Do NOT special-case `x-correlation-id`.** `wire-contracts.md:141` marks it **conditional**,
+outbound-only, not required to be read inbound, and says in terms: *"One convention among several —
+Benzene does not own this name."* A labelled "Correlation ID" field would assert a guarantee the spec
+explicitly refuses. **Render every response header verbatim, in order.** QA gets their cross-reference
+when the service emits one, and an honest blank when it does not — and the product does not acquire an
+opinion about a header it does not own.
+
+**§E5.3 — The Transport selector is DEMOTED from a control to a disclosure, and the dispatch contract
+does not grow a transport field.** Verified in §E0: mesh dispatch is bounded to the *same access the
+aggregator already has* to that one service, and that boundedness is the security argument for the
+feature existing at all. A per-message transport choice would turn a single-service, aggregator-
+equivalent probe into a general-purpose message injector with credentials for brokers it has no
+business holding. QA is right that a control which appears to change behaviour and demonstrably does
+not is worse than no control — and the answer is to remove the control, not to build the behaviour.
+Replacement copy: *"Declared transports for this topic: Sqs, AspNet. This console dispatches over the
+mesh's own access path to payments-api (AwsLambdaInvoke), not over these — transport is not a variable
+here."* That sentence answers a question the selector never did.
+
+**§E5.4 — Compose and the Console share a resolution function, or they will diverge again.** Third
+divergence in one round. **Rule, not fix (the D6 precedent):** extract `resolveVersionIndex(versions,
+arrivedAtVersion)`, call it from both pages, and add a test asserting both seed the same index for the
+same topic. And `@version` joins both hashes — `routing.ts` already has `splitVersion` handling
+`<topic>@<version>` for `#topic/`; extending it to `#test/<service>/<topic>@<version>` and
+`#compose/<topic>@<version>` makes the page's own bookmark promise true.
+
+### §E6 — RULING: ages, not charts — ACCEPTED, and the spec is already on this side
+
+Two roles independently reduced a four-round trend ask to the same much cheaper thing. **Accepted, and
+it is the better ask.** An age is a decision-ready scalar; a time series is a data dump that makes the
+reader derive the age. Against §A4's insight-not-display bar the age wins outright.
+
+**And the spec got there first.** `mesh.md` §4.2: *"A collector MUST report **last observed at** (or
+its absence) per edge rather than collapsing it to a boolean, so a reader can judge staleness for
+itself."* The specification already mandates exactly the discipline both personas converged on, in
+almost their words — and the product collapses it. That sentence is the mandate for this item.
+
+**What gets a date, and where it comes from — verified, one row at a time:**
+
+| Age | Source | Status today |
+| --- | --- | --- |
+| **Snapshot age** — how old these contract facts are | `manifest.generatedAtUtc` | Rendered as a raw UTC string in the header, no age. A 2.5-month-stale snapshot renders identically to a fresh one *while the page computes "4 of 6 topics awaiting a move" from it.* **This is production support's kept ask (freshness) and it lands here for free.** |
+| **Usage window** — what these counts cover | `usage.windowStartUtc` / `windowEndUtc` | On the wire, same file as the counts, **read nowhere**. |
+| **Topic last carried traffic** | `FleetView.topics[].lastSeen` — the collector sets `topic.LastSeen` on every trace event (`MeshCollectorStore.cs:177`) | On the wire; `selectLiveForTopic` does not read it. Free. |
+| **Service last seen** | `FleetView.services[].lastSeen` | Read, but only to compute a liveness enum (`:136`) — the same collapse §4.2 forbids one grain down. Show the date. |
+| **Issue age** | `issues[].firstSeen` / `lastSeen` | Printed as raw UTC (`IssuePage.tsx:34`). The delivery owner called first-seen-plus-count the most decision-ready number in the product; make it *read* as one. |
+| **Edge last observed** | `EdgeActivity.lastObservedAt` | Computed by the .NET collector (`MeshCollectorStore.cs:645-648`); **no aggregator forwards it** into `topics.json`/`topology.json`. **[agg]**, see E17. |
+| **Obligation age** — outstanding since when | **nothing** | `rollouts.ts` is a pure derivation over the *current* `topics.json`. Depth-of-one (`previousSpecHash`) answers *whether the spec moved since the last snapshot*, never *when this obligation started*. |
+
+**Six of the seven are renders over published data. The seventh is the only thing in this round that
+needs new state, and here is the shape.**
+
+**§E6.1 — The obligation first-seen ledger. APPROVED, at the smallest possible shape, aggregator-side.**
+The aggregator already reads its own previous artifact (`ApplyCatalogDiffAsync` does
+`_store.TryReadAsync("topics.json")` — §C2.2), so it has a store and a previous state. Add a sidecar
+keyed by obligation identity `(topic, version, obligedService, kind) → firstSeenUtc`, rewritten every
+run: existing keys keep their stamp, new keys take the run's `generatedAtUtc`, absent keys drop out.
+
+- Bounded by the number of **outstanding obligations**, not by estate size and not by history depth.
+  On the round-7 estate that is a handful of rows. No retention policy, no growth, no time series. It
+  is a depth-of-one history carrying a **stamp** instead of a hash, which is why §C2.3's rejection
+  does not apply — that one demanded a second copy of every spec.
+- **Explicitly not a time series, and this is the point.** The architect wanted "count flat, age
+  rising." The *age* supplies the second point: an oldest-outstanding age of 34 days **is** the trend
+  statement, on one line, with no history browser behind it. *"Charts can wait"* — delivery owner. They
+  can wait indefinitely.
+
+**§E6.2 — The date/age rule, written once.** `formatAge` exists and is applied only to the poller.
+**A date is never rendered without its age, and an age is never rendered without its date.** One
+helper, one test, every surface. Same rule-not-fix framing as §D6.
+
+### §E7 — RULING: `instances`, and the caveat that made our own headline unactionable
+
+The platform engineer's answer to the field question is the strongest form the ask has taken in seven
+rounds, because it is not "give me more data." `POLLED_INSTANCE_CAVEAT` — *"Each service's versions are
+what the instance that answered the last poll declared. During a rollout, instances of the same
+service can legitimately disagree"* — is a caveat we added for honesty, and it converts every
+OWES/MOVED verdict on the product's best surface into a maybe. **A caveat shipped for honesty is now
+blocking action on the output the whole of Wave D was built to produce.**
+
+`FleetViewServicesItem.instances` is on the contract and unread. **Approved, [ui] only** — and the
+copy must state precisely what mesh knows, which is not "1 of 4 have moved":
+
+- `instances: 1` → *"shipping-api runs a single instance, so this is the whole truth"* — and **the
+  caveat is withdrawn for that service.** The product stops hedging where it does not need to, which
+  is the real win.
+- `instances: 4` → *"the collector has seen 4 instances of shipping-api; this contract is what the one
+  that answered the aggregator's poll declared."* Quantified, not resolved.
+
+`placement` / `runtime` / `binding` are declined for now, on their own argument: obtainable from
+Terraform in thirty seconds, and none changes a decision mesh asks anyone to make.
+
+**This revives Wave D-opt (§D10).** The descriptor-hash rollup was ranked as collector-gated with no
+user pulling on it; `instances` is the cheap 80% and D10's *distinct hash count* is the complete answer
+— *do the four instances agree?* It now has a named user and a named decision, and it moves from
+"deferred" to "next collector wave."
+
+### §E8 — What mesh will NOT do — round 7, written to be quoted
+
+Following §D9, and following the evidence that the visible refusal works: `NO_RELEASE_TRAIN_COPY`
+became the most-praised writing in the product **because it shipped on screen**, not because it was
+recorded here. So each refusal below names the surface that says it out loud. An unstated refusal
+reads as a missing feature and gets re-asked; that is now a demonstrated fact, twice.
+
+1. **No customer, order, or revenue impact.** Mesh counts messages. It has no entity model, no session
+   concept and no revenue join, and acquiring one makes it a worse analytics product than the one the
+   business already owns. *On screen: Value page footer.*
+2. **No deploy timeline, release calendar, or "when will this land."** Restated from §D9 and sharpened
+   by §E6: the obligation age is the **exact opposite** of a timeline — it says how long something has
+   been true, never when it will change. Mesh has no future tense. *On screen: the Rollouts refusal
+   paragraph gains a sentence.*
+3. **No DLQ, queue depth, retry count, or in-flight state.** Mesh reads the collector's observation of
+   *completed* invocations and the services' *declared* contracts. Broker state belongs to the broker,
+   with its own console and its own access model, and a stale mesh copy of it would be the most
+   dangerous number in the product — somebody would drain from it. *On screen: the topic Traffic
+   card's provenance line.*
+4. **No effort, size, cost, or story-point estimate on any obligation.** Mesh knows a change's shape
+   (`kind` / `direction` / `path`), never the code behind the handler. An estimate would be a guess
+   wearing a measurement's clothes, on the screen a steering group reads. *On screen: the Outstanding
+   block.*
+5. **No transport field on `MeshDispatchRequest`** (§E5.3). *On screen: the console's transport
+   disclosure line.*
+6. **No "valid" verdict from the pre-send check** (§E4) — findings only, never a green tick. *On
+   screen: the check's own silent state.*
+7. **No usage-based value score, index, or single number.** Ruled now because the §E2 fix could easily
+   grow one. Three facts with their windows, ranked — never a scalar that hides which of them moved.
+8. **No time-series store, no history browser, no charts** (§E6). Ages, not series. Accepted from the
+   personas' own reduction and now a position rather than a deferral.
+9. **No validation-capability field in the Cloud Service Profile** (§E4). Whether a service registers
+   validation middleware is per-deployment wiring with one consumer — a sentence — and the spec does
+   not grow a field to make a sentence true.
+
+### §E9 — Ranked backlog, and the wire / aggregator / spec answer
+
+Repo tags as §D10: **[ui]** `benzene-ui`; **[agg]** `benzene-dotnet` aggregator; **[wire]**
+`Mesh.Contracts` + the TypeScript mirror; **[coll]** collector read model; **[spec]**
+`docs/specification/**`.
+
+**Wave E — "the third state, everywhere."** The honesty wave. E1 is the gate.
+
+| # | Item | Repo | Size |
+| --- | --- | --- | --- |
+| E1 | **The third-state rule (§E1), executable** — service `missingFeeds` honoured on every panel; the live plane's `health` read, with the two-plane precedence rule; estate liveness rendered; the coverage-gap line beside the divergence banner; **silent** → **stale** in the banner copy. Plus the driver test that no positive assertion survives an absent field or a declared-missing feed. **Gate: nothing else in E ships without it** | [ui] | 2.5 d |
+| E2 | **Value tiering on successful usage (§E2)** — `succeeded`/`failed`/`unrecognised`; `verify` gains three arms; structural branch un-short-circuited; the never-contradict-your-own-chip invariant, tested; visible footnote for `†` | [ui] | 1.5 d |
+| E3 | **KPI strip fed from both planes (§E3)** — `— / NOT COMPUTED` applied to the three health tiles when the plane cannot answer | [ui] | 1 d |
+| E4 | **The usage window on every usage number (§E0)** — `windowStartUtc`/`windowEndUtc` read for the first time; `UsagePanel`'s `windowLabel` becomes real dates. **Fixes the factor-of-twelve and makes the one card the delivery owner wanted to quote quotable** | [ui] | 0.5 d |
+| E5 | **The age rule (§E6.2)** — snapshot, service last-seen, issue first/last-seen, topic last-traffic (`topics[].lastSeen`, currently unread); date and age always together; one helper, one test | [ui] | 1 d |
+| E6 | **Feed health names what answered (§E0)** — `selectFeedHealth` reads `s.fleet.error`, so *"answered `not-found`"* stops rendering as *"unreachable."* **Saves an hour in security groups on the two most common wiring mistakes** | [ui] | 0.25 d |
+| E7 | **Live window relocated (§E3)** — out of the chrome, onto the topic live strip and the flows section, each beside its own `countsWindowed`/`countsSince` disclosure | [ui] | 1 d |
+| E8 | **`instances` + caveat quantification (§E7)** | [ui] | 0.5 d |
+| E9 | **Observed-but-undeclared services** — a service reporting to the collector and absent from the manifest is currently dropped silently; it is `mesh.md` §4.2's *undeclared* case at service grain, and both lists are already in the store. Third distinct cause of "why isn't my service showing up" | [ui] | 0.5 d |
+| E10 | **Small verified truths** — `Calls` error-rate gains its unit noun and its `source` (round-7 defect 2); `ServiceUsage` empty state says *handled by* (§E0 correction 2); the service Traffic panel reads the live plane as well as `usage.json`; `#issue/<fp>` stops rendering its card twice | [ui] | 0.75 d |
+
+**Wave E total: 9.5 d [ui]. Zero [agg], zero [wire], zero [spec], zero [coll].**
+
+**Wave F — "evidence you can take out of the product."** QA's, the architect's and the delivery
+owner's export need, which is one need.
+
+| # | Item | Repo | Size |
+| --- | --- | --- | --- |
+| E11 | **Console evidence block (§E5.1)** — `sentAtUtc`, request snapshot, resolved service/topic/version, status, **response headers verbatim** (already in the store, rendered nowhere) | [ui] | 1 d |
+| E12 | **Console truth pass (§E5.3–4)** — transport demoted to disclosure; blurb stops asserting validation; shared `resolveVersionIndex`; `@version` in both hashes | [ui] | 1 d |
+| E13 | **Print stylesheet (§E0)** — static header, sections expanded, load-bearing `title` content as visible footnotes, page-break control, estate + window + generated-at stamp in the print header. **Converts the architect's SCREENSHOT ONLY from a limitation into a supported mode, and un-damages the delivery owner's steering pack** | [ui] | 1 d |
+| E14 | **Pre-send schema check, findings-only (§E4)** — declared-schema walker, four outcomes labelled, never says "valid", no dependency | [ui] | 1.5 d |
+| E15 | **Configuration disclosure** — the six `data-*` attributes, their `?query` overrides, the query topic `benzene:mesh:query:fleet` and the `stale` threshold are documented **only in a source doc comment**; the platform engineer read the built bundle to find them. README + an in-product "how this page is wired" line, modelled on *"This mesh is read-only — no annotation endpoint is configured"*, which they called the best configuration disclosure in the product | [ui] | 0.5 d |
+
+**Wave F total: 5 d [ui]. Zero [agg], zero [wire], zero [spec].**
+
+**Wave E-agg — the two that are not UI.**
+
+| # | Item | Repo | Size |
+| --- | --- | --- | --- |
+| E16 | **Obligation first-seen ledger (§E6.1)** — sidecar artifact, obligation identity keys, rewritten per run; UI renders *"outstanding since 2026-07-13 (34d)"* and *"oldest outstanding move: 34d"* on the Rollouts summary | [agg] + [wire] | 2 d agg, 0.5 d ui |
+| E17 | **Aggregator forwards the collector's edge activity** into `topics.json` / `topology.json` (`consumerActivity` / `providerActivity` / `lastObservedAt`). Un-darkens two already-shipped UI arms and answers *"declared producer, never observed producing"* properly — the delivery owner's question, with evidence that can actually carry it (§E0 correction 2) | [agg] | 1.5 d |
+| — | **D10 revived** — distinct-descriptor-hash rollup on `FleetView.services[]`, now with a named user and decision (§E7) | [coll] | 1 d .NET + 1 d Go |
+
+**§E9.1 — The explicit wire/aggregator/spec answer, since the streak is the question asked.**
+
+**Waves E and F need zero wire, zero aggregator and zero spec change — 14.5 days of work, every input
+already published, and in seven cases already parsed into the store and thrown away.** That is the
+fourth consecutive wave with no service-side cost, and it is not luck: it is what §E1's finding
+predicts. A product whose defect is *rendering a discriminating fact undiscriminatingly* has, by
+definition, the data.
+
+**The streak breaks at E16, and only at E16.** It is the first `[wire]` item in four waves and here is
+exactly why I am accepting it: every other item in this round **derives**; E16 is the single fact the
+estate genuinely does not contain, because a snapshot cannot know its own age. Measured against §A4's
+standing bar — *does it derive, or does it demand?* — it derives from the aggregator's own history and
+**demands nothing of any service**.
+
+> **The Cloud Service Profile is untouched by all seventeen items.** No new field, no new obligation
+> on any conforming service, in any language, in any port. The coverage-vs-tautness call is made and
+> it is not close: the mesh's own published artifact grows by one timestamp per outstanding
+> obligation; the contract every service must implement grows by nothing.
+
+**E17 is [agg] and needs no spec change — and the distinction matters.** `mesh.md` §4.2's MUST binds
+the **collector**, and the .NET collector honours it (`MeshCollectorStore.cs:645-648`). What is
+missing is the **aggregator forwarding it into the published artifacts**, which is a mesh-product
+decision about our own surface, not a conformance question. Stated precisely so it is not later
+mis-filed as a spec repair.
+
+**Sequencing: E first, alone.** E1 is the gate and E2/E3 are the two surfaces a reader scans first.
+F follows. E16/E17 follow F, because five of the seven ages ship in E5 for free and I want to know
+whether the sixth and seventh are still wanted once the free ones are on screen — the §C2 discipline.
+
+### §E10 — Status honesty, and what the platform engineer's report actually moved
+
+- **Shipped and verified:** Wave D in full; round 7 confirmed the `OUTSTANDING` / `WAITING ON` blocks,
+  the three rollout states, the refusal paragraph, the victim/culprit inversion and the payload panel
+  as the load-bearing parts of the product. Five of six personas named a disclaimer as the reason they
+  trust the rest. **The hedging is the feature; do not trade any of it for a cleaner screen.**
+- **Shipped, correct, and applied at one grain only:** the third-state primitive — `— NOT COMPUTED`,
+  `feedErrors`, topic-level `missingFeeds`, `countsSince`. §E1 is the job of generalising it.
+- **Shipped, modelled, and never fed** — a status class this round names for the first time:
+  `consumerActivity` / `providerActivity` / `lastObservedAt` have a tri-state type, a `mesh.md` §4.2
+  MUST behind them, two rendering arms in `EdgeList`, and a Value-page evidence line — **and no
+  aggregator publishes the field, so none of it has ever rendered in a real deployment.** Distinct
+  from Wave D's *unjoined* capability and from §A4.3's *unread* capability: this one is **unfed**.
+  Third variant of the same pathology in four rounds, and worth stating as the pattern: *the recurring
+  defect in this codebase has never once been missing capability.*
+- **Shipped but unverified against a real backend:** the Tempo adapter's metric and label names remain
+  **documented convention, never checked against a live Tempo instance.** Fifth refinement running.
+  Nothing in Waves E/F touches it and nothing in them depends on it.
+- **Not built:** everything in §E9.
+
+**What the platform engineer's report moved, now that it has landed.** §D11 flagged two rulings as
+movable; the answer is that it moved three others instead:
+
+1. **It converted §E2 from a page fix into an estate rule.** I had the Value page scoped as a
+   selector repair. Their three green-when-ignorant signals proved it is the same defect on the
+   estate's front door, so it ships as one rule with one gate test rather than two fixes. That is the
+   single biggest change their report made.
+2. **It killed my planned "keep the Live window and label it honestly."** Their detail — *the topic
+   page carries the correct disclosure and the page carrying the control does not* — reframed it from
+   an implementation failure to a placement failure, and the answer became relocation (§E3), which
+   removes a control from the chrome. I would not have got there from the other three reports.
+3. **It revived Wave D-opt** by giving the descriptor-hash rollup a user and a decision (§E7).
+4. **It did NOT move the ruling I most expected it to.** §D11's open risk on E16 — whether the
+   aggregator's store supports a safe read-modify-write for the first-seen ledger under concurrent or
+   multi-aggregator deployment — is untouched by their report. **That risk stands open and is the one
+   question to put to them before E16 starts**, because if the answer is object storage with no
+   read-modify-write guarantee, or N aggregators, the ledger's shape changes (a stamp derived from the
+   collector's own first-seen, or a leader-only write). It is a two-line question and it should be
+   asked before two days of aggregator work, not after.
+
+**Their verdict is the one to hold the wave to:** adoption MAYBE, one change from YES, split cleanly —
+**YES** for *what contract state is this estate in and who owes what*, which they would run a rollout
+from; **NO** for *is everything up*. That split is exactly this document's own positioning (§4.1: an
+estate-comprehension product first, a monitoring dashboard second) arriving back as user evidence. The
+honest response is not to win the second half — it is §E3: feed what is genuinely a contract fact,
+relocate what was reaching for monitoring's job, and let the product be excellent at the half it
+owns. *"An operator's trust is lost exactly once"* is the reason Wave E is ranked ahead of every
+feature in this document.
+
+Cross-reference: **the data-layer half is E16/E17 plus the revived D10**, which sit in
+`work/service-mesh-roadmap-1.0.md` against the aggregator's published artifacts and the collector read
+models, beside §C10.1's still-open Python versioned-catalogue parity gap. Everything else — 14.5 of
+17.5 days — is a render over signal the estate already publishes.
