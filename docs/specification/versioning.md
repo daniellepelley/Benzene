@@ -12,6 +12,10 @@ overloads (`MessageVersionHeaders.Default`). HTTP apps opt into the `/v{version}
 `examples/Mesh` (payments-api: `/v1`|`/v2` routes + response downcast) and `examples/K8sMesh`
 (orders→payments: v1 request upcast to a single v2 handler over the envelope).
 
+**§5 (Mechanism C — side-by-side service versions) is proposed, not implemented.** It needs a third
+identity layer in the mesh (§5.5) and version-aware outbound routing (§5.4), neither of which any
+port has today; the §1 axes table marks it accordingly.
+
 ## 1. Purpose and scope
 
 A long-lived service inevitably needs to change the shape of a topic's request or response
@@ -21,19 +25,27 @@ defines Benzene's answer: **producers may publish any payload schema version a t
 accepts, and a service may keep serving whichever versions it declares support for**, without
 staged/lockstep releases.
 
-There are **two independent axes** of "version" in Benzene, easy to conflate and important to
-keep separate:
+There are **three independent axes** of "version" in Benzene, easy to conflate and important to
+keep separate. Note that they sit at different levels — the first two are *inside* one deployment,
+the third is *across* deployments:
 
-| Axis | Answers | Existing mechanism |
-|---|---|---|
-| **Handler version** | "Which implementation of this topic's behavior runs?" | Already shipped: `(topic, version)` → handler, `[Message(topic, version)]`, `IVersionSelector` (core-concepts.md §2, §9) |
-| **Payload schema version** | "What C# shape is this request/response wire payload?" | **New** — this document |
+| Axis | Answers | Scope | Mechanism |
+|---|---|---|---|
+| **Handler version** | "Which implementation of this topic's behavior runs?" | Within a service | Shipped: `(topic, version)` → handler, `[Message(topic, version)]`, `IVersionSelector` (core-concepts.md §2, §9) — §3 |
+| **Payload schema version** | "What shape is this request/response wire payload?" | Within a service | Shipped: schema casting — §4 |
+| **Service version** | "Which immutable set of topics and payload schemas is this deployment serving?" | Across deployments of one service | **Proposed** — §5 |
 
-A service MAY use either axis alone, or both together (e.g. a handler-version bump for a genuine
-behavior change, with payload-schema casting absorbing compatible data-shape drift so most schema
-evolution never needs a new handler version at all). Section 4 gives the full comparison.
+The third is the layer beneath a service's *name*: a name identifies which service, a service
+version identifies which contract that service is currently serving. It is what makes two
+deliberately co-deployed builds of one service distinguishable rather than looking like one service
+that keeps changing its mind (§5.1).
 
-Both axes are **transport-neutral concepts** per this spec's one rule (README.md): they belong
+A service MAY use any axis alone, or combine them — a handler-version bump for a genuine behavior
+change, payload-schema casting absorbing compatible data-shape drift, and a service-version
+side-by-side deployment for a change too large to absorb in either. Section 6 gives the full
+comparison.
+
+All three are **transport-neutral concepts** per this spec's one rule (README.md): they belong
 here, before or alongside code, in whatever language a Benzene implementation is written in. The
 .NET shapes below are illustrative — marked *(informative)*.
 
@@ -328,17 +340,187 @@ before this mechanism can be wired up generally:
   on CLR types and delegates throughout. This is the majority of the package by volume and needs no
   change for this mechanism.
 
-## 5. Choosing between the mechanisms
+## 5. Mechanism C — side-by-side service versions
 
-| | §3 Handler-version dispatch | §3.1 Casting-handler sugar | §4 Transparent casting |
+**Status: proposed.** Mechanisms A and B both keep **one deployment** of a service and absorb the
+version difference inside it. Mechanism C is the other axis entirely: leave the old deployment
+running, deploy the new one **alongside** it, and route each message to whichever deployment speaks
+its version. Nothing is replaced until the operator decides to retire it.
+
+Good fit when the change is too large or too risky to absorb by casting: a rewritten
+implementation, a genuine behavior change (not just a data-shape change), a migration that needs
+independent rollback, or a gradual cutover with real traffic on both versions at once. It is the
+deployment-shaped answer to the same problem §3 and §4 answer in code.
+
+### 5.1 The missing identity layer
+
+Today a service's identity in the mesh is its **name**. That is one layer short. A name identifies
+*which* service; it does not identify *which contract that service is currently serving*, and two
+deliberately co-deployed versions of `payments` are indistinguishable from one `payments` that
+keeps changing its mind. Three layers are needed, not two:
+
+| Layer | Identifies | Lifetime | Wire field (mesh.md §2) |
 |---|---|---|---|
-| New framework code required | None (already shipped) | None (application-level) | Request/response mapper decorators + §4.4 redesign (both shipped) |
-| Handler code duplication | Real, per version | One thin forwarding handler per retired version | None — one handler, always the latest |
-| Where casting logic lives | N/A (no casting) | Explicit, in the forwarding handler | Implicit, in registered `ISchemaCaster`s |
-| Good fit when | Versions genuinely behave differently, not just shaped differently | A quick bridge for one or two retired versions | Many long-lived producer versions, pure data-shape drift, want zero per-version handler code |
-| Both MAY be combined | — | — | A handler-version bump handles genuine behavior changes; casting absorbs shape-only drift within a handler version |
+| **Service** | the logical service — `payments` | permanent | `service` (REQUIRED) |
+| **Service version** | one **immutable** set of topics, produced topics and payload schemas | added over time, never mutated | `serviceVersion`, else generated (§5.2) |
+| **Instance** | one running process | ephemeral, replaced constantly | `instanceId` |
 
-## 6. Open questions for the implementation pass
+The middle layer is the new concept. It is where a contract actually lives: a service version is a
+frozen snapshot of what the service consumes, produces, and in what shapes. Over time a service
+**accumulates** service versions rather than overwriting one.
+
+Note what this is *not*: the `serviceVersion` field already exists on the wire and already
+participates in `descriptorHash` (mesh.md §2, §2.2). What does not exist is any **identity meaning**
+attached to it — today it is descriptive metadata a collector may display and nothing keys on. This
+mechanism promotes it to part of the key. That makes the change considerably smaller than the
+concept suggests: no new wire field is required for the declared case.
+
+### 5.2 Version identity: declared, else generated
+
+An operator **SHOULD** bump `serviceVersion` on every contract change, but a spec cannot assume
+they will — an un-bumped version is a mislabel waiting to happen, and refusing to function without
+one would make the whole mechanism opt-in-by-discipline. So the version identity resolves in two
+steps:
+
+1. **Declared.** If the descriptor carries a non-empty `serviceVersion`, the version identity is
+   that string. It is human-meaningful, stable across rebuilds that do not change the contract, and
+   is what an operator names in routing rules and rollback commands.
+2. **Generated.** If `serviceVersion` is absent, the version identity **MUST** be derived from the
+   descriptor's contract — for which `descriptorHash` (mesh.md §2.2) is already exactly the right
+   value, already normative, already computed by every port, and already defined to change when and
+   only when the contract changes. A service that never declares a version therefore still gets
+   correct side-by-side behavior automatically; it simply gets machine-shaped version names.
+
+A port **MUST NOT** invent a third scheme (build number, timestamp, deploy id): those change on
+rebuilds that did not change the contract, which would fragment one service version into many
+identical siblings and defeat the immutability in §5.3.
+
+> **Why the hash is a sound generated version, despite including `serviceVersion`.** `descriptorHash`
+> covers `serviceVersion` along with the rest of the contract (mesh.md §2.2). That is not a
+> circularity here, because the hash is only *used* as the identity in the branch where
+> `serviceVersion` is absent — and an absent field hashes identically across deployments, so the
+> hash reduces to a fingerprint of the contract proper. In the declared branch the hash is not the
+> identity at all; it is the drift detector *within* that identity (§5.3).
+
+### 5.3 Immutability, and what drift still means
+
+A service version is **immutable**: once `(service, version)` has been registered with a contract,
+that pair's contract does not change. Everything a collector needs to police that already exists —
+it is `descriptorHash`, re-scoped from the service to the `(service, version)` pair:
+
+| `serviceVersion` | `descriptorHash` | Meaning |
+|---|---|---|
+| same | same | Same version, same contract — ordinary multi-instance. Not drift. |
+| **different** | different | **Deliberate side-by-side versions.** Siblings, both valid. Today this reads as drift; under this mechanism it MUST NOT. |
+| **same** | **different** | **Contract drift** — the declared version is lying. Two builds claim one version and disagree about its contract. This is the case the existing rule (mesh.md §5) already catches, and it MUST keep being caught. |
+| different | same | Unreachable when `serviceVersion` is declared (it participates in the hash); benign if reached. |
+
+The second row is the entire fix to the identity problem. The third row is the reason the hash must
+survive as a check rather than being replaced by the label: a declared version is an *assertion*,
+and the hash is what verifies it.
+
+### 5.4 Routing a message to the right service version
+
+The enabling decision was already made in §2: **the version travels as transport metadata, never
+inside the payload.** Metadata is the one layer infrastructure routers can see, so most transports
+can route by version with no framework involvement at all. Had the version lived in the body (as in
+the source project §2 describes departing from), almost nothing below could work.
+
+| Transport | Version-based routing | How |
+|---|---|---|
+| HTTP / Kubernetes | Yes, natively | `/v{version}` path or `benzene-version` header rule at the ingress/gateway — ordinary canary machinery |
+| SNS | Yes | Subscription **filter policies** on the message attribute the version header maps to; one queue per version |
+| EventBridge | Yes | Rules pattern-match the embedded header (transport-bindings.md's `_benzeneHeaders`) |
+| Bare queue (SQS, etc.) | **No** — a queue has no routing layer | Front it with a topic/bus that has one, **or** route producer-side (below) |
+| Direct invocation (Lambda invoke, gRPC) | Producer-side only | The caller chooses the callee, so the outbound route must be version-aware |
+
+Two placements, and an implementation **MAY** offer either or both:
+
+- **Infrastructure-side** (preferred where available). Producers publish one topic with a version
+  header and stay entirely ignorant of how many versions are deployed. Cutover is a routing-rule
+  change with no redeploy of anything.
+- **Producer-side.** The outbound route resolves `(topic, version) → destination` rather than
+  `topic → destination`. This is the only option for bare queues and direct invocation. *(Informative,
+  .NET: this is a real gap today — `OutboundRoutingBuilder.Route` keys on topic alone, even though
+  `SendAsync(topic, request, version)` already stamps the header. A version-aware route key is the
+  one framework change Mechanism C needs.)*
+
+Whichever placement is used, the **absent-version default (§2.2) MUST be encoded in the routing
+rule**: a message with no version signal routes to the topic's default version — by convention the
+oldest still accepted — so producers that predate versioning keep reaching the deployment that can
+still serve them, rather than silently landing on the newest.
+
+### 5.5 What this requires of the mesh *(normative changes to mesh.md)*
+
+Mechanism C cannot be adopted without three amendments to mesh.md, listed here so they can be made
+as one deliberate cross-language pass rather than piecemeal. **They are not yet made**, and no port
+implements them today:
+
+1. **§4 — the collector keys the catalog by `(service, serviceVersion)`, not `service`.**
+   Re-registration replaces wholesale *within a version*, not across the service. Without this, v2
+   registering deletes v1's entry, which is precisely the current failure.
+2. **§5 — a descriptor-hash mismatch is drift only within one version.** Two versions of one
+   service reporting different hashes is the expected, correct state (§5.3, row 2), not a mismatch
+   to surface.
+3. **§2 — `serviceVersion`'s meaning is promoted** from descriptive metadata to part of the
+   identity, with the declared-else-generated resolution in §5.2 stated normatively.
+
+A collector that has not adopted these degrades predictably rather than dangerously: it sees
+repeated re-registration of one service whose contract keeps changing, which is exactly today's
+behavior — wrong, but not new.
+
+Two presentation consequences worth settling in the same pass: a topic's producer/consumer graph
+(mesh.md §4) gains multiple nodes per service name, and a reader almost always wants the
+service-level view by default with the version breakdown on demand; and "which versions of this
+service are live, and which is taking traffic" becomes the natural place to *observe* a cutover,
+even though the cutover itself is a routing change the mesh does not perform.
+
+### 5.6 Degradation
+
+| Requires | Why | Degradation when declined |
+|---|---|---|
+| A version signal on the message (§2) | Routing has nothing to discriminate on without one | Everything routes to the topic's default version (§2.2) — i.e. exactly single-deployment behavior |
+| A routing layer that can read it (§5.4) | Something has to act on the signal | Only one version can be live per topic; the mechanism is unavailable, but nothing breaks |
+| Version-aware mesh identity (§5.5) | Siblings are otherwise read as one service overwriting itself | Deployment and routing still work; the **catalog** misreports, showing drift where there is none |
+
+Note the third row: Mechanism C's *runtime* behavior does not depend on the mesh at all. The mesh
+changes are what make a side-by-side estate **legible**, not what make it function.
+
+### 5.7 Sharp edges
+
+These are constraints on the pattern, not gaps in it, and an implementation guide **MUST** state
+them — each one is a live production hazard that routing alone does not address:
+
+- **Event fan-out double-processing.** Side-by-side is clean for *commands*, which have one intended
+  recipient. For a subscribed *event*, if two versions both subscribe, the event is processed twice —
+  duplicate side effects, not a duplicate read. Exactly one version MUST own a given event
+  subscription at a time, and that ownership moves at cutover.
+- **Shared state.** Two versions writing one store relocates the breaking change from the wire to
+  the database rather than removing it. Side-by-side deployment addresses *contract* compatibility;
+  the store still requires expand/contract discipline, and no routing scheme substitutes for it.
+- **Unbounded accumulation.** Versions are immutable and additive, so without a retirement policy an
+  estate grows service versions forever. Retirement is an operator decision the mesh should make
+  visible (which versions still receive traffic) but MUST NOT make automatically.
+
+## 6. Choosing between the mechanisms
+
+| | §3 Handler-version dispatch | §3.1 Casting-handler sugar | §4 Transparent casting | §5 Side-by-side versions |
+|---|---|---|---|---|
+| **Deployments per service** | One | One | One | **One per live version** |
+| New framework code required | None (already shipped) | None (application-level) | Request/response mapper decorators + §4.4 redesign (both shipped) | Version-aware outbound routing (§5.4) + mesh identity (§5.5) — **neither shipped** |
+| Handler code duplication | Real, per version | One thin forwarding handler per retired version | None — one handler, always the latest | None — each deployment only knows its own version |
+| Where the version difference is absorbed | In the handler set | Explicit, in the forwarding handler | Implicit, in registered `ISchemaCaster`s | **Nowhere in code** — in the routing layer and the deployment topology |
+| Rollback granularity | Redeploy the service | Redeploy the service | Redeploy the service | **Per version, independently** |
+| Good fit when | Versions genuinely behave differently, not just shaped differently | A quick bridge for one or two retired versions | Many long-lived producer versions, pure data-shape drift, want zero per-version handler code | A rewrite, a risky migration, or a gradual cutover with real traffic on both at once |
+| Main cost | Duplicate handler code | A forwarding handler per retired version | Casters must exist in both directions (§4.2.1) | Running, observing and eventually retiring N deployments; the §5.7 hazards |
+
+The mechanisms **compose**, and the useful combination is C with A or B rather than either alone: a
+side-by-side deployment handles the genuine behavior change, while casting inside each deployment
+absorbs shape-only drift, so C's deployment count tracks *behavioral* versions rather than every
+schema revision. C alone, with no casting, means a new deployment for every payload change — which
+is where an estate accumulates versions fastest and §5.7's retirement problem bites soonest.
+
+## 7. Open questions for the implementation pass
 
 - **Multiple simultaneous canonical versions per topic.** §4.1 assumes one canonical version per
   topic (the resolved handler's declared type). A topic with more than one live canonical version
@@ -357,3 +539,31 @@ before this mechanism can be wired up generally:
 - **Conformance fixtures.** Once implemented, add version-casting cases to
   `docs/specification/conformance/` (envelope-cases.json sibling) so other-language ports can
   verify their casting chain composition against the same fixtures as the .NET reference.
+
+Specific to Mechanism C (§5):
+
+- **Two `serviceVersion` naming schemes in one estate.** §5.2 resolves declared-else-generated
+  per service, so one service may key on `1.4.2` while another keys on a hash. That is intended
+  (a port cannot force declaration), but a catalog rendering both needs a presentation rule — most
+  likely: show a shortened hash with an explicit "generated" affordance, never a bare hash that
+  reads like a name someone chose.
+- **What counts as the "default version" for absent-version routing.** §2.2 says the topic's
+  default is by convention the oldest still accepted, and §5.4 requires routing rules to encode
+  it. Nothing currently *declares* which version that is — it is a convention held in an operator's
+  head and duplicated into a routing rule. Candidate: an explicit marker on the descriptor, so the
+  mesh can show which version absent-version traffic actually lands on, and flag the case where two
+  live versions both believe they are the default.
+- **Where the version identity is applied.** §5.5 keys the collector by `(service, serviceVersion)`,
+  but every existing read model, artifact document and UI surface is keyed by service name alone
+  (`services/{name}.json`, the topic graph's node identity, issue fingerprints — mesh.md §4.1 —
+  which include `service` but not its version). Settle whether those become version-keyed, stay
+  service-keyed with version as an attribute, or split; doing this piecemeal per surface is how the
+  two identities drift apart.
+- **Retirement, and evidence for it.** §5.7 requires retirement to be an operator decision, and
+  mesh.md §4.2's declared-vs-observed layer already distinguishes a declared edge that no trace has
+  exercised. Confirm that signal is sufficient to answer "is anything still calling v1?" — it is the
+  question the whole mechanism eventually turns on, and the one an operator will not retire without.
+- **Conformance fixtures for sibling versions.** The collector cases currently register one
+  descriptor per service. Add cases pinning that two descriptors differing only in `serviceVersion`
+  produce two catalog entries rather than one overwriting the other (§5.3, row 2), and that two
+  differing only in `descriptorHash` under one declared version still report drift (row 3).
