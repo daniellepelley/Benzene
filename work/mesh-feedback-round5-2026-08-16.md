@@ -14,6 +14,9 @@ fallback is a **coordinated deployment**: several services shipped together, in 
 because one of them will break its counterpart otherwise. Working out which services those are,
 which order they go in, and whether the result is actually correct is the part teams get wrong.
 
+The re-test against the implemented answer is `work/mesh-feedback-round6-2026-08-16.md`; the design
+block between them is §D of `work/mesh-ui-product-vision.md`.
+
 Prior rounds: `work/mesh-feedback-round-2026-08-16.md` (read its correction block first),
 `work/mesh-feedback-round2-2026-08-16.md`, `work/mesh-feedback-round3-2026-08-16.md`. Round 4's
 findings are recorded in §C of `work/mesh-ui-product-vision.md`.
