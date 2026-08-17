@@ -109,7 +109,57 @@ state of an environment is a **fold** over these, never a mutated row.
 Three tenses, one type. That is the whole trick, and it is why this extends rather than forks the
 product.
 
-### 3.1 The fourth thing, which falls out for free
+### 3.1 Version order — DECIDED: versions are sortable
+
+**Maintainer decision, 2026-08-16: `version` is sortable.** Recorded here rather than left in §7,
+because a great deal rests on it and because it is the kind of requirement that is cheap to impose now
+and impossible to retrofit.
+
+**What it buys.** Four things, and the third is the one that matters most:
+
+1. A service's history is a **timeline** — newest first — without leaning on the build timestamp, which
+   is the wrong field for the job and is wrong in practice (rebuilt artifacts, clock skew, pipelines
+   finishing out of order).
+2. *"Production is four versions behind staging"* becomes answerable, which is most of what an
+   environment rank is for.
+3. **A composition diff can state a direction.** Pinning a service to another version is either an
+   **upgrade** or a **rollback**, and *difference alone cannot tell you which*. Without order the
+   planning view can only say "these differ" — which is a diff, not a plan. This is the requirement
+   that makes §4's question 3 answerable at all.
+4. **A "tip" composition is definable** — the newest build of every service. That is the natural
+   default starting point for a proposed composition, and it has no meaning without an order.
+
+**What it costs, and must be nailed down.** "Sortable" is not a specification; a comparator is.
+`"10"` versus `"9"` sorts one way as integers and the opposite way as strings, and two language ports
+that guess differently will disagree about which version is newer. So:
+
+- **The comparison rule is declared, from a small closed set** — `integer`, `semver`, `lexicographic` —
+  carried on the record, not inferred from the value. Three comparators, pinned by conformance
+  fixtures, identical in every port. Inferring the scheme from the string is the version of this
+  feature that fails silently.
+- **Order is only ever needed *within* one `serviceId`**, never across services. That is what makes a
+  per-service declared scheme completely safe, and it should be stated as a constraint so nobody
+  builds a global comparison that has no meaning.
+- **Order is not lineage.** It tells you which version is *later*, never which *contains* the other. A
+  hotfix `1.2.4` cut from a release branch while main is on `1.3.0` is correctly ordered and is not an
+  ancestor of anything. The product must not imply otherwise — "newer" is a fact, "supersedes" is not.
+- **`createdAtUtc` stays required.** It is a different fact, it is what the date/age rule renders, and
+  sortability does not replace it. Where the two **disagree** — version 5 built before version 4 —
+  that is a **finding**, not something to reconcile silently: it means an out-of-order pipeline, a
+  rebuilt artifact or a backdated tag, and any of those is worth telling somebody about.
+- **Mixed schemes within one service degrade honestly.** If a service switched from build numbers to
+  semver, versions either side of the switch **cannot be ordered against each other**, and the product
+  says exactly that rather than picking. This is the third state applied to an ordering.
+
+**One consequence for the spec.** `mesh.md` §2.4 currently treats the identity as an opaque non-empty
+string, and its case-2 fallback reads a substrate-assigned identifier — a published Lambda version
+(integer-like, orderable) or a Kubernetes ReplicaSet name (a hash, **not** orderable). So requiring
+sortability is a *tightening* of §2.4 that its own fallback cannot always satisfy. Two consequences
+follow: the amendment must be written as an additional property of a *declared* version rather than of
+all versions, and §2.4's *"operators SHOULD declare one per release"* gets materially stronger — an
+undeclared version now costs you the timeline, the direction and the tip, not just a nice label.
+
+### 3.2 The fourth thing, which falls out for free
 
 **observed vs recorded** is a diff between two compositions, so the engine already computes it. And it
 is the honest answer to a question the product currently cannot ask: *is the estate what we think it
@@ -144,6 +194,11 @@ Ranked by how often somebody will actually ask.
   `descriptorHash`, provenance. Extend `benzene-descriptor`; do not write a second extractor.
 - **R1.2** `version` is supplied by the pipeline (build number, tag, run id). The tool never invents it
   and never derives it from the contract.
+- **R1.2a** The record carries its **ordering scheme** — one of `integer`, `semver`, `lexicographic` —
+  declared, never inferred from the value. See §3.1: inferring it is the silent-failure version of this
+  feature.
+- **R1.2b** A declared `version` that does not parse under its declared scheme fails the build that
+  emitted it. This is the one place the error is cheap, and every later surface depends on it.
 - **R1.3** Emitting must continue to require no deploy, no network and no cloud. This already holds and
   is the property that makes the whole thing cheap to adopt.
 - **R1.4** Publishing a record for an existing `(serviceId, version)` with a *different*
@@ -191,6 +246,12 @@ Ranked by how often somebody will actually ask.
 - **R4.5** **The third state applies unchanged.** A service in the composition with no `ServiceVersion`
   record is **unknown**, never *compatible*. Every honesty rule from Waves A–E holds on the new plane:
   no claim of safety, dates with ages, planes never merged.
+- **R4.6** **A diff states its direction per service** — upgrade, rollback, unchanged, or
+  **not orderable** — using the declared scheme (§3.1). `not orderable` is a real outcome, not an
+  error: mixed schemes and undeclared versions both land there, and the product says so rather than
+  guessing which way a change is going.
+- **R4.7** Where version order and `createdAtUtc` order **disagree**, the report says so. It means an
+  out-of-order pipeline, a rebuilt artifact or a backdated tag, and it is a finding in its own right.
 
 ### R5 — The planning surface
 
@@ -247,9 +308,12 @@ Worth being explicit, because the proposal **retires** backlog rather than only 
 
 ## 7. Open questions — these need a maintainer decision before a plan
 
-1. **Is `version` sortable?** Ordering matters for *"prod is behind staging"*. Do we require a sortable
-   build identity, or always fall back to `createdAtUtc`? Requiring sortability is cheap now and
-   impossible later.
+1. ~~**Is `version` sortable?**~~ **DECIDED 2026-08-16: yes.** See §3.1 for what it buys, what it
+   obliges (a declared comparator from a closed set, not an inferred one), and the one place it
+   tightens `mesh.md` §2.4 beyond what that section's own fallback can always deliver. The remaining
+   sub-decision, if you want to settle it now: whether the default scheme for a service that declares
+   none is `integer` (matches "roughly a build number") or whether declaring the scheme is mandatory.
+   My recommendation is **mandatory** — a default here is a guess wearing a specification's clothes.
 2. **Who emits deployment records?** A `benzene-deploy` CLI, a pipeline task per platform, or does the
    spec define only the wire shape and leave emission to the operator? This decides how much of the
    work is Benzene's.
@@ -273,7 +337,7 @@ independently useful.
 | Phase | Content | Independently useful? |
 | --- | --- | --- |
 | **0** | Simplicity work on the current UI (R7.4 gate) | yes — it is the top complaint today |
-| **1** | `benzene-descriptor` stamps and publishes `ServiceVersion` records; catalogue store; spec section + fixtures | yes — a contract history with dates, and drift detection between builds |
+| **1** | `benzene-descriptor` stamps and publishes `ServiceVersion` records; catalogue store; the three comparators with conformance fixtures; spec section | yes — a contract history with dates **and an order**, and drift detection between builds |
 | **2** | `analyse(composition)`, pure, fixture-driven; today's estate views re-expressed as `analyse(observed)` (R4.2) | yes — removes a duplicate implementation and fixes obligation age |
 | **3** | Environments and deployment records; recorded-vs-observed drift | yes — answers "is prod what we think it is" |
 | **4** | Composition diff view; proposed compositions by override; ordering with the no-single-release outcome | yes — this is the planning product |
