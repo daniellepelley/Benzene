@@ -200,11 +200,16 @@
               "postcode": {
                 "type": "string",
                 "maxLength": 12
+              },
+              "country": {
+                "type": "string",
+                "maxLength": 2
               }
             },
             "required": [
               "line1",
-              "postcode"
+              "postcode",
+              "country"
             ]
           }
         },
@@ -219,7 +224,17 @@
       "changes": [
         {
           "kind": "schema-changed",
-          "description": "Payload schema changed (request)"
+          "description": "Payload schema changed (request)",
+          "schemaChanges": [
+            {
+              "kind": "requiredPropertyAdded",
+              "direction": "request",
+              "path": "shipping:book.request.address.country",
+              "description": "Property 'country' was added (required)",
+              "compatibility": "breaking"
+            }
+          ],
+          "compatibility": "breaking"
         }
       ]
     },
