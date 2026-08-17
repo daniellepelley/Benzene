@@ -26,6 +26,7 @@ consumes these files.
 | `mesh-collector-cases.json` | Collector ingest, validation, derivation, and degradation behavior (mesh §4–6) — required for ports that implement a collector |
 | `mesh-issue-cases.json` | Issue-feed collector behavior: `benzene:mesh:issues` ingest, fingerprint delta-merge, liveness/feed-absence derivation (mesh §4.1) — required only for collectors claiming the issue feed |
 | `mesh-service-version-cases.json` | Service-version identity: the catalog keyed by `(service, serviceVersion)`, so two releases side by side are two entries (mesh §2.4, §4) — required only for collectors claiming service-version identity |
+| `mesh-version-order-cases.json` | Service-version **order**: the declared comparison schemes, the not-orderable outcome, and parse rejection (mesh §2.5) — required only for ports that order service versions |
 | `contract-document-cases.json` | Contract Document parse/validate, topic-scope projection, and schema-closure behavior (contract-document.md §§1-5) — required for ports that ship a client generator |
 | `contract-hash-cases.json` | Exact `contractHash` values for the normalization + canonicalization + hash pipeline (contract-document.md §6) — required for ports that ship a client generator |
 
@@ -40,6 +41,7 @@ Which fixtures a given conformance claim requires
 | Collector implementations | additionally `mesh-collector-cases.json` (collector-only; not part of the profile) |
 | Issue-feed collectors | additionally `mesh-issue-cases.json` (optional feed, mesh §4.1; a collector without it stays collector-conformant) |
 | Service-version-aware collectors | additionally `mesh-service-version-cases.json` (mesh §2.4; a collector without it stays collector-conformant, because a descriptor that omits `serviceVersion` keys exactly as it always did) |
+| Service-version **ordering** | additionally `mesh-version-order-cases.json` (mesh §2.5; a port implementing §2.4 identity without §2.5 ordering stays service-version conformant) |
 | Client-generation conformance | `contract-document-cases.json` and `contract-hash-cases.json` — required only for a port that ships a client generator (contract-document.md); a port that never generates clients from the Contract Document is unaffected by these two fixtures, the same conditional shape as the collector fixtures above |
 
 At Core level the mesh fixtures apply only to ports that implement the optional mesh module

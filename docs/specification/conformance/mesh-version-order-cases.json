@@ -1,0 +1,161 @@
+{
+  "description": "Service-version ordering (mesh.md section 2.5). A pure-function fixture, not an envelope fixture: each case gives two declared service versions of ONE service and the exact outcome a conformant comparison MUST produce. Required only for ports that order service versions; a port implementing section 2.4 identity without section 2.5 ordering stays service-version conformant. The point of pinning this at all is that 'sortable' is not a specification and a comparator is — \"10\" and \"9\" order one way as integers and the opposite way as strings, so two ports that each infer a scheme will disagree about which release is newer inside a tool used to decide deployments. Hence: the scheme is declared and never inferred, there is no default, and the closed set is exactly integer/semver/lexicographic. `compare` cases assert the sign of comparing `left` against `right`: -1 (left is earlier), 0 (same position in the order), 1 (left is later), or the string \"not-orderable\" when the two carry different schemes. `parse` cases assert whether a value is valid under a declared scheme; an invalid one MUST be rejected where it is declared rather than carried and compared later. Ordering is defined only within one service, and order is not lineage — a later version is not thereby a superset, a successor, or safe to substitute.",
+  "compare": [
+    {
+      "name": "integer-orders-by-value-not-by-string",
+      "comment": "The case the whole fixture exists for. Lexicographically \"10\" < \"9\"; numerically 10 > 9. A port that infers the scheme from the value gets this backwards and reports a rollback as an upgrade.",
+      "scheme": "integer",
+      "left": "10",
+      "right": "9",
+      "expected": 1
+    },
+    {
+      "name": "integer-earlier-build-is-earlier",
+      "scheme": "integer",
+      "left": "41",
+      "right": "42",
+      "expected": -1
+    },
+    {
+      "name": "integer-same-build-is-same-position",
+      "comment": "Same position in the order. NOT an assertion that the two are the same version — section 2.4 is explicit that identity is extrinsic and that two releases may declare byte-identical contracts.",
+      "scheme": "integer",
+      "left": "42",
+      "right": "42",
+      "expected": 0
+    },
+    {
+      "name": "integer-ignores-leading-zeros",
+      "comment": "A zero-padded build number from a pipeline that formats its counter. Numerically equal, so equal in the order.",
+      "scheme": "integer",
+      "left": "0042",
+      "right": "42",
+      "expected": 0
+    },
+    {
+      "name": "integer-is-arbitrary-precision",
+      "comment": "Build counters outrun 64-bit signed integers in no real pipeline, but a comparator that silently overflows is worse than one that refuses, so the required behaviour is stated rather than left to the port's integer width.",
+      "scheme": "integer",
+      "left": "99999999999999999999999999",
+      "right": "99999999999999999999999998",
+      "expected": 1
+    },
+    {
+      "name": "semver-orders-by-precedence",
+      "scheme": "semver",
+      "left": "1.3.0",
+      "right": "1.2.4",
+      "expected": 1
+    },
+    {
+      "name": "semver-minor-outranks-patch",
+      "scheme": "semver",
+      "left": "1.2.10",
+      "right": "1.3.0",
+      "expected": -1
+    },
+    {
+      "name": "semver-prerelease-is-earlier-than-its-release",
+      "comment": "SemVer 2.0.0 section 11: a pre-release version has lower precedence than the normal version it precedes.",
+      "scheme": "semver",
+      "left": "1.3.0-rc.1",
+      "right": "1.3.0",
+      "expected": -1
+    },
+    {
+      "name": "semver-prerelease-numeric-identifiers-compare-numerically",
+      "comment": "rc.10 is later than rc.9 — the same digits-versus-string trap as the integer scheme, one level down.",
+      "scheme": "semver",
+      "left": "1.3.0-rc.10",
+      "right": "1.3.0-rc.9",
+      "expected": 1
+    },
+    {
+      "name": "semver-build-metadata-is-ignored-in-precedence",
+      "comment": "SemVer 2.0.0 section 10: build metadata is ignored when determining precedence. Two builds differing only in metadata occupy the same position in the order — which is exactly why order is not identity.",
+      "scheme": "semver",
+      "left": "1.3.0+build.55",
+      "right": "1.3.0+build.7",
+      "expected": 0
+    },
+    {
+      "name": "lexicographic-compares-by-codepoint",
+      "scheme": "lexicographic",
+      "left": "2026-08-16T09-00",
+      "right": "2026-08-15T23-00",
+      "expected": 1
+    },
+    {
+      "name": "lexicographic-does-not-rescue-numbers",
+      "comment": "Under `lexicographic` the string answer IS the right answer, because that is what the operator declared. The scheme is a promise about how the values were minted, not a hint to be second-guessed.",
+      "scheme": "lexicographic",
+      "left": "10",
+      "right": "9",
+      "expected": -1
+    },
+    {
+      "name": "mixed-schemes-are-not-orderable",
+      "comment": "A service that switched from build numbers to SemVer has a real discontinuity in its history. Ordering across it would be a claim no data supports, so the outcome is reported rather than guessed. A normal outcome, not an error.",
+      "leftScheme": "integer",
+      "left": "42",
+      "rightScheme": "semver",
+      "right": "1.3.0",
+      "expected": "not-orderable"
+    },
+    {
+      "name": "mixed-schemes-are-not-orderable-even-when-both-values-parse-as-integers",
+      "comment": "Both values would parse under either scheme. It is still not orderable: the schemes disagree, and agreeing by accident on one pair of values is not an order.",
+      "leftScheme": "integer",
+      "left": "10",
+      "rightScheme": "lexicographic",
+      "right": "9",
+      "expected": "not-orderable"
+    },
+    {
+      "name": "an-undeclared-scheme-is-not-orderable",
+      "comment": "mesh.md section 2.5: there is no default scheme. A serviceVersion declared without one is an identity, not a position in an order, and a port MUST NOT invent a comparison for it.",
+      "leftScheme": null,
+      "left": "42",
+      "rightScheme": null,
+      "right": "43",
+      "expected": "not-orderable"
+    }
+  ],
+  "parse": [
+    { "name": "integer-accepts-digits", "scheme": "integer", "value": "42", "valid": true },
+    { "name": "integer-accepts-zero", "scheme": "integer", "value": "0", "valid": true },
+    { "name": "integer-rejects-negative", "scheme": "integer", "value": "-1", "valid": false },
+    { "name": "integer-rejects-separators", "scheme": "integer", "value": "1_042", "valid": false },
+    { "name": "integer-rejects-decimal", "scheme": "integer", "value": "4.2", "valid": false },
+    { "name": "integer-rejects-empty", "scheme": "integer", "value": "", "valid": false },
+    {
+      "name": "integer-rejects-a-semver-value",
+      "comment": "The build that declared this is the cheapest place in the system to catch it. Carrying it and discovering the mismatch at comparison time means the wrong answer reaches a reader.",
+      "scheme": "integer",
+      "value": "1.3.0",
+      "valid": false
+    },
+    { "name": "semver-accepts-a-release", "scheme": "semver", "value": "1.3.0", "valid": true },
+    { "name": "semver-accepts-a-prerelease", "scheme": "semver", "value": "1.3.0-rc.1", "valid": true },
+    { "name": "semver-accepts-build-metadata", "scheme": "semver", "value": "1.3.0+build.55", "valid": true },
+    { "name": "semver-rejects-a-partial-version", "scheme": "semver", "value": "1.3", "valid": false },
+    { "name": "semver-rejects-a-leading-v", "scheme": "semver", "value": "v1.3.0", "valid": false },
+    { "name": "semver-rejects-leading-zeros-in-a-numeric-identifier", "scheme": "semver", "value": "1.03.0", "valid": false },
+    { "name": "semver-rejects-a-bare-build-number", "scheme": "semver", "value": "42", "valid": false },
+    { "name": "lexicographic-accepts-any-non-empty-string", "scheme": "lexicographic", "value": "2026-08-16T09-00", "valid": true },
+    {
+      "name": "lexicographic-rejects-empty",
+      "comment": "An empty serviceVersion is section 2.4 case 3 — no declared version at all — not a version that happens to be blank.",
+      "scheme": "lexicographic",
+      "value": "",
+      "valid": false
+    },
+    {
+      "name": "an-unknown-scheme-is-rejected",
+      "comment": "The set is closed. A port meeting a scheme it does not know MUST reject it rather than fall back to string comparison, because a silent fallback is indistinguishable from a correct answer.",
+      "scheme": "calver",
+      "value": "2026.08",
+      "valid": false
+    }
+  ]
+}
