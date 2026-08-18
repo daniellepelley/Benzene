@@ -5,6 +5,10 @@ landing and the experience is not. This is a design diagnosis and a direction, n
 three design agents created alongside it (`mesh-ux-designer`, `mesh-visual-designer`,
 `mesh-ux-critic`) are the mechanism for turning it into one.
 
+> **Superseded as a decision instrument by `work/mesh-ui-aims.md` (2026-08-18)**, which carries this
+> file's principle forward as rules R6/R8 and its ranked moves 1–5 into the screen rulings. Kept
+> because the diagnosis and the counts here are the evidence behind those rules.
+
 ---
 
 ## The diagnosis

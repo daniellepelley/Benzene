@@ -4,6 +4,12 @@
 > blocks at the top (oldest→newest) that flag deviations rather than rewriting
 > history. Cross-reference `work/service-mesh-roadmap-1.0.md` (same owner)
 > by section number when a UI need depends on the data layer.
+>
+> **2026-08-18 — `work/mesh-ui-aims.md` is now the authority on *what the mesh UI is for*.** It
+> distils the standing rulings in this file (§1, §2, §4, §5, §C5, §D8, §D9, §E8) plus
+> `work/mesh-ui-design-simplicity.md` into six aims, one question per screen, the exclusions and the
+> non-negotiable rules — the form a screen can be checked against. This file keeps the history and
+> the reasoning; where the two disagree, the aims doc wins. New refinement rounds still land here.
 
 ---
 
