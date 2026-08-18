@@ -86,15 +86,21 @@ app.UseAwsLambda(events => events
     .UseEventBridge(bus => bus.UseMessageHandlers())); // topic from detail-type
 
 [Message("tenant:created")]
-public class SendWelcomeEmailOnTenantCreated : IMessageHandler<TenantCreated>
+public class SendWelcomeEmailOnTenantCreated : IMessageHandler<TenantCreated, Reacted>
 {
-    public async Task<IBenzeneResult> HandleAsync(TenantCreated message) { /* react */ }
+    public async Task<IBenzeneResult<Reacted>> HandleAsync(TenantCreated message) { /* react */ }
 }
 ```
 
 Adding a second reaction is adding a second handler in a second service that subscribes to the same
 topic. The emitter is untouched, and never learns the reaction exists — that decoupling is the whole
 point of choreographing.
+
+Use the request/response handler interface even though nobody reads the response: on a queue-shaped
+transport the handler's **result status** is what settles the delivery — success acks, failure nacks
+and the broker redelivers. The single-generic `IMessageHandler<TRequest>` returns a plain `Task` and
+so has no way to say "this did not work", which on an at-least-once transport means a failed
+reaction is acked and lost.
 
 ### Events from non-Benzene producers
 
