@@ -51,29 +51,35 @@ app.UseAwsLambda(events => events
         .UseMessageHandlers()));
 
 [Message("tenant:created")]
-public class ProjectTenant : IMessageHandler<TenantCreated>
+public class ProjectTenant : IMessageHandler<TenantCreated, Projected>
 {
     private readonly IReadStore _view;                        // this service's OWN denormalized store
     public ProjectTenant(IReadStore view) => _view = view;
-    public async Task<IBenzeneResult> HandleAsync(TenantCreated e)
+    public async Task<IBenzeneResult<Projected>> HandleAsync(TenantCreated e)
     {
         await _view.UpsertTenantAsync(e.TenantId, e.CompanyName);   // idempotent upsert
-        return BenzeneResult.Ok();
+        return BenzeneResult.Ok(new Projected());
     }
 }
 
 [Message("user:created")]
-public class ProjectUserOntoTenant : IMessageHandler<UserCreated>
+public class ProjectUserOntoTenant : IMessageHandler<UserCreated, Projected>
 {
     private readonly IReadStore _view;
     public ProjectUserOntoTenant(IReadStore view) => _view = view;
-    public async Task<IBenzeneResult> HandleAsync(UserCreated e)
+    public async Task<IBenzeneResult<Projected>> HandleAsync(UserCreated e)
     {
         await _view.AddUserToTenantAsync(e.TenantId, e.UserId, e.Email);  // the join the write side can't do
-        return BenzeneResult.Ok();
+        return BenzeneResult.Ok(new Projected());
     }
 }
 ```
+
+> **Handler shape.** This uses `IMessageHandler<TRequest, TResponse>` even though nothing reads the
+> response. On a queue- or stream-shaped transport the handler's result **status** is what settles
+> the delivery — success acks, failure nacks and the source redelivers — while the single-generic
+> `IMessageHandler<TRequest>` returns a plain `Task` and so has no way to say "this did not work".
+> The response type is a marker; its status is the whole of its job.
 
 The projection service is **still share-nothing** — it owns its read store, no one else touches it.
 What it relaxes is the *shape*: it deliberately co-locates data from several aggregates (`tenant` and

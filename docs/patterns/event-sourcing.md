@@ -87,14 +87,20 @@ app.UseAwsLambda(events => events
         .UseMessageHandlers()));
 
 [Message("ledger:INSERT")]                 // a newly-appended event, in shard order
-public class ProjectBalance : IMessageHandler<AccountEvent>
+public class ProjectBalance : IMessageHandler<AccountEvent, Projected>
 {
     private readonly IReadStore _view;
     public ProjectBalance(IReadStore view) => _view = view;
-    public Task<IBenzeneResult> HandleAsync(AccountEvent e)
+    public Task<IBenzeneResult<Projected>> HandleAsync(AccountEvent e)
         => _view.ApplyAsync(e);            // fold the event into the read model
 }
 ```
+
+> **Handler shape.** This uses `IMessageHandler<TRequest, TResponse>` even though nothing reads the
+> response. On a queue- or stream-shaped transport the handler's result **status** is what settles
+> the delivery — success acks, failure nacks and the source redelivers — while the single-generic
+> `IMessageHandler<TRequest>` returns a plain `Task` and so has no way to say "this did not work".
+> The response type is a marker; its status is the whole of its job.
 
 Because DynamoDB Streams are **shard-ordered and processed sequentially, resuming from the first
 failed record**, events project **in order, at least once** — exactly what a ledger needs. The read

@@ -59,20 +59,26 @@ app.UseAwsLambda(events => events
     .UseDynamoDb(cdc => cdc.UseMessageHandlers()));
 
 [Message("orders:INSERT")]                         // table "orders", a new item
-public class PublishOrderCreated : IMessageHandler<OrderRow>
+public class PublishOrderCreated : IMessageHandler<OrderRow, Published>
 {
     private readonly IBenzeneMessageSender _sender;
     public PublishOrderCreated(IBenzeneMessageSender sender) => _sender = sender;
 
-    public async Task<IBenzeneResult> HandleAsync(OrderRow row)
+    public async Task<IBenzeneResult<Published>> HandleAsync(OrderRow row)
     {
         // The row is the committed NewImage, unmarshalled to a plain object.
         var evt = new OrderCreated { OrderId = row.Id, Total = row.Total };
         await _sender.SendAsync<OrderCreated, Void>("order:created", evt);   // → EventBridge/SNS
-        return BenzeneResult.Ok();
+        return BenzeneResult.Ok(new Published());
     }
 }
 ```
+
+> **Handler shape.** This uses `IMessageHandler<TRequest, TResponse>` even though nothing reads the
+> response. On a queue- or stream-shaped transport the handler's result **status** is what settles
+> the delivery — success acks, failure nacks and the source redelivers — while the single-generic
+> `IMessageHandler<TRequest>` returns a plain `Task` and so has no way to say "this did not work".
+> The response type is a marker; its status is the whole of its job.
 
 What Benzene gives you here:
 
