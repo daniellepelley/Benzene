@@ -133,7 +133,69 @@ Rules for feature authors:
   consumer sides in the same release.
 - A new status, header, or attribute convention MUST tolerate unknown values from services that
   extended the vocabulary — reject-on-unknown breaks the extensibility promise.
-- Sugar (attributes, scanning, builder shorthands) MUST have an explicit, idiom-free equivalent.
+- Sugar (attributes, scanning, builder shorthands) MUST have an explicit, idiom-free equivalent
+  (see §4.1, which states the obligations that run the *other* way).
+
+### 4.1 The shorthand ladder: what a steer costs in code
+
+Section 1 says every steer can be declined. This section says the other half: **taking a steer
+must be cheap, and the cheap path must not cost you the ability to see what it did.**
+
+Both failures are real, and a framework usually has one or the other:
+
+| Failure | What the user experiences |
+|---|---|
+| Too much ceremony | They write the framework's job — building hosts, wiring transports, constructing pipelines. Intent drowns in plumbing, and every service re-derives the same twenty lines slightly differently. |
+| Too much magic | They cannot predict what will happen, cannot override it, cannot drop a level when they need to, and find out it was wrong at message time in production. |
+
+The way out is not a compromise between them. It is a **ladder**, and the framework owes both ends
+of it.
+
+**Every capability MUST have an explicit form.** Every step visible, nothing inferred. This is the
+contract; the shorthand is a convenience over it.
+
+**Every capability a service needs *routinely* MUST have a shorthand.** A capability that exists
+only in explicit form is unfinished, not minimal. The existing rule ("sugar must have an explicit
+equivalent") is only half a policy — on its own it permits a framework with no sugar at all.
+
+**A shorthand MUST be composed from the public explicit form, never parallel to it.** This is the
+whole anti-magic guarantee, and it is testable three ways:
+
+1. A user could have written the shorthand themselves, in their own code, using only public API.
+2. From any rung you can drop **exactly one level** down and keep going — never zero, never all the
+   way to the bottom.
+3. Every rung you land on is public, documented API — not an internal type you were not meant to see.
+
+A shorthand that can do something no composition of public API can do has taken a capability
+hostage. That is the line between *convenience* and *magic*, and it does not move.
+
+**The price of a convention is a start-up check.** Inference — assembly or module scanning,
+attribute/decorator discovery, convention-over-configuration, "it just found it" — is permitted
+exactly to the degree that it is **verified before any message is handled**, and the failure
+**names what was looked for, where, and what to add**. The cost of magic was never the inference;
+it was *finding out late*. A convention that can first fail on the message path has not paid for
+itself.
+
+**The ladder MUST be visible from the top.** A shorthand's documentation MUST name the explicit
+form it composes. An escape hatch nobody can find is, from the user's seat, indistinguishable from
+no escape hatch — and the user will conclude the framework cannot do the thing.
+
+**What a steer should cost:** declaration, not wiring. A service's own code should read as *what it
+handles, what it talks to, and what it needs* — and contain approximately nothing else. Building a
+host, mounting a transport, and assembling a pipeline are the framework's work, not the service's.
+
+#### Examples are where this is proved
+
+Example and sample code is the only place these claims are actually tested, so it is held to a
+stricter rule than production code:
+
+- **Every line is domain or intent.** A line that is neither is one of two things: a missing
+  shorthand — which is a **framework** bug, not an example bug — or a deliberate demonstration of
+  the explicit form, which MUST say so in a comment. There is no third category, and "that is just
+  the setup you have to write" is the first category wearing a disguise.
+- **Duplicated plumbing across examples is a framework bug.** When two examples hand-roll the same
+  adapter, that is a missing seam, and the count is the evidence: the second copy is a signal, the
+  third is a backlog item. Copying it a fourth time is choosing not to fix it.
 
 ## 5. The default service standard
 
