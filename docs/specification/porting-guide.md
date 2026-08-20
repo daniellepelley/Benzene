@@ -60,16 +60,23 @@ nothing to design.
 
 ## 3. Conformance testing
 
-A language-neutral test suite that every implementation runs:
+**A port is "Benzene" when it passes the fixtures.** That is the whole gate today, and it is a real
+one — API shape is explicitly not part of conformance, so the fixtures are the only thing a port is
+measured against.
 
-- **Fixture form** (exists — see [conformance/](conformance/README.md)): JSON fixtures for the
-  status vocabulary, the HTTP/gRPC mapping tables in both directions, and end-to-end envelope
-  cases run against a canonical handler set. The .NET reference runner is
-  `test/Benzene.Conformance.Test/`; a port writes its own runner over the same files.
-- **Interop form** (future): a docker-composed pair — reference .NET service + candidate
-  implementation — exercising envelope round-trips, correlation/trace propagation, and the
-  `benzene-status` trailer over real transports.
-- A port is "Benzene" when it passes both; API shape is explicitly not part of conformance.
+- **Fixture form** — the gate. JSON fixtures (see [conformance/](conformance/README.md)) for the
+  status vocabulary, the HTTP/gRPC mapping tables in both directions, the problem document, and
+  end-to-end envelope cases run against a canonical handler set. A port vendors a snapshot of the
+  canonical files with the spec commit it came from, CI-checks that snapshot against this
+  repository, and writes its own runner over them. `test/Benzene.Conformance.Test/` in
+  benzene-dotnet is the reference for how a runner consumes the files — not a reference the port
+  is compared against.
+- **Interop form** — *proposed, not built, and not a gate*: a docker-composed pair — two Benzene
+  services in different languages — exercising envelope round-trips, correlation/trace propagation,
+  and the `benzene-status` trailer over real transports. No such harness exists in any repository.
+  It would close a real gap the fixtures cannot reach (each port is verified against the fixtures
+  in isolation, so a shared misreading of a fixture would pass everywhere), but until it is built
+  and adopted deliberately, **no port's conformance claim depends on it**.
 
 Conformance comes in two levels ([cloud-service-profile.md](cloud-service-profile.md)): the
 fixtures above establish **Benzene Core**. A port that also wants its services to claim the
