@@ -46,6 +46,38 @@ They are recorded because they are the actual argument for verifying over readin
    deliberate ruling, not as a resolved gap. And the `_benzeneHeaders` rename would *not* turn any
    drift-check red, because no fixture pins the key — see P3.
 
+## Wave 2: delivered 2026-08-20
+
+Landed: go `5718e66` · python `b866520`, `9901bb7` · typescript `4c987e9`, `409ddcc`.
+
+**Closed:** P1.6 (gRPC structured errors, all three ports) · P1.7 (Python Contract Document, with the
+probe and poller now reading both shapes) · P1.8 (TypeScript `benzene:` prefix, ~118 files).
+
+**Still open:** P0.4 · P0.5 and publishing · P1.1 and P1.2 · all of P3 · plus the three spec
+questions below, which wave 2 raised rather than resolved.
+
+### What wave 2 established
+
+- **The TypeScript interop break was real, and had corroborating evidence nobody had noticed.** The
+  vendored Mesh UI — built from `benzene-ui`, shipped in this repo — sends `benzene:mesh:query:fleet`
+  and `benzene:mesh:dispatch`. It could never have driven this port's own collector, which answered
+  bare ids. The conformance suite hid it by stripping the prefix before dispatch; the shipped UI had
+  been failing against it the whole time.
+- **No compatibility shim, deliberately.** A shim would make the port *look* interoperable while
+  leaving the caller broken against the other three — the exact asymmetry the prefix removes. Every
+  reserved topic is already an explicit argument, so a deployment needing a legacy bare id passes it
+  as an alias at its own composition root.
+- **TypeScript's "protobuf-only" gRPC deferral did not survive examination.** grpc-js ships no
+  `google.rpc` types and no notion of `grpc-status-details-bin` at all, but the four messages
+  involved are tiny and frozen and use two of proto3's five wire types. Hand-encoded, no new
+  dependency, unknown fields skipped by wire type so another port's `Status` decodes cleanly. The
+  brief explicitly permitted "conclude it can't be done and stop" — the agent investigated and
+  concluded otherwise, which is the outcome that instruction was there to make possible either way.
+- **Both new encoders were verified against something other than themselves.** TypeScript decoded its
+  emitted bytes with `protobufjs` (an independent implementation), and Python read its trailer back
+  through gRPC's own `rpc_status.from_call`, which rejects a code/message mismatch. Testing an
+  encoder against its own decoder proves only that it is self-consistent.
+
 ## Why this document exists
 
 The audit's headline result is not any single defect. It is that **roughly 75 documents across the
@@ -346,6 +378,12 @@ on every port, which §4.2 does not currently do for anything else. The alternat
 `ErrorInfo.Reason` (a different detail type, no version floor problem, but it means attaching a
 second detail message), or leaving `code` off gRPC and saying so explicitly in §4.2 so that
 producers know not to depend on it there.
+
+All three ports independently confirmed `reason` exists in their own stubs (Go's 2026 genproto,
+Python's googleapis-common-protos 1.75.1, and TypeScript reading the `.proto`, where it was added in
+2022). Note the discrepancy that makes the version-floor point concrete: the field has been in
+`error_details.proto` since 2022, yet Go's 2024-09 generated stub does not carry it. Stub vintage,
+not proto vintage, is what a port is actually limited by.
 
 Incidental, worth a look but not urgent: benzene-go's `grpcbinding/go.mod` pins the 2024 version
 while the `go.work` workspace resolves the 2026 one, so the module compiles against a different
