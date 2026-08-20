@@ -88,9 +88,15 @@ internal static class MarketingContent
     /// no-cloud-account claim.
     /// </para>
     /// </summary>
+    /// <remarks>
+    /// <see cref="InstallNote"/> is optional raw HTML rendered directly under the install line —
+    /// the honesty caveat for a port whose packages aren't installable yet. The first pasteable
+    /// command a visitor sees must not fail silently; if it can't work today, the tab says so.
+    /// </remarks>
     public sealed record LanguageStart(
         string Id, string Label, bool Beta, string Install, string Code, string RepoUrl,
-        string DocsOutputPath, string? TestCode = null, string? QuickstartOutputPath = null);
+        string DocsOutputPath, string? TestCode = null, string? QuickstartOutputPath = null,
+        string? InstallNote = null);
 
     public static readonly LanguageStart[] Languages =
     [
@@ -144,8 +150,11 @@ internal static class MarketingContent
             "https://github.com/daniellepelley/benzene-go",
             "go/docs/index.html"),
 
+        // Install line matches benzene-typescript's docs/getting-started.md (the real
+        // @benzenejs/* workspace package names), with the same "not on npm yet" caveat that
+        // guide carries — the command must not promise more than the registry delivers.
         new("typescript", "TypeScript", true,
-            "npm install @benzene/express @benzene/core-message-handlers @benzene/http @benzene/results",
+            "npm install @benzenejs/express @benzenejs/core-message-handlers @benzenejs/http @benzenejs/results",
             """
             @httpEndpoint("POST", "/greet")
             @message("greet", { requestType: GreetRequest, responseType: GreetResponse })
@@ -159,7 +168,11 @@ internal static class MarketingContent
             app.use(benzene((pipeline) =&gt; useMessageHandlers(pipeline, GreetHandler)));
             """,
             "https://github.com/daniellepelley/benzene-typescript",
-            "typescript/docs/index.html"),
+            "typescript/docs/index.html",
+            InstallNote: "The <code>@benzenejs/*</code> packages aren't published to npm yet, so this "
+                + "command won't resolve today &mdash; it's the package set you'll install once they "
+                + "ship. Until then, build inside the repo's npm workspace; the getting-started guide "
+                + "in the docs shows how."),
 
         // Snippet taken from benzene-python's own README rather than written for the site, so the
         // code on this page is something that actually runs against the shipped packages.

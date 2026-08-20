@@ -599,6 +599,11 @@ internal static class Layout
         var panels = string.Join("\n", langs.Select(l =>
         {
             var docs = RepoPaths.RelativeHref(outputPath, l.DocsOutputPath);
+            // An install caveat (e.g. "not on npm yet") sits directly under the install line it
+            // qualifies, so the command and its caveat are never separated by the code snippet.
+            var installNote = l.InstallNote is null
+                ? ""
+                : $"<p class=\"beta-note\">{l.InstallNote}</p>";
             var betaNote = l.Beta
                 ? "<p class=\"beta-note\">Early port &mdash; the API is still settling. See the repo for the current state.</p>"
                 : "";
@@ -624,6 +629,7 @@ internal static class Layout
             return $$"""
                 <div class="gs-panel" data-lang="{{l.Id}}">
                   <p class="gs-install"><code>{{Html(l.Install)}}</code></p>
+                  {{installNote}}
                   <pre><code>{{l.Code}}</code></pre>
                   {{betaNote}}
                   {{testBlock}}
