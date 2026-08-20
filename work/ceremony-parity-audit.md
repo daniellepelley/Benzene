@@ -197,3 +197,40 @@ survives the HTTP hop too.
 
 **The rule this adds:** a required wire member that no runner checks is a member the port may simply
 not have. Check the *envelope*, not just the body.
+
+---
+
+## 7. "Can a validator say which field failed?" — **closed, 2026-08-20**
+
+§5 gave every port a result that *can* carry a field and a code. This is the other half: whether the
+things that actually produce validation errors bother to fill them in. Mostly they did not, and the
+information was there all along.
+
+| Port | Adapter | Before | After |
+|---|---|---|---|
+| .NET | FluentValidation, DataAnnotations, JsonSchema | `BenzeneError` with Field/Code | unchanged |
+| TypeScript | ajv | JSON Pointer **glued onto the message text** | `field` + `code` |
+| TypeScript | zod, joi, yup | message only; path and rule discarded | `field` + `code` |
+| Python | pydantic | `"field: message"` glued into one string | `field` + `code` |
+| Go | `validation.Validator[T]` | `[]string` — nowhere to put either | `[]benzene.Error` |
+
+Every one of these libraries hands its adapter the message, the location, and the rule identifier.
+Six of the eight adapters kept the message and dropped the rest — pydantic's `loc`/`type`, ajv's
+`instancePath`/`keyword`, zod's `path`/`code`, joi's `path`/`type`, yup's `path`/`type`. TypeScript's
+own `JsonSchemaValidationErrors` is documented as a port of .NET's `Format`, and had ported the
+shape that predated structured errors.
+
+`"/name: must NOT have more than 5 characters"` is a string to print. `{field: "/name", code:
+"maxLength"}` is an error a UI can attach to an input and a client can branch on. Nothing here
+needed new plumbing — `BenzeneError` and the union-accepting factories already existed in every
+port. The adapters simply had not been brought across.
+
+**The rule, settled here so the next adapter follows it:** `field` is the validator's own path,
+verbatim — the same rule .NET already followed, where FluentValidation arrives dotted and JsonSchema
+arrives as a pointer. Where a validator reports a path as an array with no native string form (zod,
+joi), render a JSON Pointer, RFC 6901-escaped; that is wire-contracts §1.3's tie-breaker for a
+schema-based validator with no opinion of its own.
+
+Go took the shape its language allows again: no overloads, so instead of a second interface and a
+type switch, `Messages()` adapts a plain `[]string` validator in one call and the interface itself
+is structured.
