@@ -323,8 +323,34 @@ is a plausible fit but is not named by the spec.
 
 Wave 2 therefore drops `code` on the gRPC hop in all three ports, deliberately and consistently.
 So today: `code` survives HTTP, and does not survive gRPC, in every port. That is a real gap in the
-mapping, not an implementation shortfall — the three agents were told to report whether their
-runtime exposes `reason` so the question can be settled with facts.
+mapping, not an implementation shortfall.
+
+**The facts, now gathered (Go, verified directly).** `BadRequest.FieldViolation` grew two fields
+between the 2024 and 2026 vintages of `genproto/googleapis/rpc`:
+
+| Field | no. | 2024-09 pin | 2026-06 resolved |
+|---|---|---|---|
+| `field` | 1 | yes | yes |
+| `description` | 2 | yes | yes |
+| `reason` | 3 | **no** | yes |
+| `localized_message` | 4 | **no** | yes |
+
+So `reason` is a plausible home for `code`, but **not a free one**: a port pinned to an older
+generated stub cannot read or write it through the struct at all. On the wire it degrades safely —
+field 3 is preserved as an unknown field by an older reader rather than rejected — so a newer
+producer never breaks an older consumer. The cost lands on the *reader* side, and it is a version
+floor, not a compatibility break.
+
+That reframes the ruling. Choosing `reason` means the spec imposes a minimum protobuf-stub vintage
+on every port, which §4.2 does not currently do for anything else. The alternatives are
+`ErrorInfo.Reason` (a different detail type, no version floor problem, but it means attaching a
+second detail message), or leaving `code` off gRPC and saying so explicitly in §4.2 so that
+producers know not to depend on it there.
+
+Incidental, worth a look but not urgent: benzene-go's `grpcbinding/go.mod` pins the 2024 version
+while the `go.work` workspace resolves the 2026 one, so the module compiles against a different
+stub standalone than it does in-workspace. Harmless today because nothing references `reason`, and
+worth knowing before anything does.
 
 Until §4.2 answers this, a producer that relies on `code` reaching a consumer cannot use gRPC.
 
