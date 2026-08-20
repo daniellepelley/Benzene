@@ -20,9 +20,6 @@ on:
       - 'README.md'
       - 'website/**'
       - '.github/workflows/deploy-website.yml'
-  # The site is built from the language repos' main branches at run time, so a docs fix over there
-  # needs a way to rebuild this site without an empty commit here.
-  workflow_dispatch:
   repository_dispatch:
     types: [dotnet-docs-updated, port-docs-updated]
   workflow_dispatch:
