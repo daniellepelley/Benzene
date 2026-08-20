@@ -255,5 +255,14 @@ is structured.
   question worth answering: should a failure from a *Benzene* peer over the HTTP client carry that
   peer's `errors`, and if so, how does the client know the peer is one?
 
+- **Attaching the *received* problem document.** .NET's envelope client does more than read a peer's
+  `errors`: it attaches the document it received to the result, so `result.GetProblem()` returns
+  exactly what the peer sent rather than one synthesized from the status. That matters when the peer
+  authored its own `type` URI — the thing `ProblemResult`/`Result.problem` exists to let a service
+  do. Go and Python now carry the peer's `errors` but re-derive everything else, so an
+  application-owned `type` still dies at the first hop *inbound*, even though it survives outbound.
+  A small, well-shaped addition rather than a defect, and new public API on two ports — worth an
+  owner's decision rather than being added in passing.
+
 - **`mesh-service-version-cases.json` is vendored by all four ports and run by none.** A claim
   decision per port (§4), not a defect. Recorded so it stays a decision.
