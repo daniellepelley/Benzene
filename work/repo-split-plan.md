@@ -1,8 +1,11 @@
 # Repo split & multi-language website — plan
 
-**Status:** planning (not yet actioned). This is the tracked, phase-by-phase checklist.
-The exact file-level move/stay split lives in the companion **[repo-split-manifest.md](repo-split-manifest.md)** —
-review that before Phase 1 creates anything in the new repo.
+**Status: EXECUTED — every phase is done.** This was the tracked, phase-by-phase checklist; it is
+now a record of what was carried out. Execution is logged phase by phase in
+**[repo-split/STATUS.md](repo-split/STATUS.md)**, and the split went further than this page plans
+for: there are now four language repos (`benzene-dotnet`, `benzene-go`, `benzene-typescript`,
+`benzene-python`), each with a conformance drift-check, plus `benzene-ui` for the shared UI.
+The exact file-level move/stay split lives in the companion **[repo-split-manifest.md](repo-split-manifest.md)**.
 
 ## Goal
 

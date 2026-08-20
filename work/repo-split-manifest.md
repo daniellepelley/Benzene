@@ -1,8 +1,11 @@
 # Repo split — Phase 1 file-move manifest
 
 Companion to **[repo-split-plan.md](repo-split-plan.md)**. This is the exact, reviewable split of
-what goes to **`benzene-dotnet`** (MOVE) vs stays in **`benzene`** (STAY), as of the current tree.
-Nothing is created or deleted yet — this is the artifact to sign off before Phase 1.
+what went to **`benzene-dotnet`** (MOVE) vs stayed in **`benzene`** (STAY).
+
+**The split has been executed** — see [repo-split/STATUS.md](repo-split/STATUS.md). This page reads
+in the future tense because it was the artifact signed off *before* Phase 1; it is kept as the
+record of what was agreed, not as a list of moves still to make.
 
 > **Guiding principle (maintainer, confirmed):** this is a **best-endeavors** split, not a
 > perfect one. **Duplication across the two repos is acceptable** and gets reconciled over time.
