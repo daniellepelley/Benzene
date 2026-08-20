@@ -1,16 +1,14 @@
 # Patterns
 
-Recurring ways of composing Benzene's **core building blocks** — topics, message handlers, the
-middleware pipeline, results, and per-invocation scopes ([core-concepts.md](../specification/core-concepts.md)) —
-into real services, and whole systems of services. A pattern here is not part of the normative
-[specification](../specification/index.md) and it is not a feature of any one language: it is a
-*shape* that falls out of the core model and reads the same whether the service is written in .NET,
-Go, TypeScript, or Python.
+Proven shapes for building Benzene services — and whole systems of them — out of the same few
+parts: topics, message handlers, the middleware pipeline, results, and per-invocation scopes
+(defined in [core-concepts.md](../specification/core-concepts.md)). Patterns aren't part of the
+normative [specification](../specification/index.md), and they aren't tied to a language: each one
+reads the same in .NET, Go, TypeScript, or Python.
 
-Each pattern explains the *idea* and when to reach for it. **How to express it** — the exact API,
-the package, the attribute or the registration call — is language-specific and lives in that port's
-own docs; where a pattern shows a concrete call it is marked *(informative, .NET)* and the shape,
-not the syntax, is the point.
+Each pattern explains the idea and when to reach for it. The exact API — the package, the
+attribute, the registration call — lives in each port's own docs; where a pattern shows a concrete
+call it is marked *(informative, .NET)*, and the shape, not the syntax, is the point.
 
 Two scales of pattern:
 

@@ -8,8 +8,8 @@ aggregate roots, owns its own database (share-nothing), and references other agg
 independent — and it leaves one thing conspicuously unanswered: **how do you query across
 aggregates?** "A tenant and all its users", "orders with the customer's name and the product
 titles" — no single core service owns that data, and the [directional rule](core-services.md#directional-dependencies)
-says the parent must not even know its children exist. `core-services.md` punts that question
-explicitly, "above the core layer." This is that layer.
+says the parent must not even know its children exist. Core services deliberately leave that
+question to a layer above them. This is that layer.
 
 ---
 
