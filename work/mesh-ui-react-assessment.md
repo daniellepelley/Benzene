@@ -1,8 +1,35 @@
 # Mesh UI — assessment: single-file HTML → React + TypeScript component library
 
-**Status:** Assessment for decision. No code written, nothing committed to.
-**Date:** 2026-08-08
+**Status: DECIDED and BUILT — the assessment was accepted.** Read §10's recommendation as the
+decision that was taken, not one still on the table; everything else here is the reasoning behind
+it and the record of what the port cost.
+**Date:** 2026-08-08 (assessment) · 2026-08-20 (outcome recorded)
 **Scope:** `mesh-ui/mesh-ui.html` and its siblings, and what a componentised React rewrite would cost.
+
+---
+
+## 0. What was decided, and where the code is
+
+§10 recommended **a separate repository**, and that is what exists:
+[`daniellepelley/benzene-ui`](https://github.com/daniellepelley/benzene-ui). It is now the
+**canonical build source** for the mesh UI pages. Every vendored `mesh-ui.html` / `mesh-spec-ui.html`
+in this repository and in three ports is a build output of it, committed verbatim — the same trade
+the conformance fixtures make, for the same reason (consumers are not JavaScript projects and should
+not need a Node toolchain to render a page).
+
+`.github/workflows/mesh-ui-drift-check.yml` here — and its counterpart in the ports — fetches the
+canonical build from benzene-ui and fails if any committed copy differs. It is discovery-based
+rather than path-listed, so a new example that vendors another copy is covered without editing the
+workflow. That is the mechanism §10.5 predicted would be reused, and it is.
+
+The library is past its first release: three improvement waves have been delivered against it
+(`work/mesh-ui-improvement-plan.md`, waves 1–3, benzene-ui `998f7fa` / `e54351c` / `d2e2093`), and
+its Storybook is built and published to benzene.app by `deploy-website.yml`.
+
+**So this document is history with one live use left**: §§1–9 are the reasoning, the cost model and
+the risk list, and §§7 and 9 are worth re-reading before the *next* UI is put on the same
+primitives (the spec UI is the obvious candidate). Nothing in it is an open question about whether
+to proceed.
 
 ---
 
