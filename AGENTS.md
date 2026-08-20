@@ -52,6 +52,17 @@ used to live here) is in [benzene-dotnet](https://github.com/daniellepelley/benz
   change the spec deliberately.
 - Do not break the website generator's build or its broken-link self-check.
 
+## Documentation lifecycle
+- Every markdown doc is one of three kinds — **spec** (`docs/specification/**`, normative),
+  **capability record** (`docs/capabilities.md` here; `docs/capability-matrix.md` in each port,
+  descriptive), or **working doc** (`work/`, temporary by definition). See
+  [docs/documentation-lifecycle.md](docs/documentation-lifecycle.md).
+- **Definition of done includes the docs:** when work completes, its plan moves to `work/archive/`
+  (stamped, references fixed), the capability record is updated to state what the code now does,
+  and — for observable contracts — the spec. The `docs-archivist`, `capability-scribe` and
+  `port-aligner` agents exist for exactly this; a change that skips them adds noise instead of
+  removing it.
+
 ## Workflow expectations
 - Plan-first for non-trivial spec or website changes.
 - Keep commits scoped to one logical change.
