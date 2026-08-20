@@ -1,15 +1,24 @@
 # Conformance Fixtures
 
-**Status: DRAFT v0.1**
+**Status: normative, pre-1.0 (0.x).** These fixtures are the neutral truth every port is
+measured against — see [the specification index](../README.md).
 
 Language-neutral test fixtures for the contracts in [wire-contracts.md](../wire-contracts.md) and
 the behaviors in [core-concepts.md](../core-concepts.md). Every Benzene implementation runs the
-same fixtures through its own runner; an implementation that passes them (plus the live-interop
-tests described in [porting-guide.md §3](../porting-guide.md#3-conformance-testing)) is conformant.
-API shape is explicitly not part of conformance.
+same fixtures through its own runner; an implementation that passes them is conformant. That is the
+whole gate today — the live-interop harness sketched in
+[porting-guide.md §3](../porting-guide.md#3-conformance-testing) is a proposal, not a requirement,
+and no port is held back by it. API shape is explicitly not part of conformance.
 
-The .NET runner lives at `test/Benzene.Conformance.Test/` and is the reference for how a runner
-consumes these files.
+Every port carries a vendored snapshot of these files plus a `SPEC_VERSION` pin recording the
+canonical commit it came from, and a `conformance-drift-check` workflow that fails if the snapshot
+and canonical disagree. The .NET runner at `test/Benzene.Conformance.Test/` is a worked example of
+how a runner consumes these files — not a normative one; .NET is one of four consumers.
+
+**Vendoring a fixture is a claim that you run it.** A snapshot that carries a file no runner ever
+opens reads as covered while proving nothing, and the drift-check cannot catch it — it compares
+bytes, not coverage. If a port declines a conditional claim, drop the file from its snapshot or
+record the decision in an explicit opt-out its test suite asserts against.
 
 ## Fixture files
 

@@ -111,6 +111,10 @@ Go, TypeScript and Python vendor it and never load it, and none has a version co
 Effort: medium per port (needs the comparator, not just a runner).
 
 ### P1.3 A vendored fixture that no runner opens is invisible to every drift-check
+*(Canonical rule now written into `docs/specification/conformance/README.md`: vendoring a fixture is
+a claim that you run it. Note the drift-checks diff `*.json` only, so that README's own re-vendor to
+the four ports will not be enforced by CI — a second instance of the same blind spot, worth closing
+when the port snapshots next move.)*
 Every port's drift-check guards the fixture **bytes**; none guards that a runner **opens** the file.
 That is exactly how P1.1 and P1.2 stayed invisible. TypeScript's `mesh-issue-cases.json` is the third
 instance — the collector implements the feed, only the runner is missing.
@@ -216,10 +220,16 @@ collectively the reason this audit was expensive.
 
 Held back deliberately, with the reason:
 
-- **`_benzeneHeaders` → `benzene-headers` (spec + dotnet + go).** A breaking wire change, free only
-  until the 1.0 tag. Strictly ordered spec → ports → re-vendor, with drift-check red in between, so
-  it must not be parallelised. Its stated blocker (the repo split) cleared months ago. Needs a
-  maintainer go/no-go, then a sequenced run.
+- **`_benzeneHeaders` → `benzene-headers` (spec + all four ports).** A breaking wire change, free
+  only until the 1.0 tag. Strictly ordered spec → ports → re-vendor, so it must not be parallelised.
+  Its stated blocker (the repo split) cleared months ago. Needs a maintainer go/no-go.
+  **Two corrections to this entry's first draft, both found while executing it.** The blast radius is
+  five repos, not three — `_benzeneHeaders` is in all four ports, not just dotnet and go. And the
+  claim that the drift-check would go red in between is **false**: the key is pinned by no fixture at
+  all (conformance/README.md says so explicitly, precisely *because* the rename was scheduled), and
+  the ports' drift-checks diff `*.json` only. The check would stay green throughout and prove
+  nothing. The reason not to pin the key expires the moment it is renamed, so a fixture pinning
+  `benzene-headers` should land as part of the rename rather than after it.
 - **Publishing actions** (npm 25-of-129, PyPI release, NuGet lag, Go tagging). Need credentials and
   are irreversible.
 - **Design-gated**: mesh enterprise slice 4, Cloudflare Queues (WP-CF0 is a hard verification gate —
