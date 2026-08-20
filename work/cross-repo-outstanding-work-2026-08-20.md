@@ -296,6 +296,38 @@ Do the re-vendor as part of the merge, in all four ports, and adopt Python's REA
 the other three — a canonical file that no drift-check covers is the same blind spot as a fixture no
 runner opens, one level up.
 
+## Spec questions raised by wave 2 — need a ruling
+
+Both surfaced while briefing the gRPC structured-error work, and both were pinned by fiat so that
+three ports implementing in parallel could not produce three incompatible shapes. The fiat is
+recorded here rather than left in three commit messages, because a decision taken to unblock agents
+is not the same as a decision the spec has made.
+
+**1. Is `google.rpc.BadRequest` attached for every failure with errors, or only for
+`validation-error`?** wire-contracts.md §4.2 reads unconditionally: "structured `errors` map onto
+`google.rpc.BadRequest` in the `grpc-status-details-bin` trailer, one `FieldViolation` per error."
+The .NET implementation restricts it to `validation-error`
+(`Benzene.Grpc/GrpcMethodHandler.cs`, `AddRichErrorDetails`). One of the two is wrong.
+
+Wave 2 implements the spec as written, so Go, TypeScript and Python will attach details for any
+failure carrying errors, and .NET will not. **That is a real behavioural divergence between the
+reference implementation and the other three, and it needs resolving one way or the other** — either
+.NET drops the condition, or §4.2 grows one. `BadRequest` is arguably the wrong protobuf type for a
+non-validation failure, which is the case for narrowing the spec; the case for widening .NET is that
+`field`/`code` are meaningful on any failure a validator did not produce.
+
+**2. Where does a `BenzeneError.code` go over gRPC?** §1.3 makes `code` a first-class member —
+"a machine-readable, producer-owned rule identifier, emitted verbatim" — and §4.2 gives it no home.
+`FieldViolation` carries `field` and `description`; newer protobuf definitions add `reason`, which
+is a plausible fit but is not named by the spec.
+
+Wave 2 therefore drops `code` on the gRPC hop in all three ports, deliberately and consistently.
+So today: `code` survives HTTP, and does not survive gRPC, in every port. That is a real gap in the
+mapping, not an implementation shortfall — the three agents were told to report whether their
+runtime exposes `reason` so the question can be settled with facts.
+
+Until §4.2 answers this, a producer that relies on `code` reaching a consumer cannot use gRPC.
+
 ## Sequencing
 
 P0.1 and P1.10 are minutes of work and currently red — do them first. P0.2/P0.4 need a maintainer
