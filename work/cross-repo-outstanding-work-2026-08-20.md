@@ -243,6 +243,21 @@ Held back deliberately, with the reason:
   covers, and whose concrete choices contradict `work/cloudevents-design.md`. This is the situation
   `AGENTS.md` names explicitly: an observable contract shaped by one implementation. Spec first.
 
+## Merge-time obligation created by this branch
+
+This branch edits `docs/specification/conformance/README.md` (the phantom-interop-gate fix). That
+file is **vendored by every port**, so merging to main without re-vendoring leaves four stale copies.
+
+Only one port will actually tell you: benzene-python extended its `conformance-drift-check` to diff
+the README as well as the JSON, on the reasoning that the README "is not decoration: it is what says
+which fixtures are conditional". So on merge, **benzene-python's drift-check goes red** and the other
+three drift silently. Verified: Python's copy matches canonical `main` today and differs from this
+branch, so the check is green until the moment this lands.
+
+Do the re-vendor as part of the merge, in all four ports, and adopt Python's README-diffing check in
+the other three — a canonical file that no drift-check covers is the same blind spot as a fixture no
+runner opens, one level up.
+
 ## Sequencing
 
 P0.1 and P1.10 are minutes of work and currently red — do them first. P0.2/P0.4 need a maintainer
