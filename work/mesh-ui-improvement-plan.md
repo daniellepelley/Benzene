@@ -34,7 +34,14 @@ occurrences shipped. One measured WCAG failure: the light-theme `breaking` badge
 
 ---
 
-## Wave 1 — enforce the rulings (no design debate; do first, ship together)
+## Wave 1 — enforce the rulings — **DONE** (benzene-ui `998f7fa`, 2026-08-20)
+
+All seven landed together, plus one defect the new tests caught rather than review: the verdict
+sentence scored green on a healthy estate that still had an outstanding breaking move, because
+`summary.worst` only knows about health. Recommendations taken as offered: Value → **Retire**, and
+the estate's Recent-flows band **deleted**. The compose merge carried capability across rather than
+dropping it — the console gained topic-first entry and version-aware seeding, and the compose tests
+were repointed at it. 523 UI tests green, 451 .NET.
 
 | # | Move | Files | Size |
 |---|---|---|---|
