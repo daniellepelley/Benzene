@@ -76,7 +76,14 @@ that computes the ratios; and the hover class is frozen by an architecture ratch
 | 2.8 | **WCAG fix**: light-theme `breaking` badge to ≥4.5:1 | Measured 3.63:1 at 10.5px | XS |
 | 2.9 | **Changes-page volume**: covered rollouts lose the filled red (glyph+outline stays — R4); the ~100 words of design rationale between verdict and evidence demote to keyline/half-volume | Loudness ranks by who-must-act (R8) | S |
 
-## Wave 3 — structure and data (smarter requirement delivery)
+## Wave 3 — structure and data — **DONE** (benzene-ui `d2e2093`, 2026-08-20)
+
+All seven landed. The environment work went further than 3.5 planned: the .NET host gained a
+`UseMeshUi(..., environment:)` parameter, so the seam is wired end to end rather than UI-only — but
+it stays null by default and the page says "environment not published" until `placement.environment`
+reaches the spec (E1), because an unlabelled production mesh rendering "dev" is the one outcome that
+must not happen. The stylesheet dedupe and type scale are now enforced by tests rather than
+described. 541 UI tests green, 456 .NET.
 
 | # | Move | Why | Size |
 |---|---|---|---|
