@@ -48,8 +48,9 @@ internal static class MarketingContent
         new("Mix transports without the glue",
             "Serverless ties your logic to its trigger &mdash; an SNS function can't also take SQS, and " +
             "putting a queue in front of an HTTP service is bespoke plumbing. A Benzene handler is " +
-            "written against a topic, so the same logic is reachable over HTTP, SQS, SNS, Kafka, and " +
-            "more at the same time. You add or change a transport in the wiring, never in the handler."),
+            "written against a topic &mdash; a named operation like <code>order:create</code>, not any " +
+            "one endpoint or queue &mdash; so the same logic is reachable over HTTP, SQS, SNS, Kafka, " +
+            "and more at the same time. You add or change a transport in the wiring, never in the handler."),
         new("See what every service does",
             "Handlers, topics, payloads, and validation rules are introspectable. Benzene " +
             "generates OpenAPI and AsyncAPI specs and a live service map straight from your code, " +

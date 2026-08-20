@@ -108,6 +108,10 @@ internal static class Layout
                     however many of them at once.
                   </p>
                   <div class="arch-diagram-wrap">{ArchitectureDiagram.Render()}</div>
+                  <p class="section-lede diagram-caption">
+                    Coming from three separate services today? <a href="{whyPage}">Why
+                    Benzene</a> opens with the before-and-after picture.
+                  </p>
                 </section>
 
                 <section class="section" id="get-started">
@@ -360,8 +364,10 @@ internal static class Layout
                  <a class="button" href="{StartHref(primary)}">Start building in {Html(primary.Label)}</a>
                </p>
                <p class="hub-note">
-                 Benzene is pre-1.0 &mdash; packages are published as prerelease, and the docs mark
-                 anything partial or planned as such.
+                 You can build and test the whole walkthrough in memory on the built-in test
+                 host &mdash; a cloud account is only needed when you deploy. Benzene is pre-1.0:
+                 packages are published as prerelease, and the docs mark anything partial or
+                 planned as such.
                </p>
                """;
 
@@ -431,8 +437,8 @@ internal static class Layout
                 "guides" => CrossCuttingSection(src, "Guides",
                     "Language-neutral guides to Benzene's concepts and tooling, true for every port."),
                 "patterns" => CrossCuttingSection(src, "Patterns",
-                    "Recurring ways of composing Benzene's core building blocks into services, the "
-                    + "same shape in every language."),
+                    "Proven shapes for building Benzene services &mdash; and whole systems of them "
+                    + "&mdash; the same in every language."),
                 _ => CrossCuttingSection(src, src.Label, $"Cross-language {Html(src.Label)}."),
             }));
 
