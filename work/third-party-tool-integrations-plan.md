@@ -72,9 +72,12 @@ cosmetic.
 3. Go's counter is attributed by raw status rather than the collapsed `result` vocabulary, so Go
    and .NET services can't be summed into one usage series even after instrument names align.
 
-**benzene-go: DONE (2026-08-13).** Branch `claude/observability-conventions-alignment` pushed to
-`daniellepelley/benzene-go` (not merged — no PR opened per this session's no-unrequested-PR
-policy; open one when ready). `diagnostics/diagnostics.go` now:
+**benzene-go: DONE (2026-08-13) and MERGED.** Originally pushed as branch
+`claude/observability-conventions-alignment` with no PR opened; it has since landed on
+`daniellepelley/benzene-go` `main` — verified 2026-08-20 at `b44d53c`, where
+`diagnostics/diagnostics.go` carries the renamed instruments (`:106`, `:111`), the
+`benzene.version` span attribute (`:123`), the `result` collapse rule (`:156-159`) and the
+`topic`/`transport`/`result` metric attributes (`:175-176`). `diagnostics/diagnostics.go` now:
 - renames the span attribute `benzene.topic.version` → `benzene.version` (the silent-data-loss
   fix — this is the key the shipped Tempo/Jaeger/X-Ray trace sources actually read);
 - renames the metric instruments to `benzene.messages.processed`/`benzene.message.duration` and
@@ -264,28 +267,37 @@ ReSharper doesn't execute Roslyn analyzers, VS and Rider both do.
     single-service probe, so a fully-conformant service still reports at least one
     `Inconclusive` — documented in the probe's own design, not a defect this action introduces).
 
-**Known gap, deliberately not closed by this session:** the CLI flags this Action depends on
-are not yet in a **published** NuGet release — the latest on nuget.org at push time was
-`0.0.2.18-alpha`, built before `c6a53df`. Publishing is a manual `workflow_dispatch` on
-benzene-dotnet's release workflow; **triggering it was judged out of scope for this session
-without being asked** (a real, semi-irreversible action — an immutable package version — on the
-user's account, distinct from pushing to a repo they already own and had directed work into).
-The Action's `cli-version` input defaults to "latest prerelease" and will fail loudly
-(unrecognized-argument error at the install/run step, not a silent false pass) until either:
-- someone runs the release workflow and a version containing the flags becomes "latest
-  prerelease", or
-- a caller pins `cli-version` to such a version once one exists.
+**Known gap — CLOSED 2026-08-20.** The gap was that the CLI flags this Action depends on
+(`--fail-on` / `--format`, added by benzene-dotnet `c6a53df` on 2026-08-13) were not in any
+**published** NuGet release; the latest at push time was `0.0.2.18-alpha`, published 2026-07-14 and
+so built months before the flags existed. Publishing is a manual `workflow_dispatch` on
+benzene-dotnet's release workflow and triggering it was judged out of scope at the time (a
+semi-irreversible action — an immutable package version — on the user's account).
 
-No self-test workflow was added for the same reason — it would be red on every run through no
-fault of the Action's own code, which is worse than no workflow.
+It has since been run. nuget.org now serves `Benzene.CodeGen.Cli` `0.0.3-alpha.1`, `0.0.3-alpha.2`
+and `0.0.3-alpha.3` — the version base having been bumped to `0.0.3` by `6afaef0` on 2026-08-14 to
+clear the legacy version ceiling. All three are built from commits that contain `c6a53df`
+(`0.0.3-alpha.1` from `f5dd95d`, 2026-08-19; verified via each package's repository commit in its
+nuspec), so the Action's default of "latest prerelease" now resolves to a CLI that understands the
+flags. No pin is needed.
 
-**Task 4 (version tag / marketplace listing) not started** — pointless before the CLI-version
-gap above closes; an Action nobody can successfully run yet shouldn't be tagged or listed.
+**Still open in WP3**, and unblocked by the above rather than fixed by it:
+- **A self-test workflow.** Not added originally because it would have been red on every run
+  through no fault of the Action's own code. That reason has gone.
+- **An end-to-end run through the Action itself.** Acceptance was verified against the CLI directly
+  (below); the Action's own argument passing, `$GITHUB_PATH` handling, summary table and outputs
+  have never been exercised by a real run.
+- **Task 4 — version tag and marketplace listing.** Held because an Action nobody could
+  successfully run shouldn't be tagged or listed. Now gated on the self-test and the end-to-end run
+  instead.
+- **A repository of its own**, if the Action is to be split out (see the `git subtree split` note
+  above).
 
 Acceptance from the original plan (job fails on a non-conformant target; summary table renders)
 was **verified manually against the CLI directly** (`benzene profile-check --url
 http://127.0.0.1:1 --format json` → exit 1 with the full JSON report; `--fail-on none` → exit 0)
-but **not yet through the Action itself**, which needs the NuGet gap closed first to run at all.
+but **not yet through the Action itself** — which is now runnable, so this is a task rather than a
+blocked one.
 Do NOT: reimplement any probe logic in the Action (it is packaging only) — done, confirmed: zero
 probe/report logic lives in `action.yml`, only argument passing and jq formatting; default
 `fail-on` to include Inconclusive — done, confirmed, and the README explains why not.
