@@ -1,10 +1,60 @@
 # Error Payload — investigation and proposal
 
-**Status:** PROPOSAL for maintainer ruling — investigation complete, recommendation made, nothing
-applied. Task #28 (`work/spec-review-2026-07-25.md` §2).
-**Last Updated:** 2026-07-25
+**Status: RULED, and the ruling went against this document's recommendation. Dated record — do not
+cite it for the current contract.** The investigation below (Task #28,
+`work/spec-review-2026-07-25.md` §2) was written on 2026-07-25 and is preserved from §1 down,
+edited only to point §3's verdict table back here. It is history, not status.
+**Last Updated:** 2026-07-25 (investigation) · 2026-08-20 (outcome recorded)
 **Purpose:** Answer "is there a better error payload, and is there a standard Benzene should
 follow?" — grounded in what the code actually does today, not what the spec says it does.
+
+---
+
+## 0. What was actually ruled, and what shipped
+
+**The maintainer chose option B — full RFC 9457 compliance — which §3 below records as
+*Rejected*.** Anyone reading §3's verdict table without this section would draw exactly the wrong
+conclusion about the current contract.
+
+The successor is
+[`docs/specification/wire-contracts.md` §1.3](../../docs/specification/wire-contracts.md#13-problem-details-payload)
+(with the problem-type registry in §3.1 and the HTTP/gRPC rules in §4.1/§4.2), landed by
+`b732a74` *"spec: adopt RFC 9457 problem details payload (Phase 1)"* on 2026-08-13. The shipped
+payload is a **genuine RFC 9457 problem document on every transport**:
+
+- `type` / `title` / `detail` / `instance` — kept, not dropped as §4 recommended. `type` is drawn
+  from an eleven-row problem-type registry keyed by the existing status vocabulary.
+- `status` — the **integer HTTP status code**, RFC 9457's own meaning. It is emitted on HTTP
+  bindings only and MUST be omitted, not nulled, where no HTTP response exists.
+- `benzeneStatus` — the Benzene status string, moved to a marked extension member. This is the
+  rename that resolves the §2.2 collision.
+- `errors[]` — the structured `message` / `field` / `code` array §4 proposed, adopted verbatim in
+  shape and made **authoritative and ordered**, replacing the unimplementable "recover `errors`
+  from `detail`" rule §2.3 found broken.
+
+**Why the ruling differed.** This document rejected B on a single argument (§3, "Why B is
+rejected"): that an integer HTTP status code in the error payload of an SQS message is a fabricated
+number. The adopted profile removes that objection rather than accepting it — `status` is *omitted*
+off HTTP instead of invented, so nothing is fabricated on a queue, and the transport-neutral
+discriminator every non-HTTP reader needs is `benzeneStatus`. With no fabrication left to object to,
+B's cost fell to one extra member name and its benefit — being readable by the large installed base
+of generic problem-details consumers, which option C's "explicitly not RFC 9457" framing forfeits —
+stood on its own. Both defects this investigation found (§2.2's mislabeling, §2.3's broken
+round-trip rule) are fixed by B, and §4's structured `errors` was adopted alongside it, so the
+investigation's findings all landed; only the verdict on the standard changed.
+
+**What is pinned.** `docs/specification/conformance/problem-details-cases.json` covers the registry,
+the canonical `conformance:problem` handler's envelope behavior and the HTTP-only signalling rules;
+`envelope-cases.json` was edited in the same commit to the new body shape. All four ports run
+problem-details cases through their own runners
+(`test/Benzene.Conformance.Test/ProblemDetailsConformanceTest.cs`,
+`conformance/problem_conformance_test.go`,
+`test/Benzene.Core.Test/Conformance/ProblemDetailsConformanceTest.test.ts`,
+`tests/conformance_runner.py`).
+
+**Still true below.** §2's findings are the reason anything changed at all, and §5's ordering — the
+result model first, then the validation integrations, then the payload, then the client — is the
+order the work actually ran in. Everything from §3's verdict table onward is superseded.
 
 ---
 
@@ -73,6 +123,8 @@ joined string. That gap is the actual product cost: a client cannot render a for
 a caller cannot branch on a machine-readable code.
 
 ## 3. The options
+
+> **Superseded — the ruling picked B, the row this table marks Rejected. See [§0](#0-what-was-actually-ruled-and-what-shipped).**
 
 | | Option | Verdict |
 |---|---|---|

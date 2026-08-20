@@ -58,7 +58,9 @@ unpublishing them.
 - `benzene-vision.md` — the original problem and the design philosophy, cross-language
 - `benzene-naming-principle.md` — how Benzene names what it owns on the wire
 - `benzene-headers-design.md`, `benzene-headers-plan.md` — the header mechanism
-- `error-payload-proposal.md` — whether there is a better error payload, and a standard to adopt
+- `archive/error-payload-proposal-2026-07-25.md` — whether there is a better error payload, and a
+  standard to adopt. **Ruled and archived**: RFC 9457 shipped (`docs/specification/wire-contracts.md`
+  §1.3), which is the option this document recommended against
 - `cloudevents-design.md` — CloudEvents as a wire format
 - `spec-review-2026-07-25.md` — the maintainer's review of the specification draft
 - `mesh-ui-product-vision.md` — the shared Mesh UI, which lives in this repo
