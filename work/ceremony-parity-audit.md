@@ -104,3 +104,96 @@ behind `go.work`, and a descriptor test inside one of them
 failing on every run, seen by nobody. `scripts/modules.sh` now derives that list from `go.work`, and
 CI and the READMEs share it. Coverage that is enumerated by hand goes stale the same way a fixture
 key does.
+
+---
+
+## 4. "Which fixtures does each port actually run?" — **audited, 2026-08-20**
+
+Vendoring a fixture is not running it. Every port carries a snapshot of the canonical set; nothing
+checked that a snapshot was *read*.
+
+| Fixture | .NET | Go | TypeScript | Python |
+|---|---|---|---|---|
+| `problem-details-cases.json` | ✅ | ❌ → ✅ | ✅ | ❌ → ✅ |
+| `mesh-version-order-cases.json` | ✅ | ❌ | ❌ | ❌ |
+| `mesh-service-version-cases.json` | ❌ | ❌ | ❌ | ❌ |
+| everything else | ✅ | ✅ | ✅ | ✅ |
+
+`problem-details-cases.json` is not optional: conformance/README.md's claims table makes its
+`registry` and `envelopeCases` groups **required for the Benzene Core claim**, and `httpRules`
+required for every HTTP binding a port ships. Go and Python claimed Core, shipped an HTTP binding,
+vendored the fixture, and ran none of the three. Both now run all three (§5 below is what it took).
+
+The other two rows are legitimately conditional — `mesh-version-order-cases` is required only of a
+port that orders service versions, and `mesh-service-version-cases` only of a collector claiming
+service-version identity. But all four ports vendor them, which reads like intent rather than a
+decision, and **no port runs the service-version fixture at all**. Left open deliberately: it is a
+claim decision for each port's owner, not a defect to fix unilaterally. Recorded so it is a decision
+rather than an oversight.
+
+Go and Python also had **no conformance drift check** — the job .NET and TypeScript run to diff the
+vendored snapshot against canonical. Both now have it, and it runs in both directions: a drifted
+fixture is the obvious half, but a canonical fixture *missing* from the snapshot is the half that
+bites, since a runner cannot notice a fixture it was never given.
+
+---
+
+## 5. "How much of an error can a handler express?" — **closed, 2026-08-20**
+
+The item §3 left open ("whether that is worth changing depends on whether those ports intend to
+serve schema validators that produce field paths — a question for those ports' owners") was not
+actually open. The spec answers it: the canonical `conformance:problem` handler MUST return one
+structured error carrying `message`/`field`/`code`, and those envelope cases are required for Core.
+
+| Port | Before | After |
+|---|---|---|
+| .NET | `BenzeneError[]` on the result | unchanged |
+| TypeScript | `BenzeneError[]` on the result | unchanged |
+| Go | `Errors []string` — nowhere to put a field or a code | `[]benzene.Error`, an **alias** of `wire.ProblemError` |
+| Python | `errors: tuple[str, ...]` | `tuple[BenzeneError, ...]`, every factory takes either |
+
+The two ports took the shape their language allows, which is the distinction this audit exists to
+make. Python can accept a union, so one `ErrorLike` parameter type covers strings and structured
+errors on *every* existing factory and nothing new is needed. Go has no overloads, so it gains
+exactly two functions — `FailWith` for any status and `ValidationErrorWith` for the one where a
+field and a code are nearly always known. Neither port made the plain-string path any longer.
+
+Both aliased rather than copied (`benzene.Error = wire.ProblemError`), so the value a handler builds
+*is* the value that reaches the wire — no second shape to keep in step, no conversion to drop a
+member. And both kept the type-erased/message-only view intact (`ResultErrors() []string`,
+`Result.messages`), so every binding that only ever wanted prose was untouched by the change.
+
+The payoff is concrete, not theoretical: `benzene-pydantic` was gluing pydantic's own `loc` and
+`type` into a `"field: message"` string and throwing the structure away. They now cross into `field`
+and `code` unchanged — the same rule .NET's FluentValidation adapter already followed.
+
+---
+
+## 6. "Does the envelope state whether it succeeded?" — **closed, 2026-08-20**
+
+Found while wiring §4's fixture, and the sharpest example in this document of why a weak runner is
+worse than no runner.
+
+`isSuccessful` is **required** on every response envelope (wire-contracts §1.2) and is the
+authoritative signal — a receiver MUST prefer it over anything derived from `statusCode` text, which
+is the only signal an application-defined status has. All 17 envelope cases assert it.
+
+**Python emitted it nowhere and checked it nowhere.** Both of its envelope-case loops — the runner
+and the parametrized pytest test beside it — skipped `isSuccessful` and `bodyExclude`, so 17
+success-signal assertions and 11 withdrawn-member assertions passed without being checked, over a
+port that genuinely did not implement the member. .NET and TypeScript check both; Go's runner was
+strengthened to earlier in the same sweep.
+
+Two loops is how that happens. Python now has one checker that both call, as Go now does.
+
+The same investigation turned up a functional bug the missing member was hiding: an unhealthy health
+check answered `service-unavailable`, the encoder classified it a failure by status class, and
+**replaced the per-check report with a problem document** — discarding exactly the information
+somebody hits a health endpoint for. §1.3 carves this case out, and .NET has had the escape hatch
+all along (`BenzeneResult.Set(ServiceUnavailable, message, true)`), Go as `SetResult`, TypeScript in
+`create`. Python had no way to state a success classification at all. `Result.set` closes it, and
+`benzene.http` now prefers the envelope's `isSuccessful` over the status class so the carve-out
+survives the HTTP hop too.
+
+**The rule this adds:** a required wire member that no runner checks is a member the port may simply
+not have. Check the *envelope*, not just the body.
