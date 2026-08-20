@@ -1,7 +1,13 @@
-# Benzene Specifications (Draft)
+# Benzene Specifications
 
-**Status: DRAFT v0.1 — extracted from the .NET implementation, which remains the single normative
-reference while these documents mature.**
+**Status: normative, pre-1.0 (0.x).** These documents — not any implementation — are the source of
+truth. Four language ports (.NET, Go, TypeScript, Python) implement them and run the same
+[conformance fixtures](conformance/README.md); .NET is one of the four consumers of those fixtures,
+not the reference the other three are measured against. The specification was originally extracted
+from the .NET implementation, and that is now history: when a port and this specification disagree,
+the port is what gets fixed, and a fixture changes only as a deliberate spec change that every port
+then re-vendors and re-verifies. Pre-1.0 means the wire contracts may still change — see
+[Versioning](#versioning) — not that any one port outranks them.
 
 ## Two levels
 
