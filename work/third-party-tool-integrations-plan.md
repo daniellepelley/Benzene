@@ -1,7 +1,8 @@
 # Third-Party Tool Integrations — work plan
 
 **Date:** 2026-08-13
-**Status:** plan; no implementation started.
+**Status:** in progress — WP0 and WP2 done, WP1 and WP3 partly, WP4 onward unstarted. Each work
+package carries its own state in its heading; this line is the summary, updated 2026-08-20.
 **Source research:** [third-party-tool-integrations.md](third-party-tool-integrations.md) — read
 it first; this document turns its ranking (§5) into pickup-cold work packages.
 
