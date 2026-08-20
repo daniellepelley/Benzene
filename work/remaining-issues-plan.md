@@ -147,21 +147,63 @@ all, so the other three correctly skip it. Worth confirming that is intended and
 
 ## P2 — housekeeping I can do without a decision
 
-### P2.1 — Python's type checking stops at the package boundary
+### P2.1 — Python's type checking stops at the package boundary — **done, 2026-08-20**
 
-CI runs bare `mypy`, which reads `files=` from `pyproject.toml`: 129 source files, clean. Run
-`mypy .` and there are **43 errors**, 39 of them in `tests/`. Test code is where the awkward
-type-level mistakes hide, and one of those 43 was the signal that led to the health-check bug last
-night (`with_services` wanting a `Callable[[Container], None]` while the natural thing to write is a
-fluent lambda). Proposal: extend the mypy scope to `tests/` and `examples/`, fix the 43, and let CI
-hold the line.
+CI ran mypy over 129 files: the nineteen packages and two deploy roots, and nothing else. Test code
+was unchecked, which is backwards — it is where the awkward shapes live, and the only code that
+exercises the packages from outside, the way a user does.
 
-### P2.2 — Go's example and template coverage is now measurable for the first time
+Pointing the checker at `tests/` and `examples/` found **58 errors**. Most were ordinary (an Optional
+the test knows is present, a missing annotation), but three earned the exercise on their own:
 
-Until last night CI tested 20 of 29 modules, so nine had never had their coverage reported. Now they
-do, and it ranges from 30% (`kafka-helloworld`) to 100%. Examples are not held to the repo's
-100%-for-library-packages rule, so this is not a defect — but the numbers are visible now and worth
-one deliberate look to decide which, if any, deserve attention.
+- **Service overrides could not be written as a one-liner.** `Container`'s `add_*` methods are
+  fluent, so `lambda c: c.add_instance(Greeter, fake)` — the form the module's *own docstrings* use —
+  returns a `Container`. Typed `Callable[[Container], None]` it was rejected, and a user running mypy
+  had to expand it to a four-line named function or reach for `# type: ignore`. Now a
+  `ServiceOverride` alias returning `object`.
+- **You could not `asyncio.run` your own handler.** `Handler` was
+  `Callable[[Any], Awaitable[Result]]`, but `asyncio.run` requires a `Coroutine`, so the most natural
+  way to unit test a handler did not type-check. `handler.py`'s own first line says a handler *is*
+  `async def`, which produces exactly a Coroutine, so the narrower type states the documented
+  contract rather than a superset of it.
+- **A variable bound to two types in one function** in the problem-details conformance runner — a
+  wire envelope dict and an `HttpResponse` — sloppiness written hours earlier that reading would not
+  have caught.
+
+The injection seams (`HttpTransport`, `HttpGet`) were deliberately *not* narrowed the same way:
+an injection point wants the most permissive thing it can accept, so an `async def`, a partial
+returning a Future and a mock returning a completed Future all satisfy it. `tests/_async.py` records
+that reasoning and holds the wrapper on the test side instead.
+
+`files` now covers **292 source files**, up from 129. Verified the guard bites: reintroducing one of
+the fixed errors turns the CI-scope run red.
+
+### P2.2 — Go's example and template coverage — **assessed, 2026-08-20; one real gap, now closed**
+
+With all 29 modules reporting, the picture is 56 library packages (min 75%) and 44
+examples/templates (min 0%). Examples are not held to the repo's 100%-for-libraries rule, so the
+question was only whether any *library* package hid something. Nine sat under 90%. They fall into
+three groups, and only one was a defect:
+
+- **A real gap, fixed.** `wire` at 81.5%, with `ErrorPayload.Problems` (added the night before) and
+  `ProblemHTTPStatus` both at **0.0%**. Both were exercised from elsewhere — the conformance runner
+  reads the registry, `httpclient`'s round-trip reaches `Problems` — so a green suite and an untested
+  function looked identical from inside the package. A dependency-free package's own tests should
+  stand on their own. Now **98.8%**, and chasing the last branches turned up a genuinely reachable
+  untested path: the legacy-`status` tolerance drops one member and re-parses, so a peer mistyping a
+  *second* member must surface the error rather than return an empty payload. What remains is a
+  `json.Marshal` on RawMessages that were just unmarshalled — it cannot fail, and is now commented as
+  such, per the rule that permits a gap only when the gap is explained.
+- **Cloud-SDK paths.** `gcppubsubclient`, `azurecosmos`, `azureeventhub`, `awssqs`,
+  `azurequeuestorage`, `azureservicebus`: the uncovered functions are `Publish`, `ReadNext`,
+  `NewChangeFeedReader` and friends — the real-SDK paths that need an actual cloud. They are covered
+  end-to-end by the ten deploy workflows, all currently green. No action.
+- **A coverage-attribution artifact.** `benzenetest` at 82.5%, with `NewSQSEvent`/`NewSNSEvent` at
+  0.0%. They are *not* untested: `examples/aws-lambda-mesh` and `awssqs` feed their output into the
+  real handlers and assert the result. Those are the only modules that can import both the helper and
+  the binding without creating the dependency cycle the repo deliberately avoids, so the calls are
+  attributed to a different module's run. Writing tests here would have duplicated real ones against
+  a number I had misread. **No action** — recorded so the next reader does not chase it either.
 
 ### P2.3 — Re-run the persona suite against the changed error surface
 
@@ -179,6 +221,6 @@ prose.
    something a user gets. They are independent of each other and can go in any order.
 2. **P0.3 step 2–3** (patterns cleanup) immediately follows the NuGet publish — already scoped, no
    decisions left.
-3. **P2.1 and P2.2** can proceed in parallel with any of the above; neither needs input.
+3. ~~**P2.1 and P2.2**~~ — both done, 2026-08-20. P2.3 (personas) remains.
 4. **P1.1–P1.3** whenever you want to settle them. Nothing is blocked on them; they are the
    difference between "these ports agree by accident" and "these ports agree on purpose".
