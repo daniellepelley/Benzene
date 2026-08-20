@@ -82,8 +82,25 @@ Removed the .NET port from benzene now that it lives (and passes CI) in benzene-
 - **Verified:** the website generator still builds from the post-cutover benzene — 94 pages from 4
   sources, zero broken links (`.NET` via `--dotnet-docs`, Go/TS via `--source`, spec + hub).
 
-## Phase 5 — Polish (real sibling languages, switcher UX) — PENDING (now unblocked)
-Sibling ports already exist as public repos: **`benzene-go`** and **`benzene-typescript`**. The
-generator accepts extra languages via `--source id=Label=urlPrefix=path[=navFile]`, so each becomes a
-real language section once its docs layout is checked out in `deploy-website.yml` (same pattern as
-the .NET `--dotnet-docs` step). No placeholder needed — wire the actual repos when ready.
+## Phase 5 — Polish (real sibling languages, switcher UX) — DONE ✅
+All three sibling ports are wired as real language sections, not placeholders. `deploy-website.yml`
+checks out **`benzene-go`**, **`benzene-typescript`** and **`benzene-python`** and feeds each to the
+generator through its `wire_lang` helper as
+`--source <id>::<Label>::<id>/docs::<path>::<repoBlobUrl>` — a full docs section when the port has a
+`docs/index.md`, a landing page from its `README.md` otherwise — so a port graduates from landing
+page to full section by adding docs, with no workflow change.
+
+**Python was not in this phase's original scope** (it did not exist when the phase was written) and
+is wired on the same footing as the other two.
+
+The language switcher atop the docs sidebar carries all of them, and the same list drives the
+cross-language hub at `/docs/`.
+
+**Verified 2026-08-20:** a local build with the exact CI flags renders 242 pages (+84 redirects)
+from 7 sources — spec + hub + .NET + Go + TypeScript + Python — with the broken-link self-check
+green.
+
+---
+
+**Phases 0–5 are complete. This document is a record of how the repositories got their present
+shape, not a plan with work left in it.**
