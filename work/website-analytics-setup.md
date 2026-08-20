@@ -1,10 +1,20 @@
 # Website analytics & Search Console — setup guide
 
-How to turn on traffic monitoring for [benzene.app](https://benzene.app). The **code side is done**
-(see "What's already wired", below); what's left is the **manual account setup** in Google, then
-pasting two identifiers into the repo's CI variables. No further code changes are needed.
+How to turn on traffic monitoring for [benzene.app](https://benzene.app).
 
-You do all of this from a normal Google account — no billing, no card. Budget ~20 minutes.
+**Status, 2026-08-20: GA4 is live; only Search Console is left.** `deploy-website.yml` now defaults
+`GOOGLE_ANALYTICS_ID` to a real measurement id in the clear
+(`${{ vars.GOOGLE_ANALYTICS_ID || 'G-WDSQNTXQSS' }}`), so Part 1 and its half of Part 3 are done and
+every deploy ships the GA4 snippet — a repo variable now only *overrides* that default, it is no
+longer what switches analytics on. `GOOGLE_SITE_VERIFICATION` has **no default**, so it stays unset
+until someone completes Part 2 and sets the variable.
+
+So the remaining work is **Part 2 only**, and it may turn out to be nothing: Search Console can
+verify ownership through the Google Analytics property that is already live, in which case no token
+and no variable are needed at all (see Part 2's note). The code side is done either way — see
+"What's already wired", below — and no further code changes are needed.
+
+You do all of this from a normal Google account — no billing, no card. Budget ~10 minutes.
 
 ---
 
@@ -29,7 +39,10 @@ can create. That's the manual part below.
 
 ---
 
-## Part 1 — Google Analytics 4 (who's visiting, and what they do)
+## Part 1 — Google Analytics 4 (who's visiting, and what they do) — **DONE**
+
+*Kept as a record of how the property was created, and for whoever has to recreate or move it. The
+measurement id it produced is the one baked into `deploy-website.yml` as the default.*
 
 GA4 is the "engagement" product: sessions, page views, which pages, referrers, countries, devices,
 real-time visitors.
@@ -55,7 +68,11 @@ next deploy; the **Realtime** report is the quickest confirmation it's working.
 
 ---
 
-## Part 2 — Google Search Console (how Google's search sees the site)
+## Part 2 — Google Search Console (how Google's search sees the site) — **OUTSTANDING**
+
+*The only part still to do. Note the alternative at the end of this section: because Part 1 is now
+live, Search Console can verify through the GA4 property, which skips the token and the variable
+entirely.*
 
 Search Console is the old "Google Webmaster Tools" — it's the "how do I rank" side: which queries
 show the site, click-through rates, indexing/coverage problems, and mobile issues. Complementary to
@@ -84,15 +101,14 @@ GA4, not a replacement.
 
 ---
 
-## Part 3 — Paste the two IDs into the repo (the only place the code needs them)
+## Part 3 — Paste the IDs into the repo (the only place the code needs them)
 
 In GitHub: **Settings → Secrets and variables → Actions → Variables tab → New repository variable**.
-Add whichever you have:
 
-| Variable name | Value | From |
-|---|---|---|
-| `GOOGLE_ANALYTICS_ID` | `G-XXXXXXXXXX` | GA4 Measurement ID (Part 1) |
-| `GOOGLE_SITE_VERIFICATION` | `AbC123...the_token...` | Search Console HTML-tag token (Part 2) |
+| Variable name | Value | From | State |
+|---|---|---|---|
+| `GOOGLE_ANALYTICS_ID` | `G-XXXXXXXXXX` | GA4 Measurement ID (Part 1) | **Not needed** — the workflow defaults to the live measurement id; set this only to point the site at a *different* property |
+| `GOOGLE_SITE_VERIFICATION` | `AbC123...the_token...` | Search Console HTML-tag token (Part 2) | **Outstanding** — no default; unset means no verification tag is emitted |
 
 These are **variables, not secrets** — they're public values that appear in the page source anyway,
 so they don't need to be hidden, and putting them in *Variables* keeps them readable/editable.
@@ -136,7 +152,8 @@ carry its snippet instead. Say the word if you want to go that route.
 
 - **Build flags**: `--google-analytics-id G-XXXXXXXXXX`, `--google-site-verification <token>`
   (both optional; empty → nothing emitted).
-- **Repo variables**: `GOOGLE_ANALYTICS_ID`, `GOOGLE_SITE_VERIFICATION`.
+- **Repo variables**: `GOOGLE_ANALYTICS_ID` (already defaulted in `deploy-website.yml` — an
+  override, not a switch), `GOOGLE_SITE_VERIFICATION` (no default; the one still outstanding).
 - **Where it's injected**: `website/generator/Layout.cs` → `GoogleHead()`, called from `SeoHead()`,
   so it's on every page. Options model: `website/generator/SiteOptions.cs`.
 - **Sitemap to submit**: `https://benzene.app/sitemap.xml`.
