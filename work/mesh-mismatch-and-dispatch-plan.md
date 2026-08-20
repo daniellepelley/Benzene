@@ -1,5 +1,21 @@
 # Mismatch made visible, and dispatch made real — implementation plan
 
+> **IMPLEMENTED 2026-08-20** — benzene-ui `ca9668d`, benzene-dotnet `46f038e`. Two deviations from
+> the plan below, both improvements found while building:
+>
+> 1. **Dispatch got its own route** (`POST /mesh/dispatch`) instead of widening `/benzene/invoke`'s
+>    topic filter (WP-B2 step 4). The read plane is then untouched, and — the reason that matters —
+>    API Gateway can throttle sending separately from polling. While both rode one path, any edge
+>    throttle worth having would also have throttled reading the estate, which is a throttle somebody
+>    turns off.
+> 2. **The guard's checks are split across two layers.** `HttpRequest` carries no body, so the target
+>    service is not visible at HTTP level: CSRF, identity, size and the per-identity limit are in the
+>    middleware, and the per-target limit and the audit record are in the handler, where the parsed
+>    request exists. Each check sits where its data is.
+>
+> Not done, deliberately: the Terraform is unvalidated (no `terraform` binary available here), and
+> Part C stays parked as a product decision.
+
 **2026-08-20.** Two problems from the deployed AWS mesh, researched by four parallel agents (view
 design, aggregator data, dispatch wiring, security envelope) and synthesized here into work packages
 an implementing agent can execute directly. Companion docs: `mesh-ui-aims.md` (rules cited as R*),
