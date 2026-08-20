@@ -220,7 +220,7 @@ cannot break a downstream build when this repo moves.
 |---|---|---|
 | Website demo | `website/demos/mesh/index.html` | Copied verbatim next to the fixture JSON; the site's `CopyDemos` publishes the directory as-is. The demo has no live endpoint, so it renders the static floor. |
 | `benzene-dotnet` | `src/Benzene.Mesh.Ui/mesh-ui.html` | The `.NET` host serves this file; its current default path is `/mesh-ui` (a pre-standard default that migrates to `/benzene/mesh-ui` at 1.0 — see [design-principles §5.3](../specification/design-principles.md#53-conformance-and-migration)). It may additionally wire the live plane by pointing `data-fleet-url` at its own `/benzene/invoke`. |
-| `benzene-typescript` | a `@benzene/mesh-ui` asset (not yet ported) | When the TS port adds a mesh-UI package, it vendors this file rather than authoring a new one. Being the one JavaScript consumer, it could alternatively depend on `benzene-ui` directly and assemble its own page from the components. |
+| `benzene-typescript` | `src/Benzene.Mesh.Ui/mesh-ui.html` (the `@benzenejs/mesh-ui` package) | The TS host serves this file as its Mesh UI asset. Being the one JavaScript consumer, it could alternatively depend on `benzene-ui` directly and assemble its own page from the components; today it vendors like everyone else. |
 | `benzene-go` (future) | its mesh-UI asset | Same: vendor, do not fork. |
 
 **The rule: never fork the copy.** Fixes and features land in the canonical here (with this guide
@@ -256,8 +256,8 @@ The canonical UI was consolidated from the divergent per-language versions in Ju
 
 - **Companion Spec UI accent**: the Mesh UI now uses the website's green (§6); the companion
   `mesh-spec-ui.html` still uses the older indigo. Re-tinting it for cross-UI parity is a follow-up.
-- **TypeScript mesh-UI package**: when `@benzene/mesh-ui` is ported, it vendors this canonical file;
-  it should not re-author a page.
+- **TypeScript mesh-UI package**: `@benzenejs/mesh-ui` now exists and vendors the file; keep its
+  copy re-vendored from the canonical, never re-authored or forked.
 - **Windowable usage feed**: `usage.json` counts carry a baked window and cannot be re-windowed
   client-side; a windowable feed is tracked in [`service-mesh-roadmap-1.0.md`](https://github.com/daniellepelley/benzene-dotnet/blob/main/work/service-mesh-roadmap-1.0.md).
 - **Staleness signal**: there is no per-service freshness/`Stale` status in the artifacts yet; the
