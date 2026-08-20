@@ -51,5 +51,56 @@ or unsafe in all four ports at once, which is the pattern this audit is meant to
   `field` or `code` to a validation failure, and its problem document is message-only. Whether that
   is worth changing depends on whether those ports intend to serve schema validators that produce
   field paths — a question for those ports' owners, not a defect to fix unilaterally.
-- **Descriptor-hash coverage flags.** Named `sensitiveToProduces` everywhere after the role
-  inversion; not yet checked that every port asserts the same set.
+*(the descriptor-hash item that stood here is closed - see section 3.)*
+
+---
+
+## 3. "Does the descriptor hash cover the same things everywhere?" — **closed, 2026-08-20**
+
+It did not, and worse, two ports could not have told you either way.
+
+`mesh-descriptor-cases.json` pins four hash properties: invariant to `instanceId`, sensitive to
+`serviceVersion`, to the topic set, and to the produced-topic set. Every port reads those flags out
+of the fixture and asserts the ones the fixture asks for. Three of the four had been renamed by the
+role inversion (spec f45a187) from `sensitiveToConsumes` to `sensitiveToProduces`.
+
+| Port | Key it read | Effect |
+|---|---|---|
+| .NET | `sensitiveToProduces` | asserted |
+| Python | `sensitiveToProduces` | asserted |
+| Go | `sensitiveToConsumes` | **silently skipped** |
+| TypeScript | `sensitiveToConsumes` | **silently skipped** |
+
+**The finding was not the stale name, it was the shape of the guard.** Every port wrote the same
+idiom — read the flag, and if it is falsey, quietly do nothing:
+
+```go
+if !fixture.Hash.SensitiveToConsumes { t.Skip("not asserted by the fixture") }
+```
+
+```ts
+if (!fixture.hash.sensitiveToConsumes) return;
+```
+
+A key the fixture sets to `false` and a key the fixture has never heard of decode to the same value,
+and they mean opposite things. So the rename did not break the two runners — it disabled them, and
+both suites went on passing while asserting nothing at all about produced topics. Neither
+implementation was wrong; both were simply unverified, which a green CI is supposed to rule out.
+
+All four ports now distinguish absent from false (`*bool` in Go, optional in TypeScript, `bool?` in
+.NET, `key not in spec` in Python) and fail loudly on absent. A fixture that deliberately turns a
+property off still skips. Each was verified by renaming the key in the vendored fixture and
+confirming the suite goes red, then restoring it.
+
+The transferable rule, and the reason this belongs in a *parity* audit: **a conformance runner must
+never treat "the fixture didn't ask" as indistinguishable from "the fixture asked for nothing".**
+Ports vendor snapshots of a canonical fixture that other people rename; the drift is routine, and
+only the runner is positioned to notice it.
+
+This also exposed a second gap in Go, recorded here because it is the same failure mode one level
+up: CI's `go test` named a hand-written list of workspace modules that had fallen nine modules
+behind `go.work`, and a descriptor test inside one of them
+(`examples/azure-functions-mesh`) had been asserting the pre-inversion provider/consumer direction,
+failing on every run, seen by nobody. `scripts/modules.sh` now derives that list from `go.work`, and
+CI and the READMEs share it. Coverage that is enumerated by hand goes stale the same way a fixture
+key does.
