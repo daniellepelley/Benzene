@@ -1,12 +1,11 @@
 # Code Generation
 
-Code generation in Benzene is not a feature of any one language — it is a consequence of the
-**Cloud Service Profile**'s self-description ([cloud-service-profile.md](../specification/cloud-service-profile.md))
-and the **mesh descriptor** ([mesh.md](../specification/mesh.md) §2). A conforming service already
-knows, at runtime, the topics it handles, the request and response payload shapes for each, the
-broadcast events it emits, and its validation rules. Anything you can generate from that
-self-description, you can generate from *any* Benzene service, in *any* language, without the
-generator knowing which language produced it.
+Code generation in Benzene is not a feature of any one language. A conforming service already
+describes itself at runtime — the topics it handles, the request and response payload shapes for
+each, the events it emits, its validation rules — through the **Cloud Service Profile**
+([cloud-service-profile.md](../specification/cloud-service-profile.md)) and the **mesh descriptor**
+([mesh.md](../specification/mesh.md) §2). Anything you can generate from that self-description, you
+can generate from *any* Benzene service, whatever language it's written in.
 
 This guide describes the concept and the artifacts. **How to invoke a generator** — the package
 name, the command, the API — is language-specific and lives in each port's own docs.

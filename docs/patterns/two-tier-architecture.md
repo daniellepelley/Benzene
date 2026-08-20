@@ -1,6 +1,6 @@
 # The Two-Tier Microservice Architecture
 
-**Status: DRAFT v0.1 — a reference architecture, not wire format.**
+**Status: DRAFT v0.1 — a reference architecture, not a wire contract.**
 
 The [specification](../specification/index.md) defines what *one* good Benzene service is —
 the middleware pipeline, message handlers, topics, results, and (at the top of the adoption
