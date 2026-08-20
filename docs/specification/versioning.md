@@ -86,6 +86,11 @@ configurable**: an application with its own conflicting use of `version` restric
 shape as everything else in design-principles.md §4, applied to the list contents rather than to the
 getter as a whole — see §2.3.
 
+**The route-parameter side has no equivalent answer, and that asymmetry is an open decision** (§7):
+the header names are a configurable list precisely because a pre-existing `version` can mean
+something else, but the HTTP route parameter is a fixed `version` with no override and no reserved-
+name warning — the same collision, unaddressed on the other carrier.
+
 This adds one row to wire-contracts.md §2's header table:
 
 | Header | Direction | Meaning |
@@ -221,10 +226,12 @@ mapper is a **decorator** around the existing one:
 2. If no version was signalled, or the topic has no registered schema casters, delegate straight to
    the inner `IRequestMapper<TContext>` unchanged — **zero overhead, zero behavior change** for any
    topic that doesn't opt in (design-principles.md §1's "never require it" rule).
-3. Otherwise, look up the caster for `(incomingVersion, canonicalVersion, topic)` via the
-   already-shipped `ISchemaCasters.GetSchemaCaster(...)` (`Benzene.Core.Versioning.Schemas`). The
-   returned `ISchemaCaster.FromType` **is** the incoming payload's CLR shape — no separate
-   version-to-type registry is needed; it falls out of the casters already registered for the topic.
+3. Otherwise, look up the caster keyed by **`(topic, incomingVersion, the resolved handler's
+   request type)`** — see §4.1.2 for why the target is the request *type* rather than a canonical
+   version string. The returned caster's `FromType` **is** the incoming payload's CLR shape — no
+   separate version-to-type registry is needed; it falls out of the casters already registered for
+   the topic. *(Informative, .NET: `ISchemaCasters.TryGetSchemaCaster(topic, fromSchema, toType)` in
+   `Benzene.Core.Versioning.Schemas`, called with `typeof(TRequest)`.)*
 4. Deserialize the raw body as `FromType` using the **negotiated `ISerializer`** (not a JSON-specific
    path — `ISerializer.Deserialize(Type, string)`, or `IPayloadSerializer.Deserialize(Type,
    ReadOnlySpan<byte>)` on the byte-oriented path `RequestMapper<TContext>` already prefers when
@@ -261,6 +268,36 @@ shortcut casters still works (the full step-by-step chain is the fallback), and 
 shortcuts only ever shortens future chains — there is no scenario where adding a shortcut caster
 makes an existing resolution worse or ambiguous, since exact-pair reuse (step 1 above) and shortest-
 path composition (step 2) are both deterministic given a fixed set of registered casters.
+
+#### 4.1.2 More than one canonical version for a topic
+
+A topic may have **more than one live canonical version** — more than one handler registered for
+the same topic, each declaring a different request type. It is rare, but the shape has always
+allowed it (`PayloadSchemaVersions.ToSchemas` is an array), and a lookup keyed only by
+`(topic, fromVersion)` would be ambiguous the moment it happened.
+
+**The disambiguation rule is normative: resolve the caster whose target type is exactly the
+resolved handler's request type.** Routing has already picked the handler before the request is
+materialized (§4.1's opening paragraph), so its request type is known and is the only correct
+target — the message is being cast *for that handler*, not for the topic in the abstract. A lookup
+keyed by `(topic, fromVersion, targetType)` is therefore unambiguous by construction, whatever
+`ToSchemas` contains, and no iteration or tie-break over candidate canonical versions is needed on
+this path.
+
+*(Informative, .NET: `SchemaCasters` builds a dictionary keyed by
+`(Topic, FromSchema, ToType)` and the request mapper passes `typeof(TRequest)`.)*
+
+**Open — the duplicate-key tie-break.** The rule above is unambiguous for a *well-formed* caster
+set. It says nothing about a **malformed** one: two casters registered for the same
+`(topic, fromVersion, targetType)`. The .NET implementation resolves this with **first registration
+wins** (a `TryAdd` on the lookup dictionary, commented "a well-formed set never has one"), which is
+silent — the second registration is discarded with no error and no warning, and registration order
+across DI modules is not something an application controls closely. Settle whether that is the
+intended normative behavior, or whether a duplicate should **fail fast at registration** the way a
+duplicate topic registration does. Failing fast is the better fit for a condition the code itself
+describes as never happening in a well-formed set; the argument against is that it turns a
+previously-tolerated startup into a crash. Until this is decided, a port MUST NOT rely on either
+behavior.
 
 ### 4.2 Response path
 
@@ -552,25 +589,60 @@ absorbs shape-only drift, so C's deployment count tracks *behavioral* versions r
 schema revision. C alone, with no casting, means a new deployment for every payload change — which
 is where an estate accumulates versions fastest and §5.7's retirement problem bites soonest.
 
-## 7. Open questions for the implementation pass
+## 7. Open decisions
 
-- **Multiple simultaneous canonical versions per topic.** §4.1 assumes one canonical version per
-  topic (the resolved handler's declared type). A topic with more than one live canonical version
-  (rare, but the already-shipped `PayloadSchemaVersions.ToSchemas` is an array, suggesting the
-  original design considered it) needs an explicit disambiguation rule before implementation —
-  candidate: match the schema caster whose `ToType` equals `messageHandlerDefinition.RequestType`
-  exactly, iterating `ToSchemas` until found.
-- **HTTP route-parameter naming collision.** If an application already has a domain route parameter
-  literally named `version` for unrelated reasons, the default HTTP `IMessageVersionGetter` would
-  misfire. Needs either a documented reserved-name warning (similar to `/benzene/` prefix
-  reasoning, design-principles.md §5.1) or a configurable parameter name.
-- **Content negotiation vs version negotiation interplay.** §4.2's symmetric-by-default response
-  versioning and the existing `IMediaFormatNegotiator<TContext>` (format: JSON/XML/...) are
-  orthogonal today; confirm no ordering dependency once both decorators are real (format selection
-  reads `content-type`/`accept`, version selection reads `benzene-version`/route — no shared state).
-- **Conformance fixtures.** Once implemented, add version-casting cases to
-  `docs/specification/conformance/` (envelope-cases.json sibling) so other-language ports can
-  verify their casting chain composition against the same fixtures as the .NET reference.
+Mechanisms A and B are implemented (§3, §4), so these are no longer questions "for the
+implementation pass" — the pass happened. What remains are decisions still owed on shipped
+behavior, plus one verification gap. Each says what state it is in.
+
+- **~~Multiple simultaneous canonical versions per topic.~~ RESOLVED — promoted to
+  [§4.1.2](#412-more-than-one-canonical-version-for-a-topic).** The implementation adopted the
+  candidate rule this bullet floated: the lookup keys on the resolved handler's request type, so a
+  topic with several live canonical versions is unambiguous by construction. One sub-question
+  survives the promotion and is recorded there, still open: whether **first registration wins** on a
+  duplicate key is the intended normative tie-break or an implementation accident that should fail
+  fast at registration instead.
+- **OPEN — HTTP route-parameter naming collision.** An application with a domain route parameter
+  literally named `version`, for unrelated reasons, makes the default HTTP `IMessageVersionGetter`
+  read a domain value as a payload schema version. Neither of the resolutions this bullet offered
+  exists: the .NET getter hard-codes the name as a `const` with no override, and §2.1's table calls
+  it "conventionally named `version`" with no reserved-name warning attached.
+
+  **The decision, concretely — pick one:**
+  1. **Reserve the name.** Add `version` to the reserved-names set alongside the `/benzene/` path
+     prefix (design-principles.md §5.1), and say in §2.1 that a route declaring a `version`
+     parameter for any other purpose is a conflict the application must resolve. Cheapest; makes
+     the collision a documented rule rather than a silent misread, but takes a plain English word
+     away from every application that uses HTTP routing.
+  2. **Make it configurable.** A settable parameter name on the HTTP version getter, defaulting to
+     `version`. Costs an option and a place for two halves of an application to disagree, but takes
+     nothing away.
+  3. **Both** — configurable, with the default reserved and documented as such.
+
+  **The strongest argument is the asymmetry with the header carrier.** §2.1 already answers this
+  exact collision on headers — the fallback name list "MUST be configurable" for the stated reason
+  that a pre-existing `version` header can mean something else — and then leaves the identical
+  collision on the route parameter unaddressed. Whatever is ruled, the two carriers should answer
+  it the same way, which points at option 3 (the shape the rest of the spec uses: a default steer,
+  always overridable — design-principles.md's extension-point catalog). The argument against is
+  that it is the most work for a collision nobody has yet reported. This needs a ruling before 1.0
+  either way, because option 1 alone is a breaking change afterwards.
+- **UNCONFIRMED — content negotiation vs version negotiation interplay.** Both decorators are now
+  real, which was the precondition this bullet set ("confirm no ordering dependency once both
+  decorators are real"). **Nothing records that confirmation as having been done.** The reasoning
+  for why they should be orthogonal still holds on inspection — format selection reads
+  `content-type`/`accept`, version selection reads `benzene-version`/route, and they share no state
+  — but that is an argument, not a check. It is cheap to close: a test that exercises a versioned
+  cast and a non-default media format on the same message, in both decorator orders.
+- **OPEN — no version-casting conformance fixtures.** The canonical set has no casting sibling to
+  `envelope-cases.json`, and the "once implemented" precondition this bullet set has fired: §4 is
+  shipped. So **casting-chain composition is verified only against the .NET reference** — its
+  shortest-path composition, its shortcut preference, its degradation when no caster exists. That is
+  precisely the failure mode `conformance/README.md`'s own rationale warns about: a port can pass
+  every existing fixture and still be unable to exchange a versioned message, because nothing
+  neutral pins the behavior. Adding the fixture is a spec change of its own — it needs a canonical
+  caster set to sit alongside the canonical handler set — and every port then has to claim or
+  decline it, which is why it is listed here rather than done in passing.
 
 Specific to Mechanism C (§5):
 
