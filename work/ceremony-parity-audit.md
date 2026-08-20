@@ -234,3 +234,26 @@ schema-based validator with no opinion of its own.
 Go took the shape its language allows again: no overloads, so instead of a second interface and a
 type switch, `Messages()` adapts a plain `[]string` validator in one call and the interface itself
 is structured.
+
+---
+
+## Still open (after 2026-08-20)
+
+- **A client decoding a peer's problem document.** Go's `httpclient` and `awslambdaclient` now
+  rebuild a failed `Result` from the peer's problem document with the structured errors intact
+  (`ErrorPayload.Problems()`); before tonight they flattened it to messages, and the round trip is
+  now pinned end to end. .NET's `HttpStatusCode.Convert` and TypeScript's `HttpContextConverter` map
+  the HTTP **status code** to a result and read no errors from the body at all — a failed call
+  through them yields a result with an empty `errors`.
+
+  The two families are not the same shape, which is why this is a question and not a defect: Go's
+  clients speak the wire **envelope**, so the body always *is* a problem document, while .NET's and
+  TypeScript's HTTP client calls an arbitrary verb+path endpoint whose body is whatever that endpoint
+  returns. Reading `errors` there means guessing that an arbitrary peer speaks RFC 9457. No
+  conformance fixture requires it, and .NET and TypeScript agree with each other today, so changing
+  it is a deliberate cross-port decision for the owners rather than something to fix in passing. The
+  question worth answering: should a failure from a *Benzene* peer over the HTTP client carry that
+  peer's `errors`, and if so, how does the client know the peer is one?
+
+- **`mesh-service-version-cases.json` is vendored by all four ports and run by none.** A claim
+  decision per port (§4), not a defect. Recorded so it stays a decision.
