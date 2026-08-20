@@ -354,6 +354,35 @@ worth knowing before anything does.
 
 Until §4.2 answers this, a producer that relies on `code` reaching a consumer cannot use gRPC.
 
+## New spec gap found by wave 2: the Contract Document has no producer fixtures
+
+Verified directly. Every case in `contract-document-cases.json` starts from a `documentRef` and
+asserts what a *consumer* must derive from it (`parseCases.expected`,
+`topicScopeCases.expectedTopics`, `schemaClosureCases.expectedComponents`), and every case in
+`contract-hash-cases.json` supplies a `document` and an `expectedHash`. All of it pins the reader.
+
+**Nothing pins the writer.** The Contract Document is, in contract-document.md's own words, "the
+single input every language's client generator parses" — and no fixture checks that any port
+*emits* a valid one. That includes .NET, the document's stated reference implementation. A port
+could serve a subtly wrong document at `/benzene/spec` and the entire conformance suite would stay
+green, in every language.
+
+This is the same shape as the vendored-but-unrun finding (P1.3), one level out: there, the bytes
+were guarded and the behaviour was not; here, the parse direction is guarded and the emit direction
+is not. It is more consequential, because a bad emitter breaks every other port's generator rather
+than only its own tests.
+
+Python's wave 2 work is the first emitter in any port outside .NET, and it is checked against §1–§3's
+presence rules directly plus a round trip through `benzene.codegen_client` (derive → parse →
+generate → agree on the contract hash). That is a reasonable substitute, and it is not a fixture.
+It also added a test asserting the fixtures are reader-only, so a future re-vendor that adds
+producer cases fails loudly there rather than leaving them silently unimplemented — worth copying in
+the other ports.
+
+**The ask:** add producer-direction cases to `contract-document-cases.json` — a registry-shaped
+input and the document a conformant port must emit from it. Until then, R5 conformance is
+"serves something at `/benzene/spec`" rather than "serves the format".
+
 ## Sequencing
 
 P0.1 and P1.10 are minutes of work and currently red — do them first. P0.2/P0.4 need a maintainer
