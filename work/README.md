@@ -55,17 +55,77 @@ unpublishing them.
 
 ## What is here
 
+**Kept current as of 2026-08-20.** A stale inventory is how divergence starts — the whole argument
+of this file — so this list is checked against `ls work/` when a document is added, not periodically.
+
+### The cross-language contract
+
 - `benzene-vision.md` — the original problem and the design philosophy, cross-language
-- `benzene-naming-principle.md` — how Benzene names what it owns on the wire
-- `benzene-headers-design.md`, `benzene-headers-plan.md` — the header mechanism
-- `archive/error-payload-proposal-2026-07-25.md` — whether there is a better error payload, and a
-  standard to adopt. **Ruled and archived**: RFC 9457 shipped (`docs/specification/wire-contracts.md`
-  §1.3), which is the option this document recommended against
-- `cloudevents-design.md` — CloudEvents as a wire format
-- `spec-review-2026-07-25.md` — the maintainer's review of the specification draft
-- `mesh-ui-product-vision.md` — the shared Mesh UI, which lives in this repo
-- `mesh-ui-react-assessment.md` — what a React + TypeScript componentisation of the Mesh UI would cost
-- `repo-split-plan.md`, `repo-split-manifest.md`, `repo-split/` — how the repositories got this shape
-- `website-analytics-setup.md` — turning on traffic monitoring for benzene.app
+- `benzene-naming-principle.md` — how Benzene names what it owns on the wire (a ruling, accepted)
+- `benzene-headers-design.md`, `benzene-headers-plan.md` — the header mechanism. The plan is ready
+  to execute and blocked only on a maintainer go/no-go; its Phase A is a pre-1.0 wire change
+- `cloudevents-design.md` — CloudEvents as a wire format. **A decision is owed**: benzene-go has
+  shipped a binding that no spec section pins and that diverges from this design
+- `ceremony-parity-audit.md` — whether the same capability costs the same amount of code in all
+  four ports; the standing record of what has been compared
+
+### Reviews and audits
+
+- `spec-review-2026-07-25.md` — the maintainer's review of the specification draft (open backlog)
+- `cross-repo-outstanding-work-2026-08-20.md` — the verified five-repo audit of every
+  outstanding-work claim in the documentation, classified against the code
+- `remaining-issues-plan.md` — what the overnight quality sweep left open, checked against the live
+  registries and workflow runs rather than inferred
+
+### The mesh — product, UI and feedback
+
+The mesh is the largest body of work here, and it splits three ways.
+
+*What it is for, and what it should become:*
+- `mesh-ui-product-vision.md` — the Mesh UI's vision and roadmap (living, appended in dated blocks)
+- `mesh-ui-aims.md` — the aims each UI element must serve, written as a decision instrument
+- `mesh-ui-design-simplicity.md` — the case for simplicity, and the principle to design to
+- `mesh-enterprise-readiness.md` — what an enterprise needs from the mesh, researched against code
+- `mesh-environments-and-access.md` — who may see a mesh, where it runs, and how the UI is built
+- `mesh-versions-and-planning-requirements.md` — service versions, compositions and the planning
+  plane, as draft requirements rather than a plan
+
+*Plans and delivery records:*
+- `mesh-ui-improvement-plan.md` — the three-reviewer UI review and its waves (waves 1–3 delivered)
+- `mesh-ui-react-assessment.md` — what a React componentisation would cost. **Decided and built**:
+  it lives in `benzene-ui`
+- `mesh-mismatch-and-dispatch-plan.md` — making contract mismatch visible and dispatch real
+- `mesh-wave-e-delivery-2026-08-16.md` — what Wave E shipped
+
+*The persona feedback method and its rounds:*
+- `mesh-user-personas.md` — the shared brief for the eight persona agents
+- `mesh-persona-round-method.md` — how to run a round, and the four ways the harness broke
+- The raw evidence packs, in order — `mesh-feedback-round-2026-08-16.md`,
+  `mesh-feedback-round2-2026-08-16.md`, `mesh-feedback-round3-2026-08-16.md`,
+  `mesh-feedback-round5-2026-08-16.md`, `mesh-feedback-round6-2026-08-16.md`,
+  `mesh-feedback-round7-2026-08-16.md`. Rounds 3, 5 and 6 are focused on one question; the rest are
+  open. *(Round 4 was a confirmation pass folded into round 5 and has no file of its own.)*
+
+### Transports and tooling under consideration
+
+- `cloudflare-transport-research.md`, `cloudflare-queues-plan.md` — what Benzene could support from
+  Cloudflare beyond HTTP, and the work plan for Queues
+- `third-party-tool-integrations.md`, `third-party-tool-integrations-plan.md` — observability
+  platforms, analyzers, a profile-check GitHub Action and dashboards. WP0 and WP2 are done, WP1 and
+  WP3 partly; WP4 onward are unstarted
+
+### The repositories, and the website
+
+- `repo-split-plan.md`, `repo-split-manifest.md`, `repo-split/` — how the repositories got this
+  shape. **Executed**, all phases done
+- `website-analytics-setup.md` — turning on traffic monitoring for benzene.app. GA4 is live; only
+  Search Console is left
 - `website-information-architecture-strategy.md` — layering the site so a newcomer meets the
   quickstart before the specification, without thinning any of the reference material
+
+### Archive
+
+- `archive/` — dated records and superseded documents; nothing there is current. See
+  [`archive/README.md`](archive/README.md). It currently holds one file:
+  `error-payload-proposal-2026-07-25.md`, ruled against and superseded by
+  `docs/specification/wire-contracts.md` §1.3
