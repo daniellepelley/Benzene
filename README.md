@@ -41,6 +41,9 @@ language switcher, a cross-language docs hub, and a per-language section for eac
 ## What's in this repo
 
 - `docs/specification/**` — the language-neutral specification (the cross-language source of truth)
+- `docs/capabilities.md` — the consolidated cross-port capability matrix: what each language port
+  does, deliberately doesn't, and where they diverge (descriptive, built from each port's own
+  capability record)
 - `website/` — the static-site generator for benzene.app
 - `blog/` — the project blog
 - `work/` — planning and design notes (actioned plans live in `work/archive/`)
