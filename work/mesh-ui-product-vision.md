@@ -7,7 +7,7 @@
 >
 > **2026-08-18 — `work/mesh-ui-aims.md` is now the authority on *what the mesh UI is for*.** It
 > distils the standing rulings in this file (§1, §2, §4, §5, §C5, §D8, §D9, §E8) plus
-> `work/mesh-ui-design-simplicity.md` into six aims, one question per screen, the exclusions and the
+> `work/archive/mesh-ui-design-simplicity.md` into six aims, one question per screen, the exclusions and the
 > non-negotiable rules — the form a screen can be checked against. This file keeps the history and
 > the reasoning; where the two disagree, the aims doc wins. New refinement rounds still land here.
 
@@ -960,7 +960,7 @@ was the evidence that the thing underneath was not running.**
 
 ## 2026-08-16 — PRODUCT REFINEMENT on the first user-feedback round
 
-Input: `work/mesh-feedback-round-2026-08-16.md` (eight personas, `work/mesh-user-personas.md`, harness
+Input: `work/archive/mesh-feedback-round-2026-08-16.md` (eight personas, `work/mesh-user-personas.md`, harness
 built from `benzene-ui` `3a61f05`). This block **deviates from** the "two audiences" framing above and
 **re-ranks** the six outcomes. It does not rewrite them; read them as history, and this as what
 replaced them.
@@ -1399,9 +1399,9 @@ implementation, per the standing rule.
 
 ## 2026-08-16 (later) — PRODUCT REFINEMENT 2, and the removal of discussion/annotations
 
-Input: `work/mesh-feedback-round2-2026-08-16.md` (all eight personas rerun against a **composed rich
+Input: `work/archive/mesh-feedback-round2-2026-08-16.md` (all eight personas rerun against a **composed rich
 estate** — `owningTeam` on every service, the `payment:capture` / `shipping:book` v1/v2 split with
-`versionCompatibility`), read against `work/mesh-feedback-round-2026-08-16.md` and its correction
+`versionCompatibility`), read against `work/archive/mesh-feedback-round-2026-08-16.md` and its correction
 block. This block **re-ranks the R1 backlog above** and records a maintainer decision to remove
 discussion/annotations. It does not rewrite the R1 block; read that as history and this as what
 moved.
@@ -1581,7 +1581,7 @@ gives the shape without a new argument:
 block records the four reconciliation classes — *silent-but-declared*, *observed-but-undeclared*,
 *unhealthy*, *stale* — as **SHIPPED** in `collectLiveIssues()` on the then-canonical
 `mesh-ui.html`. **None of those five names appears anywhere in `benzene-ui` today** (grep-verified
-across `src/`). `work/mesh-ui-react-assessment.md` §9 already records that the React port needed a
+across `src/`). `work/archive/mesh-ui-react-assessment.md` §9 already records that the React port needed a
 parity sweep because *"eight of the original's `render*`/`build*` functions had no counterpart at the
 point the port looked finished … roughly 85% parity looks like 100% from the outside."* This is
 consistent with a ninth. **Action: a parity audit of the React port against the pre-rewrite
@@ -1947,7 +1947,7 @@ the spec never carried. The one approved spec change remains R1 §5.6's `placeme
 
 ## 2026-08-16 (later still) — PRODUCT REFINEMENT 3: breaking changes and contract drift
 
-Input: `work/mesh-feedback-round3-2026-08-16.md` (all eight personas, one question — *can you tell what
+Input: `work/archive/mesh-feedback-round3-2026-08-16.md` (all eight personas, one question — *can you tell what
 changed, and whether it breaks you?* — over a purpose-built drift estate), plus two direct maintainer
 observations from a live AWS deployment of the .NET mesh example: that drift is flagged, unclickable
 and unexplained, and that the service page "could do with some boxes."
@@ -3209,7 +3209,7 @@ neither can tell you who owes a deploy.
 
 Implemented against §D10 immediately after the design block, in `benzene-ui` at `main`. Recorded here
 so the vision document and the code do not drift; round 6's re-test verdicts are in
-`work/mesh-feedback-round6-2026-08-16.md`.
+`work/archive/mesh-feedback-round6-2026-08-16.md`.
 
 | # | Item | Shipped as | Note |
 | --- | --- | --- | --- |
@@ -3245,7 +3245,7 @@ and from a different direction: the same defect, one render site over.
 
 ## 2026-08-16 (round 7) — PRODUCT REFINEMENT 5: what a number is worth, and how old it is
 
-Input: `work/mesh-feedback-round7-2026-08-16.md` (architect, developer, production support) plus the
+Input: `work/archive/mesh-feedback-round7-2026-08-16.md` (architect, developer, production support) plus the
 three reports that landed after it was written — QA, the delivery owner, and the platform engineer,
 whose report arrived last and reframed the round. First **open** round since round 2: every persona
 used the whole product for their own job and named the weakest thing in it.

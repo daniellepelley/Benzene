@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-20: actioned — absorbed into `work/mesh-ui-product-vision.md`'s dated blocks and distilled by `work/mesh-ui-aims.md`.
+
 # Mesh user-feedback round — 2026-08-16
 
 The first round using the eight user personas in `.claude/agents/mesh-*.md` (see

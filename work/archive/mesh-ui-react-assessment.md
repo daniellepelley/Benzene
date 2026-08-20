@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-20: actioned — decision executed; benzene-ui is the React + TypeScript component library.
+
 # Mesh UI — assessment: single-file HTML → React + TypeScript component library
 
 **Status:** Assessment for decision. No code written, nothing committed to.

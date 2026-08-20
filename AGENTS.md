@@ -15,7 +15,7 @@ used to live here) is in [benzene-dotnet](https://github.com/daniellepelley/benz
 [benzene-go](https://github.com/daniellepelley/benzene-go); TypeScript is in
 [benzene-typescript](https://github.com/daniellepelley/benzene-typescript); Python is in
 [benzene-python](https://github.com/daniellepelley/benzene-python). The split is recorded in
-`work/repo-split-plan.md`.
+`work/archive/repo-split-plan.md`.
 
 ## Structure
 - `docs/specification/` — the spec (Markdown) + `conformance/*.json` fixtures. The **canonical** copy;
@@ -23,7 +23,8 @@ used to live here) is in [benzene-dotnet](https://github.com/daniellepelley/benz
 - `website/` — the static-site generator (a .NET console app using Markdig) + demos + assets. This is
   the only .NET project in the repo; it's a build tool, not a shipped package. See `website/CLAUDE.md`.
 - `blog/` — the project blog (Markdown).
-- `work/` — planning/design notes, including the repo-split plan/manifest/status.
+- `work/` — planning/design notes; actioned plans (including the repo-split plan/manifest/status)
+  are archived in `work/archive/`.
 - `.github/workflows/` — `deploy-website.yml` (build + publish to dev) and `promote-website.yml`
   (dev → live). The language-implementation CI lives in each language repo, not here.
 

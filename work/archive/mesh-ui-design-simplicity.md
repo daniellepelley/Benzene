@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-20: superseded by `work/mesh-ui-aims.md` (its own banner says so); its principles are carried as R6/R8.
+
 # Mesh UI — the case for simplicity, and the principle to design to
 
 **2026-08-16.** Written after Wave E shipped, against the observation that the functional advances are

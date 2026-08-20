@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-20: actioned — Waves 1–3 DONE in-file with commits (benzene-ui `998f7fa`, `e54351c`, `d2e2093`); open product-owner decisions extracted to `work/remaining-issues-plan.md`.
+
 # Mesh UI — improvement plan, 2026-08-18
 
 The output of a timeboxed review of the whole mesh UI by three independent reviewers — information

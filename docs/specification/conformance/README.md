@@ -190,7 +190,7 @@ other fixture touches — envelope, status and protocol-mapping cases never look
 A port can therefore rename or misspell the topic attribute, pass every other fixture, and still be
 unable to exchange a single queue message with another port. That is not hypothetical: it is
 exactly how the .NET and Python ports diverged when the key was briefly `benzene-topic`
-(`work/benzene-naming-principle.md` §3c, since reversed).
+(`work/archive/benzene-naming-principle.md` §3c, since reversed).
 
 The EventBridge embedded-headers key (`_benzeneHeaders`, wire-contracts §2, tier D) is deliberately
 **not** pinned here: it is scheduled to be renamed to `benzene-headers`

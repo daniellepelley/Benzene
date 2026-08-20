@@ -5,7 +5,7 @@ screenshot of any mesh screen, and they can say *"this element serves aim N"* or
 serves no aim — delete it"* without asking me.
 
 It **distils** rulings already made in `work/mesh-ui-product-vision.md` (§1, §2, §4, §5, §C5, §D8,
-§D9, §E8), `work/mesh-ui-design-simplicity.md` and the seven persona rounds. Where those disagree,
+§D9, §E8), `work/archive/mesh-ui-design-simplicity.md` and the seven persona rounds. Where those disagree,
 this file rules and this file wins. Nothing here is new policy except **R10**, which is flagged.
 
 ---
@@ -130,7 +130,7 @@ merge.
   destination**, deliberately under-invested in (§3.4): it is not the surface that scales.
 - **The Estate page's four exception banners become one block** — *declared and observed disagree* —
   with N rows. Four diagnoses rendered as four near-identical paragraphs is one fact with four
-  costumes (`mesh-ui-design-simplicity.md`, move 2).
+  costumes (`archive/mesh-ui-design-simplicity.md`, move 2).
 - **The navigation must reach every destination.** Four nav entries for eight screens is why readers
   report they cannot get back. Issues is reachable only through a *see all*; Topics is unreachable.
 - **The Value page is renamed.** *Value* is the product's internal word, not the reader's. The
@@ -187,7 +187,7 @@ Non-negotiable. A reviewer cites the number; the author fixes it or the element 
   defect as a stack trace on a landing page.
 - **R8 — Say the verdict at full volume, the qualifier at half, the derivation on demand.** The
   honesty rules constrain *what* must be said, never *how loudly*. Three volumes, assigned
-  deliberately, on every surface (`mesh-ui-design-simplicity.md`).
+  deliberately, on every surface (`archive/mesh-ui-design-simplicity.md`).
 - **R9 — Status colour is never decoration.** Red, amber and the unknown tone mean one thing each,
   everywhere.
 - **R10 — Every link leads to a page that agrees the thing exists.** *(New, 2026-08-18.)* The product

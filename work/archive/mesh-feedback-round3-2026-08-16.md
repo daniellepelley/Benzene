@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-20: actioned — absorbed into `work/mesh-ui-product-vision.md`'s dated blocks and distilled by `work/mesh-ui-aims.md`.
+
 # Mesh user-feedback round 3 — 2026-08-16 — breaking changes and contract drift
 
 A **focused** round. Rounds 1 and 2 asked every persona to use the whole product; this one asks all

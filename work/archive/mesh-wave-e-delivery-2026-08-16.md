@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-20: actioned — Wave E delivered; absorbed into `work/mesh-ui-product-vision.md`'s dated blocks and distilled by `work/mesh-ui-aims.md`.
+
 # Wave E — delivered
 
 **Round 7 → product owner (§E of `mesh-ui-product-vision.md`) → implementation.** Six commits in

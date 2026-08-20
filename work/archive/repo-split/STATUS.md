@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-20: actioned — the split completed; see `work/archive/repo-split-plan.md` (Phases 1–4 done).
+
 # Repo split — execution status
 
 Live status of the autonomous execution of [`../repo-split-plan.md`](../repo-split-plan.md).

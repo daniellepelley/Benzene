@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-20: actioned — `docs/specification/wire-contracts.md` §1.3 now mandates RFC 9457 problem details.
+
 # Error Payload — investigation and proposal
 
 **Status:** PROPOSAL for maintainer ruling — investigation complete, recommendation made, nothing

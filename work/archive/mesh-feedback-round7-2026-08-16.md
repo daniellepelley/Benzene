@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-20: actioned — absorbed into `work/mesh-ui-product-vision.md`'s dated blocks and distilled by `work/mesh-ui-aims.md`.
+
 # Mesh user-feedback round 7 — 2026-08-16 — open round
 
 The seventh round, and the first **open** one since round 2. Rounds 5 and 6 drilled hard on a single

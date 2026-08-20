@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-20: actioned — IMPLEMENTED 2026-08-20 (benzene-ui `ca9668d`, benzene-dotnet `46f038e`); live remainders extracted to `work/remaining-issues-plan.md`.
+
 # Mismatch made visible, and dispatch made real — implementation plan
 
 > **IMPLEMENTED 2026-08-20** — benzene-ui `ca9668d`, benzene-dotnet `46f038e`. Two deviations from

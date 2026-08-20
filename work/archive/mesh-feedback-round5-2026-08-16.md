@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-20: actioned — absorbed into `work/mesh-ui-product-vision.md`'s dated blocks and distilled by `work/mesh-ui-aims.md`.
+
 # Mesh user-feedback round 5 — 2026-08-16 — deployment coordination
 
 The fifth round, and the second **focused** one. Round 3 asked "can you tell what changed, and

@@ -5,7 +5,7 @@ implementation log (§12). Everything else remains a proposal.
 **Scope:** the public site ([benzene.app](https://benzene.app)) — its layering, navigation, visual
 language, page templates, and the generator changes needed to support them. Some of the work lands in
 `benzene-dotnet`, not this repo; that is called out where it applies.
-**Related:** `work/repo-split-plan.md` (why the site is multi-source), `website/CLAUDE.md` (how the
+**Related:** `work/archive/repo-split-plan.md` (why the site is multi-source), `website/CLAUDE.md` (how the
 generator works), `.claude/agents/cold-developer.md` (the instrument used to test it), and the
 marketing planning kept in the private `benzene-admin` repo.
 

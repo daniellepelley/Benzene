@@ -8,7 +8,7 @@ the website, and the shape of the repositories themselves.
 A document lives in the repository that owns its subject, and other repositories link to it. Two
 copies diverge silently, and this project has already proved that twice — the repo split left `work/`
 duplicated across `Benzene` and `benzene-dotnet`, and by the time anyone looked, eleven files had
-drifted apart. One of them mattered: `benzene-naming-principle.md` recorded the 2026-07-27 reversal of
+drifted apart. One of them mattered: `benzene-naming-principle.md` (now `archive/`) recorded the 2026-07-27 reversal of
 the topic-header decision here, while the copy in `benzene-dotnet` still described the abandoned
 `benzene-topic` spelling.
 
@@ -53,17 +53,34 @@ unpublishing them.
 > [`benzene-dotnet/work/`](https://github.com/daniellepelley/benzene-dotnet/tree/main/work) (or its
 > `archive/`). Clickable links were rewritten to absolute URLs; plain mentions were left as prose.
 
+## Actioned plans are archived, not kept here
+
+When a plan's work has demonstrably shipped, the plan moves to [`archive/`](archive/README.md) with
+an `> ARCHIVED <date>` stamp naming the evidence, and any live remainder is extracted first (today
+those live in `remaining-issues-plan.md`). So: everything below is either living or genuinely in
+flight — a document you find here is asking for something, or is a standing record current work
+still cites. Dead plans are one directory away, indexed in [`archive/README.md`](archive/README.md).
+The 2026-08-20 sweep moved the actioned set there: the naming-principle ruling, the error-payload
+proposal, the 2026-07-25 spec review, the seven dated mesh feedback/delivery records, the
+design-simplicity note, the React assessment, the two executed mesh plans, and the repo-split
+plan/manifest/status.
+
 ## What is here
 
 - `benzene-vision.md` — the original problem and the design philosophy, cross-language
-- `benzene-naming-principle.md` — how Benzene names what it owns on the wire
-- `benzene-headers-design.md`, `benzene-headers-plan.md` — the header mechanism
-- `error-payload-proposal.md` — whether there is a better error payload, and a standard to adopt
+- `benzene-headers-design.md`, `benzene-headers-plan.md` — the header mechanism (plan deliberately
+  deferred; still live)
 - `cloudevents-design.md` — CloudEvents as a wire format
-- `spec-review-2026-07-25.md` — the maintainer's review of the specification draft
-- `mesh-ui-product-vision.md` — the shared Mesh UI, which lives in this repo
-- `mesh-ui-react-assessment.md` — what a React + TypeScript componentisation of the Mesh UI would cost
-- `repo-split-plan.md`, `repo-split-manifest.md`, `repo-split/` — how the repositories got this shape
+- `remaining-issues-plan.md` — the current worklist: release state, open cross-port questions, and
+  the remainders extracted from archived plans
+- `ceremony-parity-audit.md` — the cross-port ceremony/parity audit backing the open P1 questions
+- `mesh-ui-aims.md` — the authority on what the mesh UI is for; the rules screens are checked against
+- `mesh-ui-product-vision.md` — the shared Mesh UI: history, rulings, and dated refinement blocks
+- `mesh-user-personas.md`, `mesh-persona-round-method.md` — the personas and the method for
+  feedback rounds (the dated rounds themselves are archived)
+- `mesh-versions-and-planning-requirements.md` — draft requirements for the versions/planning plane
+- `mesh-environments-and-access.md` — environments, identity and access for the mesh (E* rules)
+- `mesh-enterprise-readiness.md` — what an enterprise adoption would still need
 - `website-analytics-setup.md` — turning on traffic monitoring for benzene.app
 - `website-information-architecture-strategy.md` — layering the site so a newcomer meets the
   quickstart before the specification, without thinning any of the reference material

@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-20: actioned — ruling ACCEPTED 2026-07-25 and applied, including the §3c reversal; `docs/specification/wire-contracts.md` now carries the naming principle.
+
 # The Benzene Naming Principle — RULING
 
 **Status:** ✅ **ACCEPTED by the maintainer, 2026-07-25** — adopted exactly as proposed, including

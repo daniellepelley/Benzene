@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-20: actioned — items settled in the spec, except item 1 (CancellationToken), now a per-port API question tracked in `work/remaining-issues-plan.md`.
+
 # Specification Review — maintainer pass, 2026-07-25
 
 **Status:** OPEN BACKLOG — items captured, none decided. Each needs investigation, then a ruling.

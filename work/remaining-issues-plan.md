@@ -224,3 +224,32 @@ prose.
 3. ~~**P2.1 and P2.2**~~ — both done, 2026-08-20. P2.3 (personas) remains.
 4. **P1.1–P1.3** whenever you want to settle them. Nothing is blocked on them; they are the
    difference between "these ports agree by accident" and "these ports agree on purpose".
+
+---
+
+## Extracted remainders (2026-08-20 archive sweep)
+
+Live items carried out of plans archived to `work/archive/` on 2026-08-20, so those plans could
+retire without losing their remainders. Each notes its source.
+
+- Terraform for the dispatch throttle/env is **unvalidated** — no `terraform` binary was available
+  at build time (from `work/archive/mesh-mismatch-and-dispatch-plan.md`).
+- **Part C: persistent changes ledger** — an accumulating change-history artifact beside the
+  run-over-run diff; parked product decision (from
+  `work/archive/mesh-mismatch-and-dispatch-plan.md`).
+- PO decision 1: rename target for Value — "Retire" (shipped in Wave 1) or "Retirement candidates"?
+  (from `work/archive/mesh-ui-improvement-plan.md`)
+- PO decision 2: delete the Estate's Recent-flows band — deleted in Wave 1 as recommended, but not
+  covered by a prior ruling; confirm (from `work/archive/mesh-ui-improvement-plan.md`).
+- PO decision 3: schemaMismatch full fix scope — in a wave, or interim copy only? (from
+  `work/archive/mesh-ui-improvement-plan.md`)
+- PO decision 4: ship the environment chip before `placement.environment` lands in the spec —
+  Wave 3 shipped the seam with the honest "not published" default; confirm (from
+  `work/archive/mesh-ui-improvement-plan.md`).
+- schemaMismatch **full fix**: the aggregator publishes the differing paths, feeding the existing
+  `SchemaTree` annotations machinery (from `work/archive/mesh-ui-improvement-plan.md` §2.6).
+- Repo split **Phase 5**: wire real Go/TypeScript doc sources into the website build (placeholder
+  section, switcher UX pass, per-language "edit this page" links, cross-repo release/verify loop
+  docs) (from `work/archive/repo-split-plan.md`).
+- **CancellationToken on message handlers** — now a per-port API question (from
+  `work/archive/spec-review-2026-07-25.md`, item 1).

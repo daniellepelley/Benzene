@@ -213,7 +213,7 @@ the critical path of a NuGet package build would be a poor trade.
 
 Every consumer **vendors a verbatim copy** with a provenance marker — the same discipline the
 [conformance fixtures](../specification/conformance/README.md) use, and the reason
-[git submodules were rejected](https://github.com/daniellepelley/Benzene/blob/main/work/repo-split-plan.md): a copy is diffable, offline, and
+[git submodules were rejected](https://github.com/daniellepelley/Benzene/blob/main/work/archive/repo-split-plan.md): a copy is diffable, offline, and
 cannot break a downstream build when this repo moves.
 
 | Consumer | Vendored as | Notes |

@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-20: actioned — Phases 1–4 done; this repo carries no src/. Phase 5 remainder extracted to `work/remaining-issues-plan.md`.
+
 # Repo split & multi-language website — plan
 
 **Status:** planning (not yet actioned). This is the tracked, phase-by-phase checklist.

@@ -3,7 +3,7 @@
 **Status:** PLAN — **deliberately not executed.** Documented now, implemented later.
 **Last Updated:** 2026-07-25
 **Purpose:** The executable plan for `work/benzene-headers-design.md`. Written to be run **after**
-the repo split (`work/repo-split-plan.md`) has landed, because this change touches both sides of
+the repo split (`work/archive/repo-split-plan.md`) has landed, because this change touches both sides of
 that split and doing it now would create a near-unmergeable conflict with the in-flight file moves.
 
 > **Why this is a document and not a commit.** A large refactor is in flight moving the .NET port
@@ -15,7 +15,7 @@ that split and doing it now would create a near-unmergeable conflict with the in
 
 ## 1. This is the first spec change to cross the new repo boundary
 
-Per `work/repo-split-manifest.md`, this work lands in **both** repos:
+Per `work/archive/repo-split-manifest.md`, this work lands in **both** repos:
 
 | Piece | Repo | Notes |
 |---|---|---|

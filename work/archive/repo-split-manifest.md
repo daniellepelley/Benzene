@@ -1,3 +1,5 @@
+> ARCHIVED 2026-08-20: actioned — the split it specifies was executed (Phases 1–4 of `repo-split-plan.md`, alongside in this archive).
+
 # Repo split — Phase 1 file-move manifest
 
 Companion to **[repo-split-plan.md](repo-split-plan.md)**. This is the exact, reviewable split of

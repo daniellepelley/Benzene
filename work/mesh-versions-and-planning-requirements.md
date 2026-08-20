@@ -1,7 +1,7 @@
 # Service versions, compositions, and the planning plane — rough requirements
 
 **Status: draft requirements for discussion.** Not a plan. The plan comes after these are argued over
-and cut down. Written 2026-08-16, after Wave E and alongside `mesh-ui-design-simplicity.md`, which it
+and cut down. Written 2026-08-16, after Wave E and alongside `archive/mesh-ui-design-simplicity.md`, which it
 depends on.
 
 ---
@@ -289,7 +289,7 @@ Listed last deliberately, and gated.
 - **R7.3** The composition **diff** is the central new view, not a new band on an existing page.
 - **R7.4** **Hard dependency: the simplicity work lands first.** The estate page carries eleven bands
   today. Adding a planning plane before that is fixed doubles a problem that is already the top
-  complaint. See `mesh-ui-design-simplicity.md`.
+  complaint. See `archive/mesh-ui-design-simplicity.md`.
 
 ---
 

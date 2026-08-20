@@ -43,11 +43,11 @@ language switcher, a cross-language docs hub, and a per-language section for eac
 - `docs/specification/**` — the language-neutral specification (the cross-language source of truth)
 - `website/` — the static-site generator for benzene.app
 - `blog/` — the project blog
-- `work/` — planning and design notes (including the repo-split record)
+- `work/` — planning and design notes (actioned plans live in `work/archive/`)
 
 The .NET implementation that used to live here moved to
-[benzene-dotnet](https://github.com/daniellepelley/benzene-dotnet); see `work/repo-split-plan.md` for
-that split.
+[benzene-dotnet](https://github.com/daniellepelley/benzene-dotnet); see
+`work/archive/repo-split-plan.md` for that split.
 
 ## Contributing
 

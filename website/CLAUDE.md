@@ -15,7 +15,7 @@ language switcher (a `<details>` disclosure) sits atop the docs sidebar. The `.N
 root is `--dotnet-docs <path>` (a `benzene-dotnet` checkout); it is **required** — the `.NET` docs
 are the reference section and the marketing/front pages link into them, so a run without it errors.
 (Before the split's cutover a local run fell back to benzene's own `docs/`; the `.NET` code has since
-moved out to `benzene-dotnet`, so that fallback is gone.) See `work/repo-split-plan.md`.
+moved out to `benzene-dotnet`, so that fallback is gone.) See `work/archive/repo-split-plan.md`.
 
 ## Key types (`generator/`)
 - `SiteBuilder` - the orchestrator. For every `DocSource` it discovers that source's pages (rooted at

@@ -150,7 +150,7 @@ universal header.
 shared with the application and the transport. Names Benzene *borrows* — `content-type`,
 `traceparent`, `tracestate`, `x-correlation-id` — are never renamed: interoperating with the
 standard is the entire reason for using them. (The full rule is in
-`work/benzene-naming-principle.md`.)
+`work/archive/benzene-naming-principle.md`.)
 
 `topic` is the deliberate exception: it keeps the envelope field's spelling so that one concept has
 one name wherever it travels. The collision the marker guards against — an application that already
