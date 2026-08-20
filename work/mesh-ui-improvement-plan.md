@@ -57,7 +57,12 @@ After Wave 1 the Estate is: verdict sentence, KPI strip, disagree block, Needs a
 changes, Services — six bands, first line actionable. The critic's counted defects (twin 43-word
 paragraphs, 3 of 5 preview cards non-actionable) are all downstream of 1.4–1.7.
 
-## Wave 2 — honesty and clarity sweep (the "make what it shows clearer" wave)
+## Wave 2 — honesty and clarity sweep — **DONE** (benzene-ui `e54351c`, 2026-08-20)
+
+All nine landed. Two findings beyond what the review reported: the contrast failure was **all three**
+light-theme RAG colours, not just red (amber 2.95:1, green 3.18:1), now 4.96/5.07/5.20 with a test
+that computes the ratios; and the hover class is frozen by an architecture ratchet at 45 (down from
+87) rather than burned down case by case, because the last two rounds flagged it and it regrew.
 
 | # | Move | Why | Size |
 |---|---|---|---|
