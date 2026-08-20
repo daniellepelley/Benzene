@@ -1,13 +1,14 @@
 # Benzene Specifications (Draft)
 
-**Status: DRAFT v0.1 — extracted from the .NET implementation, which remains the single normative
-reference while these documents mature.**
+**Status: DRAFT v0.1 — the canonical, language-neutral definition of Benzene, which every language
+port implements. First extracted from the .NET implementation (the reference implementation), and
+still maturing: while in draft, contracts may change — see [Versioning](#versioning).**
 
 ## Two levels
 
-The specification is split into two levels, because Benzene itself is deliberately open —
-middleware, health checks, and the spec endpoint are all optional — while the fleet tooling
-built around it (mesh, Spec UI, codegen clients) needs services it can make assumptions about:
+The specification has two levels. Benzene itself is deliberately open — middleware, health
+checks, and the spec endpoint are all optional — but the fleet tooling built around it (mesh,
+Spec UI, codegen clients) needs services it can make assumptions about. So:
 
 1. **The Benzene Core Specification** — everything in this directory except the profile: the
    concepts, semantics, and wire contracts that any implementation of Benzene must honor *for
