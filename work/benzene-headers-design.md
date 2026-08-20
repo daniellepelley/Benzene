@@ -1,8 +1,11 @@
 # `benzene-headers` — packed headers, and the chained topic getter
 
-**Status:** PROPOSAL — accepted in shape; **execution plan is `work/benzene-headers-plan.md`**, deferred until after the repo split. Originally: proposal for maintainer ruling — captures the maintainer's design (2026-07-25), grounded
-against the current code, with the edge cases that need a decision called out. Task #33.
-**Last Updated:** 2026-07-25
+**Status:** ACCEPTED in shape; **execution plan is `work/benzene-headers-plan.md`**, which is ready
+to run and waiting only on a maintainer go/no-go. The old deferral "until after the repo split" has
+expired — the split is complete. Originally: proposal for maintainer ruling — captures the
+maintainer's design (2026-07-25), grounded against the current code, with the edge cases that need
+a decision called out. Task #33.
+**Last Updated:** 2026-07-25 (design) · 2026-08-20 (deferral note corrected)
 **Purpose:** Rename `_benzeneHeaders` in line with every other header, and generalise it from an
 EventBridge-only workaround into an **optional** packed-headers mode available on any transport —
 without making it the default, because separate headers are what you want when you're debugging.
