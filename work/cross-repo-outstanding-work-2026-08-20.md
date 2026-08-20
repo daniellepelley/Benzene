@@ -8,6 +8,44 @@ DONE / PARTIAL / OUTSTANDING / OBSOLETE with file:line evidence.
 Baselines audited: spec `c307cae` · dotnet `2621759` · go `b44d53c` · typescript `816f4c0` ·
 python `6b9f6c6`.
 
+## Wave 1: delivered 2026-08-20
+
+Recorded here immediately, because a plan that does not say what shipped becomes the thing this
+audit was called to fix. Landed: spec `f30235d` (branch) · dotnet `ce5c1b1` · go `205cbfe` ·
+typescript `93942ea` · python `d6ae211`.
+
+**Closed:** P0.1 (website green, 242 pages) · P0.2 (Kafka) · P0.3 (Python `isSuccessful`) ·
+P0.6 (publisher list) · P1.3 (fixture-coverage guards in all four ports) · P1.4 (go + typescript) ·
+P1.5 · P1.9 · P1.10 · and the whole of P2 in all five repos.
+
+**Still open, unchanged:** P0.4 (needs a behaviour ruling) · P0.5 and the other publishing actions
+(need credentials) · P1.1 and P1.2 (need one central claim-or-drop ruling) · P1.6 (gRPC structured
+errors, three ports) · P1.7 (Python Contract Document) · P1.8 (TypeScript `benzene:` prefix) · all
+of P3.
+
+### What executing the plan taught that writing it did not
+
+Four corrections, each found by an agent doing the work rather than by anyone reading the plan.
+They are recorded because they are the actual argument for verifying over reading.
+
+1. **The `SPEC_VERSION` check as specified was the wrong invariant.** "Fail if the pin disagrees with
+   canonical HEAD" makes a provenance pin into a currency requirement. Canonical main moved three
+   times in a single afternoon for commits touching only `work/`, and the check was red on its first
+   run, eight unrelated commits behind. Rewritten to test what matters — the pin must name a real
+   commit whose *conformance tree* is the one vendored — and verified against a negative control.
+   A check that fails on unrelated upstream activity is worse than the silent pin it replaced.
+2. **Kafka's root cause was structural, not a missing branch.** `KafkaApplication` derived from the
+   *result-less* `MiddlewareApplication<TEvent,TContext>`, so the worker could not observe
+   `IsSuccessful` at all. "Add a check" would have had nowhere to put one.
+3. **Running a vendored fixture for the first time found a live bug immediately.** TypeScript's new
+   `mesh-issue-cases` runner caught that a deserialized batch is a plain object, so `MeshIssue`'s
+   field defaults never ran and an entry missing `exemplarTraceIds` failed the *whole* batch —
+   against §4.1's "invalid entries are skipped, never rejected". The fixture had sat vendored and
+   unread while the drift-check confirmed its bytes were perfect. That is the entire case for P1.3.
+4. **Two claims in the audit itself were wrong.** Event Grid ships no health check by a documented
+   deliberate ruling, not as a resolved gap. And the `_benzeneHeaders` rename would *not* turn any
+   drift-check red, because no fixture pins the key — see P3.
+
 ## Why this document exists
 
 The audit's headline result is not any single defect. It is that **roughly 75 documents across the
