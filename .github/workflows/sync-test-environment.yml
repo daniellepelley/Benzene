@@ -114,6 +114,9 @@ jobs:
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
       AZURE_FUNCTIONAPP_PUBLISH_PROFILE: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
       GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+      # The mesh's Google OAuth login gate. Its client *id* is a variable and
+      # travels with the generic variable sync; only the secret needs a line here.
+      GOOGLE_OAUTH_CLIENT_SECRET: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
       # repository level, synced by default: every port's notify-website workflow reads this to
       # dispatch a website rebuild, so it travels on every run (not behind include_repository_secrets).
       WEBSITE_DISPATCH_TOKEN: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
