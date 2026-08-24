@@ -1,5 +1,12 @@
 # Copies the `test` environment — variables and secrets — from this repository into the sibling
-# port repositories.
+# port repositories, and into any other repository that needs the same credentials.
+#
+# The **source** is always this repository's `test` environment: a job can only read an
+# environment's secrets if it names that environment, and `environment:` on a job cannot be an
+# expression, so that side is fixed. The **target** environment name is an input, because not every
+# consumer calls it `test` — `daniellepelley/wetstix` deploys from one called `production`, and
+# renaming that so a sync could reach it would mean its live deploy running from an environment
+# called "test". Run this once per target environment name.
 #
 # Written for the repo split: `benzene-dotnet`, `benzene-typescript`, `benzene-go` and
 # `benzene-python` inherit the deploy workflows but none of the environment they read from, so every
@@ -56,6 +63,10 @@ on:
         description: "Repositories to sync into, as owner/name — comma or space separated"
         required: true
         default: daniellepelley/benzene-dotnet, daniellepelley/benzene-typescript, daniellepelley/benzene-go, daniellepelley/benzene-python
+      target_environment:
+        description: "Environment name to write into on each target — `test` for the ports, `production` for wetstix"
+        required: true
+        default: test
       dry_run:
         description: "Report what would change without writing anything"
         type: boolean
@@ -78,13 +89,17 @@ jobs:
     runs-on: ubuntu-latest
 
     # Hardcoded rather than an input: a job can only see an environment's secrets if it names
-    # that environment here, so the source side of this sync cannot be parameterised.
+    # that environment here, so the source side of this sync cannot be parameterised. Only the
+    # target side is.
     environment: test
 
     env:
       SOURCE_REPOSITORY: ${{ github.repository }}
       TARGET_REPOSITORIES: ${{ inputs.target_repositories }}
-      ENVIRONMENT_NAME: test
+      # Fixed: the job names this environment below, and that cannot be an expression.
+      SOURCE_ENVIRONMENT: test
+      # Whatever the targets call it. Defaults to the same, so the ports are unaffected.
+      TARGET_ENVIRONMENT: ${{ inputs.target_environment }}
       DRY_RUN: ${{ inputs.dry_run }}
       GH_TOKEN: ${{ secrets.SYNC_SECRETS_PAT }}
 
@@ -184,19 +199,19 @@ jobs:
           # Every gh call in a read loop gets </dev/null so it cannot swallow the loop's input.
           while read -r repo; do
             [ -n "${repo}" ] || continue
-            if gh api "repos/${repo}/environments/${ENVIRONMENT_NAME}" --jq '.name' </dev/null >/dev/null 2>&1; then
-              echo "${repo}: environment '${ENVIRONMENT_NAME}' already exists."
+            if gh api "repos/${repo}/environments/${TARGET_ENVIRONMENT}" --jq '.name' </dev/null >/dev/null 2>&1; then
+              echo "${repo}: environment '${TARGET_ENVIRONMENT}' already exists."
               continue
             fi
             if [ "${DRY_RUN}" = "true" ]; then
-              echo "[dry run] ${repo}: would create environment '${ENVIRONMENT_NAME}'"
+              echo "[dry run] ${repo}: would create environment '${TARGET_ENVIRONMENT}'"
               continue
             fi
             # Environment secrets cannot be written until the environment itself exists.
             # Created bare: no reviewers, no branch policy — protection rules are a deployment
             # decision for each target repository, not something to copy blindly.
-            gh api --method PUT "repos/${repo}/environments/${ENVIRONMENT_NAME}" --silent </dev/null
-            echo "${repo}: created environment '${ENVIRONMENT_NAME}'."
+            gh api --method PUT "repos/${repo}/environments/${TARGET_ENVIRONMENT}" --silent </dev/null
+            echo "${repo}: created environment '${TARGET_ENVIRONMENT}'."
           done < /tmp/targets.txt
 
       - name: Read the source environment
@@ -204,8 +219,8 @@ jobs:
         run: |
           set -o pipefail
 
-          if ! gh api "repos/${SOURCE_REPOSITORY}/environments/${ENVIRONMENT_NAME}" --jq '.name' >/dev/null 2>&1; then
-            echo "::error::${SOURCE_REPOSITORY} has no '${ENVIRONMENT_NAME}' environment, or the PAT cannot see it."
+          if ! gh api "repos/${SOURCE_REPOSITORY}/environments/${SOURCE_ENVIRONMENT}" --jq '.name' >/dev/null 2>&1; then
+            echo "::error::${SOURCE_REPOSITORY} has no '${SOURCE_ENVIRONMENT}' environment, or the PAT cannot see it."
             exit 1
           fi
 
@@ -218,7 +233,7 @@ jobs:
             esac
           }
 
-          gh api "repos/${SOURCE_REPOSITORY}/environments/${ENVIRONMENT_NAME}/secrets" \
+          gh api "repos/${SOURCE_REPOSITORY}/environments/${SOURCE_ENVIRONMENT}/secrets" \
             --paginate --jq '.secrets[].name' | sort > /tmp/source-secrets.txt
 
           : > /tmp/sync-secrets.txt
@@ -231,7 +246,7 @@ jobs:
             echo "${name}" >> /tmp/sync-secrets.txt
           done < /tmp/source-secrets.txt
 
-          gh api "repos/${SOURCE_REPOSITORY}/environments/${ENVIRONMENT_NAME}/variables" \
+          gh api "repos/${SOURCE_REPOSITORY}/environments/${SOURCE_ENVIRONMENT}/variables" \
             --paginate --jq '.variables[] | {name, value} | @base64' > /tmp/source-variables.txt
 
           secret_count=$(wc -l < /tmp/sync-secrets.txt | tr -d ' ')
@@ -239,7 +254,7 @@ jobs:
           echo "secret_count=${secret_count}" >> "$GITHUB_OUTPUT"
           echo "variable_count=${variable_count}" >> "$GITHUB_OUTPUT"
 
-          echo "Found ${secret_count} secret(s) and ${variable_count} variable(s) in '${ENVIRONMENT_NAME}'."
+          echo "Found ${secret_count} secret(s) and ${variable_count} variable(s) in '${SOURCE_ENVIRONMENT}'."
 
           # The action selects from process.env by regex, so anchor each name exactly —
           # an unanchored AWS_ACCESS_KEY_ID would also match AWS_ACCESS_KEY_ID_OLD.
@@ -263,7 +278,7 @@ jobs:
               # Deliberately does not spell out the interpolation syntax: GitHub scans every
               # string in this file for expressions before bash sees it, so a literal example
               # here would be parsed as one and fail the whole workflow.
-              echo "::error::Secret '${name}' exists in the ${ENVIRONMENT_NAME} environment but is not"
+              echo "::error::Secret '${name}' exists in the ${SOURCE_ENVIRONMENT} environment but is not"
               echo "::error::plumbed through this workflow. Add a line mapping ${name} from the"
               echo "::error::secrets context into the job env: block in"
               echo "::error::.github/workflows/sync-test-environment.yml, alongside the others."
@@ -293,15 +308,15 @@ jobs:
               # jq builds the body so that values containing quotes or newlines survive intact.
               body=$(jq -n --arg name "${name}" --arg value "${value}" '{name: $name, value: $value}')
 
-              if gh api "repos/${repo}/environments/${ENVIRONMENT_NAME}/variables/${name}" \
+              if gh api "repos/${repo}/environments/${TARGET_ENVIRONMENT}/variables/${name}" \
                    --jq '.name' </dev/null >/dev/null 2>&1; then
                 echo "${body}" | gh api --method PATCH \
-                  "repos/${repo}/environments/${ENVIRONMENT_NAME}/variables/${name}" \
+                  "repos/${repo}/environments/${TARGET_ENVIRONMENT}/variables/${name}" \
                   --input - --silent
                 echo "  updated variable ${name}"
               else
                 echo "${body}" | gh api --method POST \
-                  "repos/${repo}/environments/${ENVIRONMENT_NAME}/variables" \
+                  "repos/${repo}/environments/${TARGET_ENVIRONMENT}/variables" \
                   --input - --silent
                 echo "  created variable ${name}"
               fi
@@ -317,7 +332,7 @@ jobs:
           repositories: ${{ steps.targets.outputs.list }}
           repositories_list_regex: false
           # With this set the action writes environment secrets rather than repository secrets.
-          environment: test
+          environment: ${{ inputs.target_environment }}
           secrets: ${{ steps.source.outputs.regex }}
           dry_run: ${{ inputs.dry_run }}
           concurrency: 4
@@ -374,7 +389,7 @@ jobs:
         if: always()
         run: |
           {
-            echo "## Sync \`${ENVIRONMENT_NAME}\` from ${SOURCE_REPOSITORY}"
+            echo "## Sync \`${SOURCE_ENVIRONMENT}\` from ${SOURCE_REPOSITORY} into \`${TARGET_ENVIRONMENT}\`"
             echo
             if [ "${DRY_RUN}" = "true" ]; then
               echo "**Dry run — nothing was written.** Re-run with dry run off to apply."
