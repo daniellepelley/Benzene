@@ -8,7 +8,8 @@
 # renaming that so a sync could reach it would mean its live deploy running from an environment
 # called "test". Run this once per target environment name.
 #
-# Leave the target environment **blank** to write repository-level secrets and variables instead. That is
+# Give the target environment as **`repository`** to write repository-level secrets and variables instead
+# (a blank box does not work: the dispatch form fills an empty input with its default, `test`). That is
 # for private repositories on GitHub Free, which have no environments at all — `daniellepelley/the-count`
 # and `daniellepelley/the-almanac` read their AWS credentials repository-level for that reason.
 #
@@ -68,7 +69,7 @@ on:
         required: true
         default: daniellepelley/benzene-dotnet, daniellepelley/benzene-typescript, daniellepelley/benzene-go, daniellepelley/benzene-python
       target_environment:
-        description: "Environment name to write into on each target — `test` for the ports, `production` for wetstix; blank for repository-level (private repos on GitHub Free)"
+        description: "Environment name to write into on each target — `test` for the ports, `production` for wetstix, `repository` for repository-level (private repos on GitHub Free)"
         required: false
         default: test
       only:
@@ -106,8 +107,9 @@ jobs:
       TARGET_REPOSITORIES: ${{ inputs.target_repositories }}
       # Fixed: the job names this environment below, and that cannot be an expression.
       SOURCE_ENVIRONMENT: test
-      # Whatever the targets call it. Defaults to the same, so the ports are unaffected.
-      TARGET_ENVIRONMENT: ${{ inputs.target_environment }}
+      # Whatever the targets call it. Defaults to the same, so the ports are unaffected. `repository` becomes
+      # empty here, and empty means repository-level in every step below.
+      TARGET_ENVIRONMENT: ${{ inputs.target_environment != 'repository' && inputs.target_environment || '' }}
       DRY_RUN: ${{ inputs.dry_run }}
       # Names to copy; blank copies everything. A repository that needs only the AWS keys should not be
       # handed the Azure, GCP and OAuth credentials as well.
@@ -359,9 +361,9 @@ jobs:
           # Explicit owner/name lines, not a regex over every repo the token can see.
           repositories: ${{ steps.targets.outputs.list }}
           repositories_list_regex: false
-          # With this set the action writes environment secrets rather than repository secrets; blank
-          # writes them repository-level.
-          environment: ${{ inputs.target_environment }}
+          # With this set the action writes environment secrets rather than repository secrets; empty
+          # (from `repository`) writes them repository-level.
+          environment: ${{ env.TARGET_ENVIRONMENT }}
           secrets: ${{ steps.source.outputs.regex }}
           dry_run: ${{ inputs.dry_run }}
           concurrency: 4
