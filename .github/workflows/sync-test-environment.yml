@@ -8,6 +8,10 @@
 # renaming that so a sync could reach it would mean its live deploy running from an environment
 # called "test". Run this once per target environment name.
 #
+# Leave the target environment **blank** to write repository-level secrets and variables instead. That is
+# for private repositories on GitHub Free, which have no environments at all — `daniellepelley/the-count`
+# and `daniellepelley/the-almanac` read their AWS credentials repository-level for that reason.
+#
 # Written for the repo split: `benzene-dotnet`, `benzene-typescript`, `benzene-go` and
 # `benzene-python` inherit the deploy workflows but none of the environment they read from, so every
 # deployment fails at the credentials step. One environment lives here and is fanned out to all of them.
@@ -64,9 +68,13 @@ on:
         required: true
         default: daniellepelley/benzene-dotnet, daniellepelley/benzene-typescript, daniellepelley/benzene-go, daniellepelley/benzene-python
       target_environment:
-        description: "Environment name to write into on each target — `test` for the ports, `production` for wetstix"
-        required: true
+        description: "Environment name to write into on each target — `test` for the ports, `production` for wetstix; blank for repository-level (private repos on GitHub Free)"
+        required: false
         default: test
+      only:
+        description: "Only these secrets and variables, comma or space separated — blank for everything in `test`"
+        required: false
+        default: ""
       dry_run:
         description: "Report what would change without writing anything"
         type: boolean
@@ -101,6 +109,9 @@ jobs:
       # Whatever the targets call it. Defaults to the same, so the ports are unaffected.
       TARGET_ENVIRONMENT: ${{ inputs.target_environment }}
       DRY_RUN: ${{ inputs.dry_run }}
+      # Names to copy; blank copies everything. A repository that needs only the AWS keys should not be
+      # handed the Azure, GCP and OAuth credentials as well.
+      ONLY: ${{ inputs.only }}
       GH_TOKEN: ${{ secrets.SYNC_SECRETS_PAT }}
 
       # ─── The maintained list ────────────────────────────────────────────────────────────────
@@ -198,6 +209,7 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       - name: Ensure the environment exists on each target
+        if: env.TARGET_ENVIRONMENT != ''
         run: |
           # Every gh call in a read loop gets </dev/null so it cannot swallow the loop's input.
           while read -r repo; do
@@ -229,11 +241,17 @@ jobs:
 
           # Secrets that must never travel: the sync credential itself, and anything GitHub
           # injects. Copying the PAT into a target would hand it a token over this repo.
+          only=" $(echo "${ONLY}" | tr ',' ' ' | xargs) "
+          wanted() {
+            [ "${only}" = "  " ] && return 0
+            case "${only}" in *" $1 "*) return 0 ;; *) return 1 ;; esac
+          }
           skip() {
             case "$1" in
               SYNC_SECRETS_PAT|GH_TOKEN|GITHUB_TOKEN) return 0 ;;
-              *) return 1 ;;
             esac
+            wanted "$1" && return 1
+            return 0
           }
 
           gh api "repos/${SOURCE_REPOSITORY}/environments/${SOURCE_ENVIRONMENT}/secrets" \
@@ -250,7 +268,12 @@ jobs:
           done < /tmp/source-secrets.txt
 
           gh api "repos/${SOURCE_REPOSITORY}/environments/${SOURCE_ENVIRONMENT}/variables" \
-            --paginate --jq '.variables[] | {name, value} | @base64' > /tmp/source-variables.txt
+            --paginate --jq '.variables[] | {name, value} | @base64' > /tmp/all-variables.txt
+          : > /tmp/source-variables.txt
+          while read -r row; do
+            [ -n "${row}" ] || continue
+            wanted "$(echo "${row}" | base64 -d | jq -r '.name')" && echo "${row}" >> /tmp/source-variables.txt
+          done < /tmp/all-variables.txt
 
           secret_count=$(wc -l < /tmp/sync-secrets.txt | tr -d ' ')
           variable_count=$(wc -l < /tmp/source-variables.txt | tr -d ' ')
@@ -311,16 +334,18 @@ jobs:
               # jq builds the body so that values containing quotes or newlines survive intact.
               body=$(jq -n --arg name "${name}" --arg value "${value}" '{name: $name, value: $value}')
 
-              if gh api "repos/${repo}/environments/${TARGET_ENVIRONMENT}/variables/${name}" \
-                   --jq '.name' </dev/null >/dev/null 2>&1; then
-                echo "${body}" | gh api --method PATCH \
-                  "repos/${repo}/environments/${TARGET_ENVIRONMENT}/variables/${name}" \
-                  --input - --silent
+              # A blank target environment means repository-level variables.
+              if [ -n "${TARGET_ENVIRONMENT}" ]; then
+                base="repos/${repo}/environments/${TARGET_ENVIRONMENT}/variables"
+              else
+                base="repos/${repo}/actions/variables"
+              fi
+
+              if gh api "${base}/${name}" --jq '.name' </dev/null >/dev/null 2>&1; then
+                echo "${body}" | gh api --method PATCH "${base}/${name}" --input - --silent
                 echo "  updated variable ${name}"
               else
-                echo "${body}" | gh api --method POST \
-                  "repos/${repo}/environments/${TARGET_ENVIRONMENT}/variables" \
-                  --input - --silent
+                echo "${body}" | gh api --method POST "${base}" --input - --silent
                 echo "  created variable ${name}"
               fi
             done < /tmp/source-variables.txt
@@ -334,7 +359,8 @@ jobs:
           # Explicit owner/name lines, not a regex over every repo the token can see.
           repositories: ${{ steps.targets.outputs.list }}
           repositories_list_regex: false
-          # With this set the action writes environment secrets rather than repository secrets.
+          # With this set the action writes environment secrets rather than repository secrets; blank
+          # writes them repository-level.
           environment: ${{ inputs.target_environment }}
           secrets: ${{ steps.source.outputs.regex }}
           dry_run: ${{ inputs.dry_run }}
@@ -355,6 +381,14 @@ jobs:
           names="WEBSITE_DISPATCH_TOKEN"
           if [ "${{ inputs.include_repository_secrets }}" = "true" ]; then
             names="${names} NUGET_USER CODECOV_TOKEN"
+          fi
+          # With a list given, only the names on it travel — the website token included.
+          if [ -n "$(echo "${ONLY}" | xargs)" ]; then
+            kept=""
+            for name in ${names}; do
+              case " $(echo "${ONLY}" | tr ',' ' ') " in *" ${name} "*) kept="${kept} ${name}" ;; esac
+            done
+            names="${kept}"
           fi
 
           : > /tmp/sync-repo-secrets.txt
