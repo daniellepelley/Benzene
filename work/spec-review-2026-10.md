@@ -109,13 +109,18 @@ follow it.
 | **Profile** | a service that claims it | `cloud-service-profile.md` |
 | **Guidance** *(informative)* | nobody | `design-principles.md` (most of it), `porting-guide.md`, `port-quality-standards.md` → move to `docs/`, not `docs/specification/` |
 
-And a fourth bucket that is not the spec at all: **proposals** — versioning §5 (Mechanism C, "no
-port implements"), mesh §2.4–§2.5 (service-version identity and order, "no collector honours it"),
-mesh §4.1 (issue feed, "Go parity pending"), versioning §7 (open questions). These belong in `work/`
-until two ports implement them. The spec's rule that concepts land "before or alongside" code is
-right; pinning *conformance fixtures* for mechanisms nobody has built
-(`mesh-service-version-cases.json`, `mesh-version-order-cases.json`) spends complexity budget on
-speculation and makes the fixture set look twice as large as the contract.
+And a fourth bucket that is not the spec at all: **proposals** — versioning §5 (Mechanism C's
+version-aware outbound routing, which no port has) and versioning §7 (open questions). These belong
+in `work/` until a port builds them. The spec's rule that concepts land "before or alongside" code is
+right; a proposal with no implementation is not "alongside".
+
+Two things the spec's own status headers get wrong, and which this review initially repeated: mesh
+§2.4–§2.5 (service-version identity and order) and §4.1 (the issue feed) are **not** unbuilt.
+versioning.md's header says "no port implements" the identity layer, but benzene-dotnet's collector
+keys its catalog by `(service, serviceVersion)` (`MeshCollectorStore`) and ships the order
+comparators (`MeshServiceVersion`), and both .NET and Go emit issues. They are modules with one or
+two implementations and stay in the spec as such — labelled with their implementation count, outside
+Core. The stale header is itself a finding: a status line nobody maintains is worse than none.
 
 ### 2.3 Five layering vocabularies for one idea
 
@@ -359,9 +364,12 @@ The profile is the right idea and R1–R8 are the right eight. Three things:
 minus §2.4–§2.5 (descriptor, which becomes §2.1's document), §3 (TraceEvent), §4 minus §4.1
 (collector topics and the declared-graph rule), §5 (heartbeat), §6 (degradation). The rest:
 
-- §2.4–§2.5 service-version identity and order — "no port implements"; two fixtures. → `work/`.
-- §4.1 issue feed — one port, "Go parity pending", 80 lines, its own fingerprint algorithm and
-  classification table. → a module or `work/` until a second port.
+- §2.4–§2.5 service-version identity and order — implemented by the .NET collector (versioning.md's
+  "no port implements" is stale); 100 lines and two fixtures. → a module document,
+  `service-versions.md`, so mesh.md is the feeds and the collector only.
+- §4.1 issue feed — emitted by .NET and Go, collected by .NET; 80 lines, its own fingerprint
+  algorithm and classification table. → stays, as module content, trimmed of the "additive 2026-07"
+  status prose.
 - §4.2 declared vs observed — good, short, keep.
 - §9 .NET package convergence table → delete (it is a migration note for one port).
 - The revision note and status header → delete; the declared-graph rule is simply the rule now.
@@ -440,11 +448,12 @@ docs/specification/
     self-description.md     identity + contract + hash + generation rules               ~180
     mesh.md                 feeds, collector topics, declared graph, degradation        ~220
     versioning.md           the header, absence, dispatch                                ~60
+    service-versions.md     identity + order (mesh §2.4–§2.5 today)                      ~80
     claim-check.md                                                                        ~40
     mcp.md                                                                                ~60
   conformance/              README ~150, fixtures regrouped by tier
 docs/guides/                design-principles (strategy), porting-guide, port-quality-standards
-work/                       Mechanism C, service-version identity/order, issue feed, open questions
+work/                       Mechanism C routing, open questions
 ```
 
 Roughly 1,400 normative lines in place of 3,470 total, with nothing a port needs removed — only
