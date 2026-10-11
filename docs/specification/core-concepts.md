@@ -201,7 +201,7 @@ the shape the spec defines:
 - **W3C trace context** — continue a trace from inbound `traceparent`/`tracestate` headers and
   forward it on outbound calls. An implementation that propagates trace context MUST do so per the
   W3C Trace Context specification (wire-contracts §2); whether a service must propagate it at all is
-  the [Cloud Service Profile](cloud-service-profile.md)'s R8, not a Core rule. (A per-invocation
+  the mesh module's meshed-service claim ([mesh.md](mesh.md) §7, M2), not a Core rule. (A per-invocation
   correlation value settable by application middleware and forwardable on outbound clients MAY
   additionally be offered, but inbound pickup of legacy correlation headers is not a framework
   contract.)

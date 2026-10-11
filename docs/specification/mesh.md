@@ -1,7 +1,7 @@
 # Mesh Contracts
 
-**Module — Stable.** Optional at Core level; its service-side feeds are required by the
-[Cloud Service Profile](cloud-service-profile.md) (R6).
+**Module — Stable.** Optional at Core level. A service that provides its service-side feeds and
+trace propagation can claim to be **meshed** (§7).
 
 Benzene Mesh is the *application-level* mesh: every service **declares its full contract** — the
 topics it serves, the events it publishes and the messages it sends to topics others define — so
@@ -13,9 +13,9 @@ This document specifies everything that crosses a process boundary to make that 
 across language ports.
 
 At Core level, mesh is optional, and so is each of its feeds; the normative degradation rule of
-§6 applies to every section here. A service claiming the
-[Cloud Service Profile](cloud-service-profile.md) MUST provision the service-side feeds (its
-R6) — for such a service, §6 governs runtime degradation, not whether the feeds exist.
+§6 applies to every section here. A service claiming to be meshed (§7) MUST provision the
+service-side feeds — for such a service, §6 governs runtime degradation, not whether the feeds
+exist.
 
 ## 1. Self-description
 
@@ -78,7 +78,7 @@ transport-shaped.
   invocation. Pinned by the `traceparent` section of `conformance/mesh-trace-cases.json`.
 - Outbound propagation: a downstream Benzene call carries
   `traceparent: 00-<traceId>-<spanId>-01` built from the calling invocation's span — required of a
-  profiled service by the [Cloud Service Profile](cloud-service-profile.md)'s R8. This is what lets a
+  meshed service (§7, M2). This is what lets a
   collector correlate an *observed* call with the declared edge it exercises (§4.2) — propagation
   feeds observation, not the graph itself (§4), which comes from the registration (§2) regardless of
   whether any call has ever propagated a trace at all.
@@ -300,20 +300,39 @@ optional, on both sides:
 
 ## 7. Conformance
 
+### 7.1 A meshed service
+
+A service that claims to be **meshed** — a full participant in the fleet view — MUST be a
+[Cloud Service](cloud-service-profile.md) (R1–R5, R7) and additionally satisfy:
+
+- **M1 — Service-side feeds.** Register its contract document on startup (§2, §4), send heartbeats
+  (§5), and export one TraceEvent per routed invocation (§3–§4), under the sender rules of §4: no
+  feed may ever fail, slow, or block the service's own traffic. Implementing a collector is not
+  required.
+- **M2 — Trace context propagation.** Join inbound W3C trace context and forward `traceparent`
+  on every outbound Benzene call (§3). The graph does not come from traces (§4), but whether a
+  declared edge is exercised does (§4.2), and a fleet where propagation is optional has holes in
+  that signal through no fault of the collector.
+
+M1 and M2 were the Cloud Service Profile's R6 and R8. Runtime degradation (§6) does not withdraw
+the claim; deliberately unprovisioned feeds do.
+
+### 7.2 Fixtures
+
 Fixture files in [conformance/](conformance/README.md) pin this document; their formats and the
-canonical mesh handlers are documented there. A port that implements mesh MUST pass
-`mesh-trace-cases.json`, and the contract-document producer groups (contract-document §8), whose
-document is its register body; a port that additionally implements a collector MUST pass
-`mesh-collector-cases.json` (including the graph-from-registration cases — a registered service with
-zero traffic reporting its full provider/consumer graph — and the declared-vs-observed cases of
-§4.2), and a collector that additionally claims the §4.1 issue feed MUST pass
-`mesh-issue-cases.json` (optional — a collector without it stays collector-conformant, and picking
-up the undeclared-edge trigger of §4.2 is bundled with it, not a separate obligation). A port that
-implements neither is unaffected at Core level — mesh is an optional module there, and the Core
-spec creates no obligation to implement it, only the obligation to implement it *compatibly*.
-Supporting the [Cloud Service Profile](cloud-service-profile.md), however, requires the
-service-side feeds, so a port that wants its services to claim the profile implements §§2–3 and §5
-and passes the service-side fixtures above.
+canonical mesh handlers are documented there.
+
+- **A meshed service's port** passes `mesh-trace-cases.json`, and the contract-document producer
+  groups (contract-document §8), whose document is its register body.
+- **A collector** passes `mesh-collector-cases.json` (including the graph-from-registration cases —
+  a registered service with zero traffic reporting its full provider/consumer graph — and the
+  declared-vs-observed cases of §4.2). One that additionally claims the §4.1 issue feed passes
+  `mesh-issue-cases.json` (optional — a collector without it stays collector-conformant, and
+  picking up the undeclared-edge trigger of §4.2 is bundled with it, not a separate obligation).
+
+A port that implements neither is unaffected at Core level — mesh is an optional module there,
+and the Core spec creates no obligation to implement it, only the obligation to implement it
+*compatibly*.
 
 ## 8. Conformance language note
 

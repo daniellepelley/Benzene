@@ -22,7 +22,7 @@ with a collector ([mesh.md](mesh.md) §2).
   "description": "Order intake",
   "runtime": "go",
   "placement": { "cloud": "aws", "region": "eu-west-1" },
-  "profile": { "name": "cloud-service", "missing": ["R6"] },
+  "profile": { "name": "cloud-service", "missing": ["R3"] },
   "degraded": ["sends"],
   "messageEndpoint": "/benzene/invoke",
   "transports": ["http", "sqs"],

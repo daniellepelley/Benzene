@@ -17,7 +17,7 @@ stability labels.
   - [MCP](mcp.md) — Provisional (.NET): a service's handlers as tools for AI clients
   - [Claim Check](claim-check.md) — Provisional (.NET): large payloads passed by reference
 - **Profile**
-  - [Cloud Service Profile](cloud-service-profile.md) — requirements R1–R8 for a fully tool-operable service
+  - [Cloud Service Profile](cloud-service-profile.md) — requirements R1–R5 and R7 for a fully tool-operable service
 - **Conformance**
   - [Conformance Fixtures](conformance/README.md) — the fixtures every implementation runs, and which each claim requires
 - **Guidance**

@@ -150,12 +150,12 @@ The saga is only as atomic as its compensations. Rules that keep it honest:
 
 An orchestrator is a Benzene service like any other and should target the
 [Cloud Service Profile](../specification/cloud-service-profile.md) too — its handlers,
-health, and mesh feeds make the *process* layer as visible as the data layer. Because orchestrators
-are the services that call across the fleet, their trace-context propagation
-([R8](../specification/cloud-service-profile.md)) is what draws
-the **edges** in the mesh topology: "the signup orchestrator calls tenant:create, user:create, and
-billing:setup" is derived from the traces the orchestrator propagates, not declared anywhere. Keep
-propagation on and the mesh shows your business processes as real, observed call graphs.
+health, and contract document make the *process* layer as visible as the data layer. Because
+orchestrators are the services that call across the fleet, their **send declarations** draw the
+edges in the mesh topology: "the signup orchestrator calls tenant:create, user:create, and
+billing:setup" is declared in its contract document, before a single message has flowed. Meshed
+([mesh.md](../specification/mesh.md) §7), its trace-context propagation then shows which of those
+edges your business processes actually exercise.
 
 ---
 

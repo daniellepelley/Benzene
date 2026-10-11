@@ -56,10 +56,12 @@ a fleet. But the dependencies only ever point *down* the ladder — a rung-2 ser
 participates in the mesh's trace feed (reduced, per [mesh.md](../specification/mesh.md) §6), and a rung-1 pipeline
 is still real Benzene.
 
-The top of the ladder has a name: a service at rungs 2–5 in full is a **Benzene Cloud Service**
-([cloud-service-profile.md](../specification/cloud-service-profile.md)) — the conformance target fleet tooling is
-allowed to assume. The ladder describes the journey and keeps every rung first-class; the
-profile marks the destination for services that opt in to being fully tool-operable.
+The upper rungs have names: a service at rungs 2–4 in full is a **Benzene Cloud Service**
+([cloud-service-profile.md](../specification/cloud-service-profile.md)) — the conformance target any tool is
+allowed to assume, with no collector — and one that adds rung 5 is **meshed**
+([mesh.md](../specification/mesh.md) §7). The ladder describes the journey and keeps every rung
+first-class; the two claims mark the destinations for services that opt in to being fully
+tool-operable, and fully visible in the fleet.
 
 ## 3. Capabilities and what they require
 

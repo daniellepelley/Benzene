@@ -56,7 +56,8 @@ binding**, the **Profile**, and **per module** — and a port claims only what i
 | Core | Benzene Core | `status-vocabulary.json`, the mapping tables for each protocol the port binds, `envelope-cases.json`, and `problem-details-cases.json`'s `registry` and `envelopeCases` groups |
 | Per binding | each metadata-carrying binding (queues, topics, streams) | `transport-metadata-cases.json` for that binding, and its row in `settlementDefaults` (every one-way binding the port ships) |
 | Per binding | each HTTP binding | `problem-details-cases.json`'s `httpRules` group. Within it, `envelopeEndpoint` applies to a port that serves the envelope over HTTP, and `healthEndpoint` to a port that also ships health checks |
-| Profile | Cloud Service Profile support | Core, the contract-document producer claim below (its document is the register body), and `mesh-trace-cases.json` |
+| Profile | Cloud Service Profile support | Core, and the contract-document producer claim below |
+| Per module | Meshed service (mesh §7.1) | The profile, and `mesh-trace-cases.json` |
 | Per module | Mesh collector | `mesh-collector-cases.json` (not part of the profile) |
 | Per module | Mesh issue feed | `mesh-issue-cases.json` (optional feed, mesh §4.1; a collector without it stays collector-conformant) |
 | Per module | Service versions — *Provisional* | `mesh-service-version-cases.json` (identity) and `mesh-version-order-cases.json` (order), [service-versions.md](../service-versions.md); a collector without the module stays collector-conformant, because a registration that omits `serviceVersion` keys exactly as it always did |

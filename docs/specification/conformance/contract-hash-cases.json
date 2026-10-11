@@ -60,7 +60,7 @@
         "profile": {
           "name": "cloud-service",
           "missing": [
-            "R6"
+            "R3"
           ]
         },
         "degraded": [

@@ -148,8 +148,8 @@ the fleet tooling works on it with no negotiation:
   from it rather than hand-writing them.
 - **Health checks** (R3) — a core service's health check naturally probes *its own* database
   connectivity, nothing else (share-nothing again).
-- **Mesh feeds** (R6) and **trace-context propagation** (R8) — so the fleet view shows this
-  service's real traffic, its schemas, and its edges.
+- **Meshed** ([mesh.md](../specification/mesh.md) §7: the feeds and trace-context propagation) —
+  so the fleet view shows this service's real traffic, its schemas, and its edges.
 
 A core service typically needs **no orchestration and no saga** of its own: each of its writes is a
 single write to a single database, atomic on its own. Atomicity *across* services is the

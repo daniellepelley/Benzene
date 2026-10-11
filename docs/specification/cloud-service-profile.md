@@ -12,9 +12,12 @@ clients, and cross-service operability all depend on surfaces that a Core-level 
 not to have.
 
 This profile resolves that tension without giving up the openness. It is a **named conformance
-target layered on top of the core**: a service that claims it guarantees the full set of
-operational surfaces that fleet tooling assumes, so that mesh, the Spec UI, and every other
-cross-service tool work on **every** profiled service with no per-service negotiation.
+target layered on top of the core**: a service that claims it guarantees the operational surfaces
+any tool can **pull** from the service itself — a hosted pipeline, registry-served handlers,
+health, envelope invocability, its derived contract document and the default paths — so that the
+Spec UI, codegen, probes and every other cross-service tool work on **every** profiled service
+with no per-service negotiation, and with no collector. Joining a mesh, which needs a collector,
+is the separate claim of a **meshed service** ([mesh.md](mesh.md) §7).
 
 The profile defines **no new wire contracts**. Everything it requires is already specified in
 the core documents — this document only changes the RFC 2119 requirement level (SHOULD/MAY →
@@ -24,10 +27,10 @@ MUST) of existing, individually-optional capabilities, for services that claim t
 
 The profile is opt-in in both directions, and each side of the bargain is unconditional:
 
-- **Meet all of it, get all of it.** A service that satisfies every requirement in §2 gets the
-  full mesh and visibility offering — it appears in the fleet view with live health, its derived
-  spec and schemas, its topology edges, and every tool works against it with no per-service
-  setup. Within the profile, the requirements are MUSTs precisely so this promise never comes
+- **Meet all of it, get all of it.** A service that satisfies every requirement in §2 is fully
+  tool-operable — its health, its derived contract document and schemas, and its envelope are
+  where every tool expects them, with no per-service setup; a meshed service additionally
+  appears in the fleet view with live health and its topology edges. Within the profile, the requirements are MUSTs precisely so this promise never comes
   with an asterisk.
 - **Skip it, lose only dashboard.** A service that doesn't claim the profile still runs, still
   interoperates over the wire contracts, and still shows up in the mesh to whatever extent its
@@ -46,7 +49,7 @@ deployment.
 | Level | Claim | What it means |
 |---|---|---|
 | **Benzene Core** | "This is a Benzene implementation/service" | Conforms to the core documents as applicable to what it uses. Every capability is optional; the [adoption ladder](../guides/design-principles.md#2-the-adoption-ladder) applies in full. |
-| **Benzene Cloud Service** | "Fleet tooling can rely on this service" | Benzene Core, plus every requirement in §2 of this document. Corresponds to rungs 2–5 of the adoption ladder. |
+| **Benzene Cloud Service** | "Fleet tooling can rely on this service" | Benzene Core, plus every requirement in §2 of this document. Corresponds to rungs 2–4 of the adoption ladder. |
 
 Core-level conformance is a property of an *implementation* (a language port) or a *service*;
 the Cloud Service profile is a property of a **service** (a deployed application). A port
@@ -69,8 +72,8 @@ rung 1) cannot claim the profile — there is nothing for fleet tooling to reach
 
 The service's topics MUST be served by message handlers registered through the handler registry
 ([core-concepts.md](core-concepts.md) §3, §9), so that the registry is the complete truth of
-what the service serves. This is the load-bearing steer: R5 (derived spec) and R6 (its
-registration) are projections of the registry and cannot exist without it.
+what the service serves. This is the load-bearing steer: R5 (derived spec), and the mesh
+registration built from it, are projections of the registry and cannot exist without it.
 
 Middleware may still do anything middleware can do — interception, cross-cutting behavior,
 short-circuiting — but *routable application topics* MUST go through handlers.
@@ -92,29 +95,14 @@ tooling use to reach any service without knowing its native transport shapes.
 
 ### R5 — Derived spec
 
-The service MUST derive its spec document from the handler registry and expose it — over HTTP at
-the `/benzene/spec` default ([transport-bindings.md](transport-bindings.md) §1, "Default HTTP paths"). Hand-maintained
+The service MUST derive its spec document from the handler registry and expose it: by answering
+the reserved `benzene:spec` topic with it on every transport
+([contract-document.md](contract-document.md) §7), and, where the service has an HTTP surface,
+at the `/benzene/spec` default ([transport-bindings.md](transport-bindings.md) §1, "Default HTTP paths"). Hand-maintained
 spec documents do not satisfy this requirement: the point of the profile is that the spec is
 true because it is derived ([core-concepts.md](core-concepts.md) §11). The served document's
 shape is [contract-document.md](contract-document.md) — the same format language-neutral client
 generators parse.
-
-### R6 — Mesh service-side feeds
-
-The service MUST answer the reserved `benzene:spec` topic with its R5 contract document
-([contract-document.md](contract-document.md) §7) — its self-description on every transport — and
-provision the three service-side mesh feeds of [mesh.md](mesh.md):
-
-- registration (`benzene:mesh:register`) on startup, its body that document (mesh §2, §4),
-- heartbeats (`benzene:mesh:heartbeat`) (mesh §5),
-- the trace feed (`benzene:mesh:traces`) with one TraceEvent per routed invocation (mesh §3–§4).
-
-Implementing a *collector* is NOT required — the profile makes every service a good mesh
-citizen, not a mesh host.
-
-The sender-behavior rules of mesh §4 apply unchanged: no feed may ever fail, slow, or block the
-service's own traffic. See §4 below for how runtime degradation interacts with the profile
-claim.
 
 ### R7 — Default service standard paths
 
@@ -126,13 +114,11 @@ remains configurable per deployment (the extension-point rule of
 deployment that relocates or blocks a surface accepts the documented degradation for that
 surface (§4 below) — fleet tooling is entitled to assume the defaults.
 
-### R8 — Trace context propagation
+### R6 and R8 *(moved)*
 
-The service MUST join inbound W3C trace context per [core-concepts.md](core-concepts.md) §10 and
-mesh §3, and its outbound Benzene clients MUST forward `traceparent` built from the current
-invocation's span (the format of mesh §3). Consumer edges in the mesh are derived
-from trace parentage; a profiled fleet where propagation is optional would have holes in its
-topology through no fault of the collector.
+The mesh feeds (formerly R6) and trace context propagation (formerly R8) are the mesh module's own
+conformance claim, a **meshed service** ([mesh.md](mesh.md) §7, M1 and M2). The ids R6 and R8
+are not reused.
 
 ## 3. What stays optional, even under the profile
 
@@ -141,8 +127,8 @@ profiled service:
 
 | Still optional | Why |
 |---|---|
-| The UIs (`/benzene/spec-ui`, `/benzene/mesh-ui`, `/benzene/fleet-ui`) | Human conveniences; tooling consumes the machine surfaces (R4–R6) |
-| Implementing a mesh collector | R6 is service-side only; collectors are separate services |
+| The UIs (`/benzene/spec-ui`, `/benzene/mesh-ui`, `/benzene/fleet-ui`) | Human conveniences; tooling consumes the machine surfaces (R3–R5) |
+| Joining a mesh | The meshed-service claim ([mesh.md](mesh.md) §7) is separate: it needs a collector, and the profile does not |
 | Any specific transport binding | R1/R4 require *at least one* binding; which ones is the service's business |
 | Handler discovery idiom | Attribute scanning vs explicit calls is an idiom ([core-concepts.md](core-concepts.md) §9); R2 requires the registry, not a discovery style |
 | Convention overrides | Every configurable name and replaceable default ([wire-contracts.md](wire-contracts.md) §2, [core-concepts.md](core-concepts.md) §8) stays replaceable; the profile constrains defaults and presence, not customizability |
@@ -153,9 +139,9 @@ profiled service:
 The mesh degradation rules ([mesh.md](mesh.md) §6) and the profile claim answer different
 questions, and both stay in force:
 
-- **Runtime degradation is not a conformance failure.** An unreachable collector, a full trace
-  buffer dropping events, a transient health-check failure — a profiled service degrades exactly
-  as mesh §6 specifies and keeps its claim. The profile requires the capabilities to be
+- **Runtime degradation is not a conformance failure.** A transient health-check failure, a slow
+  dependency — a profiled service degrades and keeps its claim (and a meshed service's
+  unreachable collector or full trace buffer degrades exactly as mesh §6 specifies). The profile requires the capabilities to be
   *provisioned*, not that the network never fails.
 - **Deliberate omission is what the profile rules out.** A service that never installs health
   checks, never derives its contract document, or serves topics outside the registry is a perfectly good
@@ -173,11 +159,16 @@ questions, and both stay in force:
   [conformance/README.md](conformance/README.md) ("Which fixtures a given conformance claim
   requires").
 - **Benzene Cloud Service** (profile support): additionally pass the contract-document producer
-  groups ([contract-document.md](contract-document.md) §8) and `mesh-trace-cases.json`. (`mesh-collector-cases.json` remains collector-only and is not
-  part of the profile.)
+  groups ([contract-document.md](contract-document.md) §8). The meshed-service claim's fixtures
+  are [mesh.md](mesh.md) §7's.
+- **The `profile` field.** A service MAY state its claim on its contract document
+  ([contract-document.md](contract-document.md) §1): `{"name": "cloud-service", "missing": [...]}`,
+  where `missing` lists the ids of §2 (`R1`–`R5`, `R7`) its own wiring knows it does not meet,
+  omitted when none. It is a self-assessment of wiring, not of runtime health (§4), and outside
+  both hashes.
 - *(Informative.)* A port MAY offer a wiring-time **self-check** that evaluates a service's setup
-  against R1–R8 and carries the result on the contract document's optional `profile` field
-  ([contract-document.md](contract-document.md) §1), and an external **probe** that audits any service over HTTP. Neither is
+  against §2 and fills the `profile` field, and an external **probe** that audits any service
+  over HTTP. Neither is
   required by the wire contract; .NET ships both (`Benzene.CloudService` and
   `Benzene.CloudService.Probe` — see the
   [benzene-dotnet docs](https://github.com/daniellepelley/benzene-dotnet/tree/main/docs)).
@@ -194,11 +185,12 @@ rely on:
 | 2. Hosted middleware-only | R1 |
 | 3. Message handlers | R2, R5 |
 | 4. Default service standard | R3, R4, R7 |
-| 5. Meshed | R6, R8 |
+| 5. Meshed | — (the meshed-service claim, [mesh.md](mesh.md) §7) |
 
 Nothing about the ladder changes for Core-level services: every rung below the profile remains
 first-class and indefinitely inhabitable. The profile exists so that "we run Benzene Cloud
-Services" is a complete, precise statement of what an operator, a teammate, or a tool will find.
+Services" is a complete, precise statement of what an operator, a teammate, or a tool will find;
+"and they are meshed" adds the fleet view.
 
 ## 7. Naming note *(informative)*
 

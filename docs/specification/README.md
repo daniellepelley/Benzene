@@ -43,7 +43,7 @@ defines. (Reading the version header and selecting a handler by it is not option
 
 | Document | Contents |
 |---|---|
-| [cloud-service-profile.md](cloud-service-profile.md) | Requirements R1–R8 — hosted pipeline, registry-served handlers, health checks, envelope invocability, derived spec, mesh feeds, default paths, trace propagation — what stays optional, and how runtime degradation differs from non-conformance |
+| [cloud-service-profile.md](cloud-service-profile.md) | Requirements R1–R5 and R7 — hosted pipeline, registry-served handlers, health checks, envelope invocability, derived spec, default paths — what stays optional, and how runtime degradation differs from non-conformance |
 
 ### Conformance
 
