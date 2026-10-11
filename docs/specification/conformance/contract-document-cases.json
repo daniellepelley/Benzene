@@ -1,209 +1,874 @@
 {
-  "description": "Contract Document parsing/validation, topic-scope projection, and schema-closure conformance (contract-document.md sections 1-5). `documents` holds the shared fixture documents, referenced by id from `documentRef` in each case group below. `expected`/`expectedTopics`/`expectedComponents` are compared as sets unless noted (order-independent, no duplicates); `expected.requests`/`expected.events` entries are subset-matched by `topic` the way envelope-cases.json subset-matches bodies. `expectedError` cases assert failure, not a successful result.",
+  "description": "Contract Document cases (contract-document.md). 'documents' holds shared documents referenced by id. Producer groups (required of every contract-document producer, R5): derivationCases - register the canonical types and compare the derived document's entries after section 6.2 steps 3-4 (dereferenced, annotations stripped, required sorted), plus the exact hashes; namingCases - the section 4.1 naming rules; specTopicCases and specHttpCases - the benzene:spec request (section 7). Client-generator groups: parseCases, topicScopeCases, schemaClosureCases. See README.md for formats.",
   "documents": {
-    "minimal": {
-      "openapi": "3.0.1",
-      "info": { "title": "orders-api", "description": "", "version": "1.0.0" },
+    "canonical": {
+      "schemaDialect": "openapi-3.0",
+      "service": "conformance",
+      "contractHash": "sha256:4f27f0faf25765699031840c58d967aad3b45691d54e3b16c7e8b3f8df58f475",
+      "registrationHash": "sha256:ed0a2af39e4bc1e8309d839abee5e158d2ec440e64d7f8461959de7476b2cab3",
       "requests": [
         {
-          "topic": "orders:create",
-          "httpMappings": [{ "method": "POST", "path": "/orders" }],
-          "request": { "$ref": "#/components/schemas/CreateOrder" },
-          "response": { "$ref": "#/components/schemas/OrderDto" }
+          "topic": "conformance:greet",
+          "request": {
+            "$ref": "#/components/schemas/GreetRequest"
+          },
+          "response": {
+            "$ref": "#/components/schemas/GreetResponse"
+          }
         }
       ],
       "events": [
         {
-          "topic": "order:created",
-          "message": { "$ref": "#/components/schemas/OrderCreated" }
+          "topic": "conformance:greeted",
+          "message": {
+            "$ref": "#/components/schemas/Greeted"
+          }
+        }
+      ],
+      "sends": [
+        {
+          "topic": "conformance:log",
+          "request": {
+            "$ref": "#/components/schemas/LogEntry"
+          }
+        },
+        {
+          "topic": "conformance:lookup",
+          "request": {
+            "$ref": "#/components/schemas/LookupRequest"
+          },
+          "response": {
+            "$ref": "#/components/schemas/LookupResponse"
+          }
         }
       ],
       "components": {
         "schemas": {
-          "CreateOrder": {
+          "GreetRequest": {
             "type": "object",
-            "properties": { "customerId": { "type": "string" } },
-            "required": ["customerId"]
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ]
           },
-          "OrderDto": {
+          "GreetResponse": {
             "type": "object",
-            "properties": { "id": { "type": "string" }, "customerId": { "type": "string" } }
+            "properties": {
+              "greeting": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "greeting"
+            ]
           },
-          "OrderCreated": {
+          "Greeted": {
             "type": "object",
-            "properties": { "id": { "type": "string" } }
+            "properties": {
+              "greeting": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "greeting"
+            ]
+          },
+          "LogEntry": {
+            "type": "object",
+            "properties": {
+              "message": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "message"
+            ]
+          },
+          "LookupRequest": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "key"
+            ]
+          },
+          "LookupResponse": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "value"
+            ]
           }
         }
       }
     },
     "versioned": {
-      "openapi": "3.0.1",
-      "info": { "title": "orders-api", "description": "", "version": "1.0.0" },
+      "schemaDialect": "openapi-3.0",
+      "service": "payments",
+      "contractHash": "sha256:5413d972ea9c28024a901e53d905694c6850acf08c3d401bfc4f478653a99bd8",
+      "registrationHash": "sha256:b9e46f974f4245de28b148e712722afe20e0cb01e4e44623b4b1c2d68b85e928",
       "requests": [
         {
-          "topic": "orders:create",
-          "version": "v2",
-          "request": { "$ref": "#/components/schemas/CreateOrder" },
-          "response": { "$ref": "#/components/schemas/OrderDto" }
-        },
-        {
-          "topic": "orders:cancel",
-          "request": { "$ref": "#/components/schemas/CreateOrder" },
-          "response": { "$ref": "#/components/schemas/OrderDto" }
-        }
-      ],
-      "events": [
-        {
-          "topic": "order:created",
+          "topic": "payments:capture",
           "version": "v1",
-          "message": { "$ref": "#/components/schemas/OrderCreated" }
+          "request": {
+            "$ref": "#/components/schemas/CaptureV1"
+          },
+          "response": {
+            "$ref": "#/components/schemas/Captured"
+          }
         },
         {
-          "topic": "order:cancelled",
-          "message": { "$ref": "#/components/schemas/OrderCreated" }
-        }
-      ],
-      "components": {
-        "schemas": {
-          "CreateOrder": {
-            "type": "object",
-            "properties": { "customerId": { "type": "string" } },
-            "required": ["customerId"]
+          "topic": "payments:capture",
+          "version": "v2",
+          "httpMappings": [
+            {
+              "method": "POST",
+              "path": "/payments"
+            }
+          ],
+          "request": {
+            "$ref": "#/components/schemas/CaptureV2"
           },
-          "OrderDto": {
-            "type": "object",
-            "properties": { "id": { "type": "string" }, "customerId": { "type": "string" } }
-          },
-          "OrderCreated": {
-            "type": "object",
-            "properties": { "id": { "type": "string" } }
+          "response": {
+            "$ref": "#/components/schemas/Captured"
+          }
+        },
+        {
+          "topic": "payments:refund",
+          "request": {
+            "$ref": "#/components/schemas/Refund"
           }
         }
-      }
-    },
-    "reserved": {
-      "openapi": "3.0.1",
-      "info": { "title": "orders-api", "description": "", "version": "1.0.0" },
-      "requests": [
-        {
-          "topic": "orders:create",
-          "request": { "$ref": "#/components/schemas/CreateOrder" },
-          "response": { "$ref": "#/components/schemas/OrderDto" }
-        },
-        {
-          "topic": "benzene:spec",
-          "reserved": true,
-          "request": { "$ref": "#/components/schemas/CreateOrder" },
-          "response": { "$ref": "#/components/schemas/OrderDto" }
-        },
-        {
-          "topic": "benzene:healthcheck",
-          "request": { "$ref": "#/components/schemas/CreateOrder" },
-          "response": { "$ref": "#/components/schemas/OrderDto" }
-        }
       ],
-      "events": [
-        {
-          "topic": "order:created",
-          "message": { "$ref": "#/components/schemas/OrderCreated" }
-        }
-      ],
+      "events": [],
+      "sends": [],
       "components": {
         "schemas": {
-          "CreateOrder": {
+          "CaptureV1": {
             "type": "object",
-            "properties": { "customerId": { "type": "string" } },
-            "required": ["customerId"]
+            "properties": {
+              "orderId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "orderId"
+            ]
           },
-          "OrderDto": {
+          "CaptureV2": {
             "type": "object",
-            "properties": { "id": { "type": "string" }, "customerId": { "type": "string" } }
+            "properties": {
+              "orderId": {
+                "type": "string"
+              },
+              "currency": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "orderId",
+              "currency"
+            ]
           },
-          "OrderCreated": {
+          "Captured": {
             "type": "object",
-            "properties": { "id": { "type": "string" } }
+            "properties": {
+              "paymentId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "paymentId"
+            ]
+          },
+          "Refund": {
+            "type": "object",
+            "properties": {
+              "paymentId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "paymentId"
+            ]
           }
         }
       }
     },
     "closure": {
-      "openapi": "3.0.1",
-      "info": { "title": "closure-fixture", "description": "", "version": "" },
+      "schemaDialect": "openapi-3.0",
+      "service": "graph",
+      "contractHash": "sha256:55c47c963c27d15122b584aa8914bf776bbfabc0f4c6a776ad9cf7e6187a02dd",
+      "registrationHash": "sha256:b43404f3ae264370db21270ab367288d49a7c9a9798e7b249b906aff8c13fd7f",
       "requests": [
         {
-          "topic": "closure:cycle",
-          "request": { "$ref": "#/components/schemas/A" },
-          "response": { "$ref": "#/components/schemas/Void" }
+          "topic": "graph:a",
+          "request": {
+            "$ref": "#/components/schemas/A"
+          },
+          "response": {
+            "$ref": "#/components/schemas/Ok"
+          }
         },
         {
-          "topic": "closure:compose",
-          "request": { "$ref": "#/components/schemas/D" },
-          "response": { "$ref": "#/components/schemas/Void" }
+          "topic": "graph:poly",
+          "request": {
+            "$ref": "#/components/schemas/Poly"
+          },
+          "response": {
+            "$ref": "#/components/schemas/Ok"
+          }
         },
         {
-          "topic": "closure:collections",
-          "request": { "$ref": "#/components/schemas/MapWrapper" },
-          "response": { "$ref": "#/components/schemas/ListWrapper" }
+          "topic": "graph:collections",
+          "request": {
+            "$ref": "#/components/schemas/Collections"
+          },
+          "response": {
+            "$ref": "#/components/schemas/Ok"
+          }
         }
       ],
       "events": [],
+      "sends": [],
       "components": {
         "schemas": {
-          "Void": { "type": "object", "additionalProperties": false },
           "A": {
             "type": "object",
-            "properties": { "b": { "$ref": "#/components/schemas/B" } }
+            "properties": {
+              "b": {
+                "$ref": "#/components/schemas/B"
+              }
+            },
+            "required": [
+              "b"
+            ]
           },
           "B": {
             "type": "object",
-            "properties": { "a": { "$ref": "#/components/schemas/A" } }
+            "properties": {
+              "a": {
+                "$ref": "#/components/schemas/A"
+              }
+            },
+            "required": [
+              "a"
+            ]
           },
-          "C": { "type": "object" },
-          "D": {
+          "Poly": {
             "oneOf": [
-              { "$ref": "#/components/schemas/E" },
-              { "$ref": "#/components/schemas/F" }
-            ]
-          },
-          "E": {
+              {
+                "$ref": "#/components/schemas/Cat"
+              },
+              {
+                "$ref": "#/components/schemas/Dog"
+              }
+            ],
             "allOf": [
-              { "$ref": "#/components/schemas/G" },
-              { "type": "object", "properties": { "x": { "type": "string" } } }
+              {
+                "$ref": "#/components/schemas/Animal"
+              }
             ]
           },
-          "F": { "type": "object" },
-          "G": {
+          "Cat": {
             "type": "object",
-            "properties": { "y": { "type": "string" } }
+            "properties": {
+              "meow": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "meow"
+            ]
           },
-          "MapWrapper": {
+          "Dog": {
             "type": "object",
-            "additionalProperties": { "$ref": "#/components/schemas/Item" }
+            "properties": {
+              "bark": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "bark"
+            ]
+          },
+          "Animal": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "Collections": {
+            "type": "object",
+            "properties": {
+              "list": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Item"
+                }
+              },
+              "map": {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/Value"
+                }
+              }
+            },
+            "required": [
+              "list",
+              "map"
+            ]
           },
           "Item": {
             "type": "object",
-            "properties": { "tag": { "type": "string" } }
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id"
+            ]
           },
-          "ListWrapper": {
-            "type": "array",
-            "items": { "$ref": "#/components/schemas/ListItem" }
+          "Value": {
+            "type": "object",
+            "properties": {
+              "v": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "v"
+            ]
           },
-          "ListItem": { "type": "object" }
+          "Ok": {
+            "type": "object",
+            "properties": {
+              "ok": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "ok"
+            ]
+          },
+          "Unreached": {
+            "type": "object",
+            "properties": {
+              "never": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "never"
+            ]
+          }
         }
+      }
+    },
+    "withBenzeneEntry": {
+      "schemaDialect": "openapi-3.0",
+      "service": "conformance",
+      "contractHash": "sha256:2b8906d276bb0e6f24ed6f77d919841812903e0affdf611daa4cac42716dddc7",
+      "registrationHash": "sha256:ad398055f066b2917d168d6c4ab9097b5691351e83484d3b9816376558946013",
+      "requests": [
+        {
+          "topic": "orders:create",
+          "request": {
+            "type": "object",
+            "properties": {
+              "orderId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "orderId"
+            ]
+          },
+          "response": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        },
+        {
+          "topic": "benzene:healthcheck",
+          "request": {},
+          "response": {}
+        }
+      ],
+      "events": [],
+      "sends": [],
+      "components": {
+        "schemas": {}
+      }
+    },
+    "unknownDialect": {
+      "schemaDialect": "json-schema-2020-12",
+      "service": "conformance",
+      "contractHash": "sha256:2b8906d276bb0e6f24ed6f77d919841812903e0affdf611daa4cac42716dddc7",
+      "registrationHash": "sha256:ad398055f066b2917d168d6c4ab9097b5691351e83484d3b9816376558946013",
+      "requests": [
+        {
+          "topic": "orders:create",
+          "request": {
+            "type": "object",
+            "properties": {
+              "orderId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "orderId"
+            ]
+          },
+          "response": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        }
+      ],
+      "events": [],
+      "sends": [],
+      "components": {
+        "schemas": {}
       }
     }
   },
-  "parseCases": [
+  "derivationCases": [
     {
-      "name": "minimal-document-parses",
-      "documentRef": "minimal",
-      "expected": {
-        "openapi": "3.0.1",
+      "name": "canonical-service",
+      "description": "The canonical registrations (conformance/README.md): handler conformance:greet, event conformance:greeted, one-way send conformance:log, send conformance:lookup with a reply.",
+      "registrations": {
         "requests": [
-          { "topic": "orders:create", "versionPresent": false, "reserved": false }
+          {
+            "topic": "conformance:greet",
+            "request": "GreetRequest",
+            "response": "GreetResponse"
+          }
         ],
         "events": [
-          { "topic": "order:created", "versionPresent": false }
+          {
+            "topic": "conformance:greeted",
+            "message": "Greeted"
+          }
+        ],
+        "sends": [
+          {
+            "topic": "conformance:log",
+            "request": "LogEntry"
+          },
+          {
+            "topic": "conformance:lookup",
+            "request": "LookupRequest",
+            "response": "LookupResponse"
+          }
+        ]
+      },
+      "expected": {
+        "requests": [
+          {
+            "topic": "conformance:greet",
+            "request": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ]
+            },
+            "response": {
+              "type": "object",
+              "properties": {
+                "greeting": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "greeting"
+              ]
+            }
+          }
+        ],
+        "events": [
+          {
+            "topic": "conformance:greeted",
+            "message": {
+              "type": "object",
+              "properties": {
+                "greeting": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "greeting"
+              ]
+            }
+          }
+        ],
+        "sends": [
+          {
+            "topic": "conformance:log",
+            "request": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ]
+            }
+          },
+          {
+            "topic": "conformance:lookup",
+            "request": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key"
+              ]
+            },
+            "response": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "value"
+              ]
+            }
+          }
+        ],
+        "contractHash": "sha256:4f27f0faf25765699031840c58d967aad3b45691d54e3b16c7e8b3f8df58f475",
+        "registrationHash": "sha256:ed0a2af39e4bc1e8309d839abee5e158d2ec440e64d7f8461959de7476b2cab3"
+      }
+    },
+    {
+      "name": "derivation-shapes",
+      "description": "The canonical ShapesRequest type exercising the derivation table (contract-document §4.2): integer, number, boolean, array, string-keyed map, nullable string and a nested object; registered on a handler that returns no payload, so response is absent.",
+      "registrations": {
+        "requests": [
+          {
+            "topic": "conformance:shapes",
+            "request": "ShapesRequest"
+          }
+        ],
+        "events": [],
+        "sends": []
+      },
+      "expected": {
+        "requests": [
+          {
+            "topic": "conformance:shapes",
+            "request": {
+              "type": "object",
+              "properties": {
+                "count": {
+                  "type": "integer"
+                },
+                "ratio": {
+                  "type": "number"
+                },
+                "active": {
+                  "type": "boolean"
+                },
+                "tags": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "labels": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  }
+                },
+                "note": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "child": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name"
+                  ]
+                }
+              },
+              "required": [
+                "active",
+                "child",
+                "count",
+                "labels",
+                "note",
+                "ratio",
+                "tags"
+              ]
+            }
+          }
+        ],
+        "events": [],
+        "sends": [],
+        "contractHash": "sha256:2a90252fb9a5b627add68cda8e9ae380bdaa857def445f5b7196b13978fe2125",
+        "registrationHash": "sha256:709e2c84b35ddc8438a90dd66c706f23d8ec12a6d0c90a52013941b605921fd9"
+      }
+    }
+  ],
+  "namingCases": [
+    {
+      "name": "colliding-names-fail",
+      "description": "Two different types with the same simple name, Item, reachable from two topics: derivation fails before any message, naming both types (contract-document §4.1 rule 4).",
+      "types": {
+        "orders.Item": {
+          "type": "object",
+          "properties": {
+            "sku": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "sku"
+          ]
+        },
+        "payments.Item": {
+          "type": "object",
+          "properties": {
+            "paymentId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "paymentId"
+          ]
+        }
+      },
+      "registrations": {
+        "requests": [
+          {
+            "topic": "conformance:order-item",
+            "request": "orders.Item"
+          },
+          {
+            "topic": "conformance:payment-item",
+            "request": "payments.Item"
+          }
+        ]
+      },
+      "expected": {
+        "error": "component-name-collision",
+        "name": "Item"
+      }
+    },
+    {
+      "name": "declared-names-resolve-a-collision",
+      "description": "The same two types with declared schema names OrderItem and PaymentItem: derivation succeeds and the components carry the declared names.",
+      "types": {
+        "orders.Item": {
+          "type": "object",
+          "properties": {
+            "sku": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "sku"
+          ]
+        },
+        "payments.Item": {
+          "type": "object",
+          "properties": {
+            "paymentId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "paymentId"
+          ]
+        }
+      },
+      "declaredNames": {
+        "orders.Item": "OrderItem",
+        "payments.Item": "PaymentItem"
+      },
+      "registrations": {
+        "requests": [
+          {
+            "topic": "conformance:order-item",
+            "request": "orders.Item"
+          },
+          {
+            "topic": "conformance:payment-item",
+            "request": "payments.Item"
+          }
+        ]
+      },
+      "expected": {
+        "componentNames": [
+          "OrderItem",
+          "PaymentItem"
+        ]
+      }
+    }
+  ],
+  "specTopicCases": [
+    {
+      "name": "no-body-is-the-contract-document",
+      "request": null,
+      "expected": {
+        "statusCode": "ok",
+        "document": {
+          "schemaDialect": "openapi-3.0"
+        }
+      }
+    },
+    {
+      "name": "empty-object-is-the-contract-document",
+      "request": {},
+      "expected": {
+        "statusCode": "ok",
+        "document": {
+          "schemaDialect": "openapi-3.0"
+        }
+      }
+    },
+    {
+      "name": "benzene-json-is-the-contract-document",
+      "request": {
+        "type": "benzene",
+        "format": "json"
+      },
+      "expected": {
+        "statusCode": "ok",
+        "document": {
+          "schemaDialect": "openapi-3.0"
+        }
+      }
+    },
+    {
+      "name": "values-are-case-insensitive",
+      "request": {
+        "type": "Benzene",
+        "format": "JSON"
+      },
+      "expected": {
+        "statusCode": "ok",
+        "document": {
+          "schemaDialect": "openapi-3.0"
+        }
+      }
+    },
+    {
+      "name": "unsupported-type-is-not-implemented",
+      "request": {
+        "type": "conformance-x"
+      },
+      "expected": {
+        "statusCode": "not-implemented"
+      }
+    },
+    {
+      "name": "unsupported-format-is-not-implemented",
+      "request": {
+        "format": "conformance-x"
+      },
+      "expected": {
+        "statusCode": "not-implemented"
+      }
+    }
+  ],
+  "specHttpCases": [
+    {
+      "name": "get-benzene-spec-is-the-contract-document",
+      "path": "/benzene/spec",
+      "expected": {
+        "httpStatus": 200,
+        "document": {
+          "schemaDialect": "openapi-3.0"
+        }
+      }
+    },
+    {
+      "name": "get-benzene-spec-unsupported-type-is-501",
+      "path": "/benzene/spec?type=conformance-x",
+      "expected": {
+        "httpStatus": 501
+      }
+    }
+  ],
+  "parseCases": [
+    {
+      "name": "canonical-document-parses",
+      "documentRef": "canonical",
+      "expected": {
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
+        "requests": [
+          {
+            "topic": "conformance:greet",
+            "versionPresent": false,
+            "responsePresent": true
+          }
+        ],
+        "events": [
+          {
+            "topic": "conformance:greeted"
+          }
+        ],
+        "sends": [
+          {
+            "topic": "conformance:log",
+            "responsePresent": false
+          },
+          {
+            "topic": "conformance:lookup",
+            "responsePresent": true
+          }
         ]
       }
     },
@@ -212,86 +877,138 @@
       "documentRef": "versioned",
       "expected": {
         "requests": [
-          { "topic": "orders:create", "versionPresent": true, "version": "v2" },
-          { "topic": "orders:cancel", "versionPresent": false }
-        ],
-        "events": [
-          { "topic": "order:created", "versionPresent": true, "version": "v1" },
-          { "topic": "order:cancelled", "versionPresent": false }
+          {
+            "topic": "payments:capture",
+            "versionPresent": true,
+            "version": "v1"
+          },
+          {
+            "topic": "payments:capture",
+            "versionPresent": true,
+            "version": "v2"
+          },
+          {
+            "topic": "payments:refund",
+            "versionPresent": false,
+            "responsePresent": false
+          }
         ]
       }
     },
     {
-      "name": "reserved-detected-by-flag-and-by-benzene-prefix",
-      "documentRef": "reserved",
+      "name": "benzene-entries-are-ignored",
+      "documentRef": "withBenzeneEntry",
       "expected": {
         "requests": [
-          { "topic": "orders:create", "reserved": false },
-          { "topic": "benzene:spec", "reserved": true },
-          { "topic": "benzene:healthcheck", "reserved": true }
+          {
+            "topic": "orders:create"
+          }
         ]
+      }
+    },
+    {
+      "name": "unknown-schema-dialect-is-rejected",
+      "documentRef": "unknownDialect",
+      "expectedError": {
+        "kind": "unknown-schema-dialect"
       }
     },
     {
       "name": "include-list-names-unknown-topic-fails-loud",
-      "documentRef": "minimal",
-      "options": { "topics": ["not-a-real-topic"] },
+      "documentRef": "versioned",
+      "options": {
+        "topics": [
+          "payments:capture",
+          "payments:void"
+        ]
+      },
       "expectedError": {
-        "unknownTopics": ["not-a-real-topic"],
-        "validTopics": ["orders:create"]
+        "kind": "unknown-topics",
+        "unknownTopics": [
+          "payments:void"
+        ],
+        "validTopics": [
+          "payments:capture",
+          "payments:refund"
+        ]
       }
     }
   ],
   "topicScopeCases": [
     {
-      "name": "domain-only-default-excludes-both-flagged-and-prefix-only-reserved-topics",
-      "documentRef": "reserved",
+      "name": "no-include-list-keeps-every-request",
+      "documentRef": "versioned",
       "options": {},
-      "expectedTopics": ["orders:create"]
+      "expectedTopics": [
+        "payments:capture",
+        "payments:refund"
+      ]
     },
     {
-      "name": "includeReserved-true-admits-every-topic",
-      "documentRef": "reserved",
-      "options": { "includeReserved": true },
-      "expectedTopics": ["orders:create", "benzene:spec", "benzene:healthcheck"]
+      "name": "include-list-keeps-only-named-requests",
+      "documentRef": "versioned",
+      "options": {
+        "topics": [
+          "payments:refund"
+        ]
+      },
+      "expectedTopics": [
+        "payments:refund"
+      ]
     },
     {
-      "name": "explicit-topic-list-admits-a-reserved-topic-even-without-includeReserved",
-      "documentRef": "reserved",
-      "options": { "topics": ["benzene:spec"] },
-      "expectedTopics": ["benzene:spec"]
-    },
-    {
-      "name": "explicit-topic-list-mixes-domain-and-reserved-topics",
-      "documentRef": "reserved",
-      "options": { "topics": ["orders:create", "benzene:healthcheck"] },
-      "expectedTopics": ["orders:create", "benzene:healthcheck"]
-    },
-    {
-      "name": "explicit-topic-list-does-not-implicitly-admit-topics-includeReserved-would-have",
-      "documentRef": "reserved",
-      "options": { "topics": ["orders:create"], "includeReserved": true },
-      "expectedTopics": ["orders:create"]
+      "name": "include-list-leaves-events-and-sends-untouched",
+      "documentRef": "canonical",
+      "options": {
+        "topics": [
+          "conformance:greet"
+        ]
+      },
+      "expectedTopics": [
+        "conformance:greet"
+      ],
+      "expectedEvents": [
+        "conformance:greeted"
+      ],
+      "expectedSends": [
+        "conformance:log",
+        "conformance:lookup"
+      ]
     }
   ],
   "schemaClosureCases": [
     {
       "name": "ref-cycle-terminates-and-both-members-are-reached",
       "documentRef": "closure",
-      "topic": "closure:cycle",
-      "expectedComponents": ["A", "B", "Void"]
+      "topic": "graph:a",
+      "expectedComponents": [
+        "A",
+        "B",
+        "Ok"
+      ]
     },
     {
       "name": "oneOf-and-allOf-members-are-reached",
       "documentRef": "closure",
-      "topic": "closure:compose",
-      "expectedComponents": ["D", "E", "F", "G", "Void"]
+      "topic": "graph:poly",
+      "expectedComponents": [
+        "Poly",
+        "Cat",
+        "Dog",
+        "Animal",
+        "Ok"
+      ]
     },
     {
       "name": "items-and-additionalProperties-are-reached",
       "documentRef": "closure",
-      "topic": "closure:collections",
-      "expectedComponents": ["Item", "ListItem", "ListWrapper", "MapWrapper"]
+      "topic": "graph:collections",
+      "expectedComponents": [
+        "Collections",
+        "Item",
+        "Value",
+        "Ok"
+      ]
     }
   ]
 }

@@ -34,7 +34,7 @@ defines. (Reading the version header and selecting a handler by it is not option
 | Document | Stability | Contents |
 |---|---|---|
 | [mesh.md](mesh.md) | Stable | Service self-description, trace events, collector topics, heartbeats and degradation |
-| [contract-document.md](contract-document.md) | Stable | The derived contract document served at `/benzene/spec`, the client-generation rules and the contract hash |
+| [contract-document.md](contract-document.md) | Stable | The self-description at `benzene:spec`: requests, events and sends, the derivation and naming rules, the two cross-port hashes, and the client-generation rules |
 | [service-versions.md](service-versions.md) | Provisional: .NET | Service-version identity and order, for releases deployed side by side |
 | [mcp.md](mcp.md) | Provisional: .NET | A binding (claimed per binding, documented like a module): a service's handlers as tools for AI clients |
 | [claim-check.md](claim-check.md) | Provisional: .NET | Large payloads passed by reference to an external store |

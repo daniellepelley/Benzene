@@ -46,8 +46,8 @@ writes the new tag into `SPEC_VERSION`, and lands all three in one change.
 | `mesh-issue-cases.json` | Issue-feed collector behavior: `benzene:mesh:issues` ingest, fingerprint delta-merge, liveness/feed-absence derivation (mesh §4.1) — required only for collectors claiming the issue feed |
 | `mesh-service-version-cases.json` | Service-version identity: the catalog keyed by `(service, serviceVersion)`, so two releases side by side are two entries (service-versions.md §1, mesh §4) — required only for collectors claiming service-version identity |
 | `mesh-version-order-cases.json` | Service-version **order**: the declared comparison schemes, the not-orderable outcome, and parse rejection (service-versions.md §2) — required only for ports that order service versions |
-| `contract-document-cases.json` | Contract Document parse/validate, topic-scope projection, and schema-closure behavior (contract-document.md §§1-5) — required for ports that ship a client generator |
-| `contract-hash-cases.json` | Exact `contractHash` values for the normalization + canonicalization + hash pipeline (contract-document.md §6) — required for ports that ship a client generator |
+| `contract-document-cases.json` | The contract document: derivation from the canonical registrations with exact hashes, the naming rules, the `benzene:spec` request (producer groups); parse, topic scope and schema closure (client-generator groups) (contract-document.md) |
+| `contract-hash-cases.json` | Exact `contractHash` and `registrationHash` values for the projection, canonicalization and hash pipeline (contract-document.md §6) — required for a port that ships a client generator |
 
 Which fixtures a given conformance claim requires. A claim is made per level — **Core**, **per
 binding**, the **Profile**, and **per module** — and a port claims only what it implements.
@@ -61,7 +61,8 @@ binding**, the **Profile**, and **per module** — and a port claims only what i
 | Per module | Mesh collector | `mesh-collector-cases.json` (not part of the profile) |
 | Per module | Mesh issue feed | `mesh-issue-cases.json` (optional feed, mesh §4.1; a collector without it stays collector-conformant) |
 | Per module | Service versions — *Provisional* | `mesh-service-version-cases.json` (identity) and `mesh-version-order-cases.json` (order), [service-versions.md](../service-versions.md); a collector without the module stays collector-conformant, because a descriptor that omits `serviceVersion` keys exactly as it always did |
-| Per module | Contract document / client generation | `contract-document-cases.json` and `contract-hash-cases.json` — required for a port that ships a client generator |
+| Profile | Contract-document producer (R5) | `contract-document-cases.json`'s `derivationCases`, `namingCases`, `specTopicCases`, and `specHttpCases` for a port with an HTTP binding |
+| Per module | Client generator | `contract-document-cases.json`'s `parseCases`, `topicScopeCases` and `schemaClosureCases`, and `contract-hash-cases.json` |
 
 MCP and claim check (both *Provisional*) have no fixtures yet. At Core level the mesh fixtures apply
 only to ports that implement the optional mesh module; a port without mesh skips them and remains
@@ -87,18 +88,35 @@ verify the router's `not-found` / `validation-error` behavior.
 each list the checks to register — a name and the status (`ok`, `warning` or `failed`) the check
 reports — in place of any the runner would otherwise register.
 
-## Canonical outbound registration
+## Canonical outbound declarations
 
-`mesh-descriptor-cases.json` additionally registers one **outbound** record (mesh.md §2.3) — no
-handler, since nothing here receives:
+`mesh-descriptor-cases.json` registers one **outbound** record (mesh.md §2.3), with no handler:
 
 | Topic | Request body | Response |
 |---|---|---|
 | `conformance:log` | `{ "message": string }` | none declared |
 
-This is what populates `ServiceDescriptor.produces` for the fixture; it is never sent, and no
-handler answers it in any other fixture file — it exists purely to give every runner one shared,
-concrete outbound registration to derive a `produces` entry from.
+`contract-document-cases.json`'s `derivationCases` declare the canonical outbound of the contract
+document instead (contract-document.md §3): the **event** `conformance:greeted`, the one-way **send**
+`conformance:log`, and the **send** `conformance:lookup`, which expects a reply. None is ever sent.
+
+## Canonical payload types
+
+The contract-document cases use payload types with fixed names, so that the canonical document's
+component keys match across ports. A runner declares its types with exactly these names (by its
+port's declared-name mechanism, contract-document.md §4.1 rule 5, where its default name would
+differ). Every property is a string the marshaler always emits, unless stated.
+
+| Type | Shape | Used by |
+|---|---|---|
+| `GreetRequest` | `{ name }` | `conformance:greet` request |
+| `GreetResponse` | `{ greeting }` | `conformance:greet` response |
+| `Greeted` | `{ greeting }` | event `conformance:greeted` |
+| `LogEntry` | `{ message }` | send `conformance:log` (one-way) |
+| `LookupRequest` | `{ key }` | send `conformance:lookup` |
+| `LookupResponse` | `{ value }` | send `conformance:lookup` reply |
+| `ShapesRequest` | `{ count: integer, ratio: number, active: boolean, tags: string[], labels: map of string, note: nullable string, child: ShapesChild }` | `conformance:shapes`, a handler with no response payload |
+| `ShapesChild` | `{ name }` | nested in `ShapesRequest` |
 
 ## Status mapping case format
 
@@ -296,34 +314,47 @@ collections).
 
 ## Contract Document and contract hash case formats
 
-Both files pin [contract-document.md](../contract-document.md). Every case group in
-`contract-document-cases.json` shares a `documents` map at the top of the file, keyed by id;
-each case references one document by `documentRef` rather than repeating it. `expectedTopics` and
-`expectedComponents` are compared as **sets** — order-independent, no duplicates expected either
-side — unlike the positional array comparisons used elsewhere in this directory, since a topic
-scope or a schema closure is a membership question, not a sequence.
+Both files pin [contract-document.md](../contract-document.md). `contract-document-cases.json` keeps
+shared documents in a `documents` map, which cases reference by `documentRef`. Topic, event, send and
+component lists in expectations compare as **sets**.
 
-- **`parseCases`** — each gives a `documentRef` (and, for the fail-loud case, `options`) and an
-  `expected` (subset-matched: `openapi`, and per-entry `requests[]`/`events[]` rows keyed by
-  `topic`, asserting `versionPresent`/`version`/`reserved` as applicable) or an `expectedError`
-  (asserting the failure's `unknownTopics` and `validTopics` sets, contract-document.md §5.2).
-  `versionPresent: false` asserts the field is genuinely **absent**, not an empty string
-  (contract-document.md §2's absent-means-unversioned rule).
-- **`topicScopeCases`** — each gives a `documentRef`, `options` (`topics`/`includeReserved`, both
-  optional, contract-document.md §5.2), and the resulting `expectedTopics` set of surviving
-  `requests[]` topic ids.
+**Producer groups** — every contract-document producer:
+
+- **`derivationCases`** — each lists `registrations` (handlers in `requests`, event declarations in
+  `events`, send declarations in `sends`, each naming a canonical payload type) and an `expected`
+  document. The runner registers exactly those, derives its document, and compares each entry —
+  matched by topic and version — after applying contract-document.md §6.2 steps 3–4 to its own
+  schemas (dereferenced, annotations removed, `required` sorted), so hoisting and naming differences
+  do not fail it. A `response` absent from an expected entry MUST be absent from the derived one.
+  It also asserts that every component key is valid (§4.1 rule 3) and every `$ref` resolves, and
+  that the document's `contractHash` and `registrationHash` equal the expected values exactly.
+- **`namingCases`** — each gives `types` (two distinct types, keyed by a qualified name, with their
+  shapes), optional `declaredNames`, and `registrations`. `expected.error: "component-name-collision"`
+  means derivation fails before any message is handled and the failure names `expected.name`;
+  `expected.componentNames` means derivation succeeds and the components include those keys.
+- **`specTopicCases`** — each sends `request` as the body of a `benzene:spec` envelope (`null`
+  means no body). `expected.statusCode` is compared exactly; `expected.document` is subset-matched
+  against the response body. **`specHttpCases`** (ports with an HTTP binding) send `GET` to `path`
+  and assert `expected.httpStatus` and, where given, `expected.document`.
+
+**Client-generator groups:**
+
+- **`parseCases`** — each gives a `documentRef` (and, for the fail-loud case, `options`) and either
+  an `expected` (subset-matched; per-entry rows keyed by `topic` assert `versionPresent`/`version`
+  and `responsePresent`, where "present: false" means the member is genuinely **absent**) or an
+  `expectedError` (`kind`: `unknown-schema-dialect`, or `unknown-topics` with the `unknownTopics`
+  and `validTopics` sets, contract-document.md §5.2). A `benzene:` entry is ignored, not listed.
+- **`topicScopeCases`** — each gives a `documentRef`, `options` (`topics`, optional), and the
+  `expectedTopics` set of surviving `requests[]` topics; where given, `expectedEvents` and
+  `expectedSends` are the sets that pass through unchanged.
 - **`schemaClosureCases`** — each gives a `documentRef`, a `topic`, and the `expectedComponents`
-  set: every `components.schemas` key reachable from that topic's request and response by the walk
-  of contract-document.md §5.3. Includes a `$ref` cycle case and an `allOf`/`oneOf` reach case, per
-  that section's normative walk.
+  set reachable by contract-document.md §5.3's walk, including a `$ref` cycle and an
+  `allOf`/`oneOf` reach case.
 
-`contract-hash-cases.json` lists `cases`, each an input `document` (already in whatever projection
-the case is about — a whole-service document, or one already topic-scoped per §5.3) and the exact
-`expectedHash` a conformant `normalize` → `canonicalJSON` (RFC 8785/JCS) → SHA-256 pipeline
-(contract-document.md §6.2) MUST produce. Two cases are deliberately **not already normalized**
-(one carries `example`/`messageEndpoint`/`transports`, one carries reserved entries) specifically so
-their `expectedHash` — identical to the minimal case's — proves an implementation performs the
-strip, not merely hashes its input verbatim.
+`contract-hash-cases.json` lists `cases`, each a `document` and the exact `expectedContractHash` and
+`expectedRegistrationHash` (contract-document.md §6.2). Several cases are deliberately decorated,
+reordered, renamed, hoisted or annotated, and expect the same values as a plain case — proving an
+implementation performs every normalization step rather than hashing its input verbatim.
 
 ## Mapping table format
 

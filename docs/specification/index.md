@@ -12,7 +12,7 @@ stability labels.
   - [Versioning](versioning.md) — the version header, absence, dispatch and payload casting
 - **Modules**
   - [Mesh](mesh.md) — Stable: service self-description, trace events, collector topics and degradation
-  - [Contract Document](contract-document.md) — Stable: the document at `/benzene/spec`, client-generation rules and the contract hash
+  - [Contract Document](contract-document.md) — Stable: the self-description at `benzene:spec`, its derivation, naming and hashes, and client generation
   - [Service Versions](service-versions.md) — Provisional (.NET): service-version identity and order
   - [MCP](mcp.md) — Provisional (.NET): a service's handlers as tools for AI clients
   - [Claim Check](claim-check.md) — Provisional (.NET): large payloads passed by reference

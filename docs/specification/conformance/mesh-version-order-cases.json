@@ -1,5 +1,5 @@
 {
-  "description": "Service-version ordering (mesh.md section 2.5). A pure-function fixture, not an envelope fixture: each case gives two declared service versions of ONE service and the exact outcome a conformant comparison MUST produce. Required only for ports that order service versions; a port implementing section 2.4 identity without section 2.5 ordering stays service-version conformant. The point of pinning this at all is that 'sortable' is not a specification and a comparator is — \"10\" and \"9\" order one way as integers and the opposite way as strings, so two ports that each infer a scheme will disagree about which release is newer inside a tool used to decide deployments. Hence: the scheme is declared and never inferred, there is no default, and the closed set is exactly integer/semver/lexicographic. `compare` cases assert the sign of comparing `left` against `right`: -1 (left is earlier), 0 (same position in the order), 1 (left is later), or the string \"not-orderable\" when the two carry different schemes. `parse` cases assert whether a value is valid under a declared scheme; an invalid one MUST be rejected where it is declared rather than carried and compared later. Ordering is defined only within one service, and order is not lineage — a later version is not thereby a superset, a successor, or safe to substitute.",
+  "description": "Service-version ordering (service-versions.md section 2). A pure-function fixture, not an envelope fixture: each case gives two declared service versions of ONE service and the exact outcome a conformant comparison MUST produce. Required only for ports that order service versions; a port implementing section 2.4 identity without section 2.5 ordering stays service-version conformant. The point of pinning this at all is that 'sortable' is not a specification and a comparator is — \"10\" and \"9\" order one way as integers and the opposite way as strings, so two ports that each infer a scheme will disagree about which release is newer inside a tool used to decide deployments. Hence: the scheme is declared and never inferred, there is no default, and the closed set is exactly integer/semver/lexicographic. `compare` cases assert the sign of comparing `left` against `right`: -1 (left is earlier), 0 (same position in the order), 1 (left is later), or the string \"not-orderable\" when the two carry different schemes. `parse` cases assert whether a value is valid under a declared scheme; an invalid one MUST be rejected where it is declared rather than carried and compared later. Ordering is defined only within one service, and order is not lineage — a later version is not thereby a superset, a successor, or safe to substitute.",
   "compare": [
     {
       "name": "integer-orders-by-value-not-by-string",
@@ -18,7 +18,7 @@
     },
     {
       "name": "integer-same-build-is-same-position",
-      "comment": "Same position in the order. NOT an assertion that the two are the same version — section 2.4 is explicit that identity is extrinsic and that two releases may declare byte-identical contracts.",
+      "comment": "Same position in the order. NOT an assertion that the two are the same version — service-versions.md section 1 is explicit that identity is extrinsic and that two releases may declare byte-identical contracts.",
       "scheme": "integer",
       "left": "42",
       "right": "42",
@@ -113,7 +113,7 @@
     },
     {
       "name": "an-undeclared-scheme-is-not-orderable",
-      "comment": "mesh.md section 2.5: there is no default scheme. A serviceVersion declared without one is an identity, not a position in an order, and a port MUST NOT invent a comparison for it.",
+      "comment": "service-versions.md section 2: there is no default scheme. A serviceVersion declared without one is an identity, not a position in an order, and a port MUST NOT invent a comparison for it.",
       "leftScheme": null,
       "left": "42",
       "rightScheme": null,
@@ -145,7 +145,7 @@
     { "name": "lexicographic-accepts-any-non-empty-string", "scheme": "lexicographic", "value": "2026-08-16T09-00", "valid": true },
     {
       "name": "lexicographic-rejects-empty",
-      "comment": "An empty serviceVersion is section 2.4 case 3 — no declared version at all — not a version that happens to be blank.",
+      "comment": "An empty serviceVersion is service-versions.md section 1 case 3 — no declared version at all — not a version that happens to be blank.",
       "scheme": "lexicographic",
       "value": "",
       "valid": false

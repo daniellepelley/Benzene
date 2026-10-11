@@ -5,9 +5,9 @@
     "version": "benzene-version",
     "headers": "benzene-headers"
   },
-  "defaultMetadataKeysNote": "headers is the EventBridge embedded-headers key (wire-contracts.md §2, tier D): the reserved object inside detail that carries the wire headers on a transport with no native per-message metadata. Only ports with an EventBridge binding assert it.",
+  "defaultMetadataKeysNote": "headers is the EventBridge embedded-headers key (wire-contracts.md §2, Binding: EventBridge): the reserved object inside detail that carries the wire headers on a transport with no native per-message metadata. Only ports with an EventBridge binding assert it.",
   "configurable": true,
-  "configurableNote": "An implementation MUST expose the reserved names as a single injectable value (wire-contracts §2). The defaults above are the interop baseline; overrideCases assert that a replacement is actually honoured, on inbound bindings and outbound clients alike.",
+  "configurableNote": "Every reserved name is configurable in one place and applies in both directions (wire-contracts §2). The defaults above are the interop baseline; overrideCases assert that a replacement is actually honoured, on inbound bindings and outbound clients alike.",
   "topicSources": [
     {
       "binding": "sqs",

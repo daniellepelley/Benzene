@@ -339,18 +339,15 @@ reserved topic is optional unless a profile requires it (the
 | `benzene:healthcheck` | none | `ok`, the health response (§5): every registered check |
 | `benzene:liveness` | none | `ok`, the health response, from checks that never depend on anything outside the process |
 | `benzene:readiness` | none | `ok`, the health response, from the checks that decide whether this instance should receive traffic |
-| `benzene:spec` | optional `{ "type"?: string, "format"?: string }` | `ok`, the contract document ([contract-document.md](contract-document.md)), or the format its request names |
+| `benzene:spec` | optional `{ "type"?: string, "format"?: string }` | `ok`, the contract document ([contract-document.md](contract-document.md) §7), or the format its request names |
 | `benzene:ping` | none | `ok`, no payload — its body is unspecified, and a caller reads only the status |
 | `benzene:mesh` | none | `ok`, the ServiceDescriptor ([mesh.md](mesh.md) §1–§2) |
 | `benzene:mesh:register`, `benzene:mesh:heartbeat`, `benzene:mesh:traces`, `benzene:mesh:issues` | per [mesh.md](mesh.md) §4 | per [mesh.md](mesh.md) §4 — served by a collector, not by every service |
 | `benzene:mesh:query:fleet`, `benzene:mesh:query:service`, `benzene:mesh:query:topic` *(Provisional)* | per collector | the collector's read models ([mesh.md](mesh.md) §4) — served by a collector; the shapes are not pinned |
 | `benzene:mesh:dispatch` *(Provisional)* | informative: `{ "service": string, "topic": string, "headers"?: object, "body"?: string }` | the target service's result for that envelope — served by a collector that offers live dispatch; neither shape is pinned while the topic is Provisional |
 
-- **`benzene:spec`.** An absent body, an empty body, `null` and `{}` all mean `type: "benzene"`,
-  `format: "json"` — the contract document. Values are lowercase ASCII, compared
-  case-insensitively. A `type` or `format` the service does not support is answered
-  `not-implemented`, never with a different document. Other values (`openapi`, `asyncapi`, `yaml`,
-  …) are port extensions.
+- **`benzene:spec`.** Its request, defaults and the `not-implemented` rule for an unsupported
+  `type` or `format` are [contract-document.md](contract-document.md) §7.
 - **`benzene:ping`** is a reachability probe: health checks send it into a queue or a function to
   prove the path to a service works. A service that consumes a one-way transport SHOULD serve it,
   because an unanswered probe is a `not-found` failure that the transport redelivers until it

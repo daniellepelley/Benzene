@@ -33,6 +33,11 @@ The service's self-description, derived at startup from its handler registry (wh
 and its outbound registration (§2.3, what it **produces**) — never hand-maintained. Also the body of
 a `benzene:mesh:register` message (§4).
 
+*(Forward note.)* The [contract document](contract-document.md) is becoming the one
+self-description: it already carries the same registrations, split into `requests`, `events` and
+`sends`, with hashes that compare across ports. In the next release it replaces the
+ServiceDescriptor as the register body, and this section reduces to that statement.
+
 ```json
 {
   "service": "orders",

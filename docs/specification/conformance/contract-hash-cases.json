@@ -1,170 +1,1228 @@
 {
-  "description": "contractHash conformance (contract-document.md section 6): contractHash = \"sha256:\" + lowercase-hex(sha256(canonicalJSON(normalize(document)))), canonicalJSON per RFC 8785 (JCS). Each case gives an input `document` (already reflecting whatever projection the case is about) and the exact `expectedHash` a conformant implementation MUST produce after applying normalize() to it. Values were computed independently with two separate RFC 8785 implementations (the `canonicalize` npm package, v4.0.0; the `rfc8785` PyPI package, v0.1.4) piped through SHA-256 — both agreed exactly on all four values below. `minimal` and `topicScoped` documents already have no example/messageEndpoint/transports/reserved entries to strip, so normalize() is a no-op on them and expectedHash is their direct canonical hash; `decorated` and `withReserved` are NOT already normalized (that is the point of those two cases) and MUST be normalized by the implementation under test before hashing, which is why their expectedHash equals `minimal`'s.",
+  "description": "Exact contractHash and registrationHash values (contract-document.md section 6). Each case gives a document and the two hashes a conformant implementation computes from it: build the projection P (section 6.2 steps 1-5), canonicalize with RFC 8785, SHA-256, lowercase hex, prefix 'sha256:'. Several cases are deliberately decorated, reordered, renamed, hoisted or annotated, and their expected values equal an undecorated case's - proving an implementation performs each normalization step rather than hashing its input verbatim. A case's document is the input as it stands; for the two projection cases it is already projected.",
   "cases": [
     {
       "name": "minimal-document",
+      "description": "One request entry, inline schemas, no events or sends.",
       "document": {
-        "openapi": "3.0.1",
-        "info": { "title": "orders-api", "description": "", "version": "1.0.0" },
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
         "requests": [
           {
             "topic": "orders:create",
-            "httpMappings": [{ "method": "POST", "path": "/orders" }],
-            "request": { "$ref": "#/components/schemas/CreateOrder" },
-            "response": { "$ref": "#/components/schemas/OrderDto" }
-          }
-        ],
-        "events": [
-          {
-            "topic": "order:created",
-            "message": { "$ref": "#/components/schemas/OrderCreated" }
-          }
-        ],
-        "components": {
-          "schemas": {
-            "CreateOrder": {
+            "request": {
               "type": "object",
-              "properties": { "customerId": { "type": "string" } },
-              "required": ["customerId"]
+              "properties": {
+                "orderId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "orderId"
+              ]
             },
-            "OrderDto": {
+            "response": {
               "type": "object",
-              "properties": { "id": { "type": "string" }, "customerId": { "type": "string" } }
-            },
-            "OrderCreated": {
-              "type": "object",
-              "properties": { "id": { "type": "string" } }
+              "properties": {
+                "status": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "status"
+              ]
             }
-          }
-        }
-      },
-      "expectedHash": "sha256:942f3e7cd2c62080e4cbcf5c87d7ecd9dfa1ed4499b75caad414938e1e7e9e7b"
-    },
-    {
-      "name": "example-messageEndpoint-transports-are-stripped-by-normalization",
-      "description": "Same requests/events/components content as minimal-document, decorated with example payloads, messageEndpoint, and transports. normalize() strips all of that, so this MUST hash identically to minimal-document — proving those three fields do not participate in the contract hash.",
-      "document": {
-        "openapi": "3.0.1",
-        "info": { "title": "orders-api", "description": "", "version": "1.0.0" },
-        "messageEndpoint": "/benzene/invoke",
-        "transports": ["http", "sqs"],
-        "requests": [
-          {
-            "topic": "orders:create",
-            "httpMappings": [{ "method": "POST", "path": "/orders" }],
-            "request": { "$ref": "#/components/schemas/CreateOrder" },
-            "response": { "$ref": "#/components/schemas/OrderDto" },
-            "example": { "customerId": "value" }
-          }
-        ],
-        "events": [
-          {
-            "topic": "order:created",
-            "message": { "$ref": "#/components/schemas/OrderCreated" },
-            "example": { "id": "value" }
-          }
-        ],
-        "components": {
-          "schemas": {
-            "CreateOrder": {
-              "type": "object",
-              "properties": { "customerId": { "type": "string" } },
-              "required": ["customerId"]
-            },
-            "OrderDto": {
-              "type": "object",
-              "properties": { "id": { "type": "string" }, "customerId": { "type": "string" } }
-            },
-            "OrderCreated": {
-              "type": "object",
-              "properties": { "id": { "type": "string" } }
-            }
-          }
-        }
-      },
-      "expectedHash": "sha256:942f3e7cd2c62080e4cbcf5c87d7ecd9dfa1ed4499b75caad414938e1e7e9e7b"
-    },
-    {
-      "name": "reserved-entries-are-excluded-by-the-domain-projection",
-      "description": "Same domain content as minimal-document, plus two reserved requests: one flagged reserved:true (benzene:spec), one detected only by the benzene: prefix rule with no flag at all (benzene:healthcheck, the older-producer case). The whole-service contractHash normalize step removes both entries entirely (contract-document.md section 6.2), so this MUST hash identically to minimal-document.",
-      "document": {
-        "openapi": "3.0.1",
-        "info": { "title": "orders-api", "description": "", "version": "1.0.0" },
-        "requests": [
-          {
-            "topic": "orders:create",
-            "httpMappings": [{ "method": "POST", "path": "/orders" }],
-            "request": { "$ref": "#/components/schemas/CreateOrder" },
-            "response": { "$ref": "#/components/schemas/OrderDto" }
-          },
-          {
-            "topic": "benzene:spec",
-            "reserved": true,
-            "request": { "$ref": "#/components/schemas/CreateOrder" },
-            "response": { "$ref": "#/components/schemas/OrderDto" }
-          },
-          {
-            "topic": "benzene:healthcheck",
-            "request": { "$ref": "#/components/schemas/CreateOrder" },
-            "response": { "$ref": "#/components/schemas/OrderDto" }
-          }
-        ],
-        "events": [
-          {
-            "topic": "order:created",
-            "message": { "$ref": "#/components/schemas/OrderCreated" }
-          }
-        ],
-        "components": {
-          "schemas": {
-            "CreateOrder": {
-              "type": "object",
-              "properties": { "customerId": { "type": "string" } },
-              "required": ["customerId"]
-            },
-            "OrderDto": {
-              "type": "object",
-              "properties": { "id": { "type": "string" }, "customerId": { "type": "string" } }
-            },
-            "OrderCreated": {
-              "type": "object",
-              "properties": { "id": { "type": "string" } }
-            }
-          }
-        }
-      },
-      "expectedHash": "sha256:942f3e7cd2c62080e4cbcf5c87d7ecd9dfa1ed4499b75caad414938e1e7e9e7b"
-    },
-    {
-      "name": "topic-scoped-projection",
-      "description": "The schema-closure (contract-document.md section 5.3) projection of minimal-document for topic orders:create: requests holds only that one entry, events is empty, and components is narrowed to just what orders:create's request/response reach (CreateOrder, OrderDto) — OrderCreated is excluded because it is reachable only from the order:created EVENT, not from orders:create's request/response. This document is already the topic-scoped projection (an implementation computing it from minimal-document via section 5.3 must arrive at exactly this shape); normalize() is then a no-op on it since it already has no example/messageEndpoint/transports/reserved entries.",
-      "document": {
-        "openapi": "3.0.1",
-        "info": { "title": "orders-api", "description": "", "version": "1.0.0" },
-        "requests": [
-          {
-            "topic": "orders:create",
-            "httpMappings": [{ "method": "POST", "path": "/orders" }],
-            "request": { "$ref": "#/components/schemas/CreateOrder" },
-            "response": { "$ref": "#/components/schemas/OrderDto" }
           }
         ],
         "events": [],
+        "sends": [],
+        "components": {
+          "schemas": {}
+        }
+      },
+      "expectedContractHash": "sha256:2b8906d276bb0e6f24ed6f77d919841812903e0affdf611daa4cac42716dddc7",
+      "expectedRegistrationHash": "sha256:ad398055f066b2917d168d6c4ab9097b5691351e83484d3b9816376558946013"
+    },
+    {
+      "name": "identity-and-decoration-are-outside-the-hash",
+      "description": "minimal-document plus every field outside P (identity, endpoint, transports, an example, stale hash values): same two hashes as minimal-document.",
+      "document": {
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
+        "serviceVersion": "1.4.2",
+        "versionScheme": "semver",
+        "description": "Order intake",
+        "messageEndpoint": "/benzene/invoke",
+        "transports": [
+          "http",
+          "sqs"
+        ],
+        "contractHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "registrationHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "requests": [
+          {
+            "topic": "orders:create",
+            "request": {
+              "type": "object",
+              "properties": {
+                "orderId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "orderId"
+              ]
+            },
+            "response": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "example": {
+              "orderId": "o-1"
+            }
+          }
+        ],
+        "events": [],
+        "sends": [],
+        "components": {
+          "schemas": {}
+        }
+      },
+      "expectedContractHash": "sha256:2b8906d276bb0e6f24ed6f77d919841812903e0affdf611daa4cac42716dddc7",
+      "expectedRegistrationHash": "sha256:ad398055f066b2917d168d6c4ab9097b5691351e83484d3b9816376558946013"
+    },
+    {
+      "name": "benzene-entries-are-ignored",
+      "description": "minimal-document plus a benzene: entry a producer must not emit: a consumer ignores it, so the hashes equal minimal-document's.",
+      "document": {
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
+        "requests": [
+          {
+            "topic": "orders:create",
+            "request": {
+              "type": "object",
+              "properties": {
+                "orderId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "orderId"
+              ]
+            },
+            "response": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            }
+          },
+          {
+            "topic": "benzene:spec",
+            "request": {},
+            "response": {}
+          }
+        ],
+        "events": [],
+        "sends": [],
+        "components": {
+          "schemas": {}
+        }
+      },
+      "expectedContractHash": "sha256:2b8906d276bb0e6f24ed6f77d919841812903e0affdf611daa4cac42716dddc7",
+      "expectedRegistrationHash": "sha256:ad398055f066b2917d168d6c4ab9097b5691351e83484d3b9816376558946013"
+    },
+    {
+      "name": "hoisted-components",
+      "description": "Every named type hoisted into components and referenced by $ref.",
+      "document": {
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
+        "requests": [
+          {
+            "topic": "orders:create",
+            "request": {
+              "$ref": "#/components/schemas/CreateOrder"
+            },
+            "response": {
+              "$ref": "#/components/schemas/OrderAccepted"
+            }
+          }
+        ],
+        "events": [],
+        "sends": [],
         "components": {
           "schemas": {
             "CreateOrder": {
               "type": "object",
-              "properties": { "customerId": { "type": "string" } },
-              "required": ["customerId"]
+              "properties": {
+                "customer": {
+                  "$ref": "#/components/schemas/Customer"
+                },
+                "lines": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LineItem"
+                  }
+                }
+              },
+              "required": [
+                "customer",
+                "lines"
+              ]
             },
-            "OrderDto": {
+            "Customer": {
               "type": "object",
-              "properties": { "id": { "type": "string" }, "customerId": { "type": "string" } }
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "email"
+              ]
+            },
+            "LineItem": {
+              "type": "object",
+              "properties": {
+                "sku": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "sku",
+                "quantity"
+              ]
+            },
+            "OrderAccepted": {
+              "type": "object",
+              "properties": {
+                "orderId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "orderId"
+              ]
             }
           }
         }
       },
-      "expectedHash": "sha256:ec8d9ab5b2325cc167305468ba677f0fd5e6165b8a0f7bda06f8406bd1db6c8f"
+      "expectedContractHash": "sha256:9cb801860a9f30019f23d56527b0db50dd5d831637831c1fcd66ca076c2c9605",
+      "expectedRegistrationHash": "sha256:ff78c431fe68ba4b7a3c91a1e77b643d7fcf09a63f2f59c7e4e56a18825436b8"
+    },
+    {
+      "name": "inline-schemas",
+      "description": "The same wire shapes as hoisted-components, all inline, with properties and required in a different order: the same two hashes.",
+      "document": {
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
+        "requests": [
+          {
+            "topic": "orders:create",
+            "request": {
+              "type": "object",
+              "properties": {
+                "lines": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "quantity": {
+                        "type": "integer"
+                      },
+                      "sku": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "quantity",
+                      "sku"
+                    ]
+                  }
+                },
+                "customer": {
+                  "type": "object",
+                  "properties": {
+                    "email": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "email",
+                    "id"
+                  ]
+                }
+              },
+              "required": [
+                "lines",
+                "customer"
+              ]
+            },
+            "response": {
+              "type": "object",
+              "properties": {
+                "orderId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "orderId"
+              ]
+            }
+          }
+        ],
+        "events": [],
+        "sends": [],
+        "components": {
+          "schemas": {}
+        }
+      },
+      "expectedContractHash": "sha256:9cb801860a9f30019f23d56527b0db50dd5d831637831c1fcd66ca076c2c9605",
+      "expectedRegistrationHash": "sha256:ff78c431fe68ba4b7a3c91a1e77b643d7fcf09a63f2f59c7e4e56a18825436b8"
+    },
+    {
+      "name": "renamed-components",
+      "description": "hoisted-components with two components renamed: names are not contract, so the same two hashes.",
+      "document": {
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
+        "requests": [
+          {
+            "topic": "orders:create",
+            "request": {
+              "$ref": "#/components/schemas/Order"
+            },
+            "response": {
+              "$ref": "#/components/schemas/OrderAccepted"
+            }
+          }
+        ],
+        "events": [],
+        "sends": [],
+        "components": {
+          "schemas": {
+            "LineItem": {
+              "type": "object",
+              "properties": {
+                "sku": {
+                  "type": "string"
+                },
+                "quantity": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "sku",
+                "quantity"
+              ]
+            },
+            "OrderAccepted": {
+              "type": "object",
+              "properties": {
+                "orderId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "orderId"
+              ]
+            },
+            "Order": {
+              "type": "object",
+              "properties": {
+                "customer": {
+                  "$ref": "#/components/schemas/Buyer"
+                },
+                "lines": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LineItem"
+                  }
+                }
+              },
+              "required": [
+                "customer",
+                "lines"
+              ]
+            },
+            "Buyer": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "email"
+              ]
+            }
+          }
+        }
+      },
+      "expectedContractHash": "sha256:9cb801860a9f30019f23d56527b0db50dd5d831637831c1fcd66ca076c2c9605",
+      "expectedRegistrationHash": "sha256:ff78c431fe68ba4b7a3c91a1e77b643d7fcf09a63f2f59c7e4e56a18825436b8"
+    },
+    {
+      "name": "entries-in-registration-order",
+      "description": "Three entries, a versioned one first, and httpMappings in arbitrary order with mixed-case methods (below).",
+      "document": {
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
+        "requests": [
+          {
+            "topic": "b:second",
+            "version": "v2",
+            "request": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            },
+            "response": {
+              "type": "object",
+              "properties": {
+                "y": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "y"
+              ]
+            },
+            "httpMappings": [
+              {
+                "method": "POST",
+                "path": "/b"
+              },
+              {
+                "method": "GET",
+                "path": "/b"
+              }
+            ]
+          },
+          {
+            "topic": "a:first",
+            "request": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            },
+            "response": {
+              "type": "object",
+              "properties": {
+                "y": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "y"
+              ]
+            }
+          },
+          {
+            "topic": "b:second",
+            "request": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            },
+            "response": {
+              "type": "object",
+              "properties": {
+                "y": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "y"
+              ]
+            }
+          }
+        ],
+        "events": [],
+        "sends": [],
+        "components": {
+          "schemas": {}
+        }
+      },
+      "expectedContractHash": "sha256:1755e0a599e68761bcb9b7e5e8637ec3fce305c774145edb8586bbedb92df821",
+      "expectedRegistrationHash": "sha256:dcfc4099ead90bf4a0a85d398a774801b9dbdb4b0336493bd35a8e4076d621be"
+    },
+    {
+      "name": "entries-sorted-and-methods-lower-case",
+      "description": "entries-in-registration-order's entries in another order, with httpMappings methods in lower case: the same two hashes.",
+      "document": {
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
+        "requests": [
+          {
+            "topic": "a:first",
+            "request": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            },
+            "response": {
+              "type": "object",
+              "properties": {
+                "y": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "y"
+              ]
+            }
+          },
+          {
+            "topic": "b:second",
+            "request": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            },
+            "response": {
+              "type": "object",
+              "properties": {
+                "y": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "y"
+              ]
+            }
+          },
+          {
+            "topic": "b:second",
+            "version": "v2",
+            "request": {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x"
+              ]
+            },
+            "response": {
+              "type": "object",
+              "properties": {
+                "y": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "y"
+              ]
+            },
+            "httpMappings": [
+              {
+                "method": "get",
+                "path": "/b"
+              },
+              {
+                "method": "post",
+                "path": "/b"
+              }
+            ]
+          }
+        ],
+        "events": [],
+        "sends": [],
+        "components": {
+          "schemas": {}
+        }
+      },
+      "expectedContractHash": "sha256:1755e0a599e68761bcb9b7e5e8637ec3fce305c774145edb8586bbedb92df821",
+      "expectedRegistrationHash": "sha256:dcfc4099ead90bf4a0a85d398a774801b9dbdb4b0336493bd35a8e4076d621be"
+    },
+    {
+      "name": "annotations-are-outside-the-hash",
+      "description": "minimal-document with title, description, format, example, default, readOnly, $schema and x- keywords added: the same two hashes.",
+      "document": {
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
+        "requests": [
+          {
+            "topic": "orders:create",
+            "request": {
+              "type": "object",
+              "properties": {
+                "orderId": {
+                  "type": "string",
+                  "description": "The id",
+                  "format": "uuid",
+                  "example": "o-1",
+                  "default": "",
+                  "readOnly": false
+                }
+              },
+              "required": [
+                "orderId"
+              ],
+              "title": "Create order",
+              "description": "Creates an order",
+              "x-internal": true,
+              "$schema": "http://json-schema.org/draft-07/schema#"
+            },
+            "response": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "description": "The id",
+                  "format": "uuid",
+                  "example": "o-1",
+                  "default": "",
+                  "readOnly": false
+                }
+              },
+              "required": [
+                "status"
+              ]
+            }
+          }
+        ],
+        "events": [],
+        "sends": [],
+        "components": {
+          "schemas": {}
+        }
+      },
+      "expectedContractHash": "sha256:2b8906d276bb0e6f24ed6f77d919841812903e0affdf611daa4cac42716dddc7",
+      "expectedRegistrationHash": "sha256:ad398055f066b2917d168d6c4ab9097b5691351e83484d3b9816376558946013"
+    },
+    {
+      "name": "validation-constraints-are-contract",
+      "description": "minimal-document with a minLength added: a validation rule is a contract change, so both hashes differ from minimal-document's.",
+      "document": {
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
+        "requests": [
+          {
+            "topic": "orders:create",
+            "request": {
+              "type": "object",
+              "properties": {
+                "orderId": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "orderId"
+              ]
+            },
+            "response": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "status"
+              ]
+            }
+          }
+        ],
+        "events": [],
+        "sends": [],
+        "components": {
+          "schemas": {}
+        }
+      },
+      "expectedContractHash": "sha256:44f99188ed77aa0f14a748f05dbfa614ccf2599b55ff1a72dd601d544017971f",
+      "expectedRegistrationHash": "sha256:431d32855991d3cc6f900d842ca62b5bc19f39e548fb1bd212c3705269bfa21a"
+    },
+    {
+      "name": "absent-response",
+      "description": "A handler with no response payload: response is absent.",
+      "document": {
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
+        "requests": [
+          {
+            "topic": "orders:cancel",
+            "request": {
+              "type": "object",
+              "properties": {
+                "orderId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "orderId"
+              ]
+            }
+          }
+        ],
+        "events": [],
+        "sends": [],
+        "components": {
+          "schemas": {}
+        }
+      },
+      "expectedContractHash": "sha256:90fa3c0169b0becda0562dbcb04e6407aa592bd359381bb41aad6d753a385c5a",
+      "expectedRegistrationHash": "sha256:a8dcdb06ece520015e6b91fea62f21c418a358a056ba6d4c0b2fb6fabc49be6a"
+    },
+    {
+      "name": "unconstrained-response",
+      "description": "The same topic with response {} (a payload of any shape): different hashes from absent-response.",
+      "document": {
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
+        "requests": [
+          {
+            "topic": "orders:cancel",
+            "request": {
+              "type": "object",
+              "properties": {
+                "orderId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "orderId"
+              ]
+            },
+            "response": {}
+          }
+        ],
+        "events": [],
+        "sends": [],
+        "components": {
+          "schemas": {}
+        }
+      },
+      "expectedContractHash": "sha256:6ac5bd79f2351278106fb8b821b6dccdf66643088e41e542ac0b2e543e4bb9c4",
+      "expectedRegistrationHash": "sha256:bd2eb9108a49c4221429fe50074454f155a8da786d6800fce2b28f73a4adc0ba"
+    },
+    {
+      "name": "recursive-component",
+      "description": "A self-referencing component: the projection cuts the cycle with {}.",
+      "document": {
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
+        "requests": [
+          {
+            "topic": "tree:put",
+            "request": {
+              "$ref": "#/components/schemas/TreeNode"
+            },
+            "response": {}
+          }
+        ],
+        "events": [],
+        "sends": [],
+        "components": {
+          "schemas": {
+            "TreeNode": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "children": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TreeNode"
+                  }
+                }
+              },
+              "required": [
+                "name"
+              ]
+            }
+          }
+        }
+      },
+      "expectedContractHash": "sha256:b9b093d2de1e91b164394459fda105c6f00b2823fc16bde7e4063e2749a3da40",
+      "expectedRegistrationHash": "sha256:825ad57d3afef083c727629e6c371f4cd8b15c69c0a0bdefba57826a04990e5f"
+    },
+    {
+      "name": "recursive-component-renamed",
+      "description": "recursive-component with the type named Node: the same two hashes.",
+      "document": {
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
+        "requests": [
+          {
+            "topic": "tree:put",
+            "request": {
+              "$ref": "#/components/schemas/Node"
+            },
+            "response": {}
+          }
+        ],
+        "events": [],
+        "sends": [],
+        "components": {
+          "schemas": {
+            "Node": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "children": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Node"
+                  }
+                }
+              },
+              "required": [
+                "name"
+              ]
+            }
+          }
+        }
+      },
+      "expectedContractHash": "sha256:b9b093d2de1e91b164394459fda105c6f00b2823fc16bde7e4063e2749a3da40",
+      "expectedRegistrationHash": "sha256:825ad57d3afef083c727629e6c371f4cd8b15c69c0a0bdefba57826a04990e5f"
+    },
+    {
+      "name": "canonical-service",
+      "description": "The canonical service (conformance/README.md): one request, one event, two sends.",
+      "document": {
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
+        "requests": [
+          {
+            "topic": "conformance:greet",
+            "request": {
+              "$ref": "#/components/schemas/GreetRequest"
+            },
+            "response": {
+              "$ref": "#/components/schemas/GreetResponse"
+            }
+          }
+        ],
+        "events": [
+          {
+            "topic": "conformance:greeted",
+            "message": {
+              "$ref": "#/components/schemas/Greeted"
+            }
+          }
+        ],
+        "sends": [
+          {
+            "topic": "conformance:log",
+            "request": {
+              "$ref": "#/components/schemas/LogEntry"
+            }
+          },
+          {
+            "topic": "conformance:lookup",
+            "request": {
+              "$ref": "#/components/schemas/LookupRequest"
+            },
+            "response": {
+              "$ref": "#/components/schemas/LookupResponse"
+            }
+          }
+        ],
+        "components": {
+          "schemas": {
+            "GreetRequest": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ]
+            },
+            "GreetResponse": {
+              "type": "object",
+              "properties": {
+                "greeting": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "greeting"
+              ]
+            },
+            "Greeted": {
+              "type": "object",
+              "properties": {
+                "greeting": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "greeting"
+              ]
+            },
+            "LogEntry": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ]
+            },
+            "LookupRequest": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key"
+              ]
+            },
+            "LookupResponse": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "value"
+              ]
+            }
+          }
+        }
+      },
+      "expectedContractHash": "sha256:4f27f0faf25765699031840c58d967aad3b45691d54e3b16c7e8b3f8df58f475",
+      "expectedRegistrationHash": "sha256:ed0a2af39e4bc1e8309d839abee5e158d2ec440e64d7f8461959de7476b2cab3"
+    },
+    {
+      "name": "canonical-service-without-sends",
+      "description": "canonical-service with no sends: contractHash is unchanged; registrationHash differs.",
+      "document": {
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
+        "requests": [
+          {
+            "topic": "conformance:greet",
+            "request": {
+              "$ref": "#/components/schemas/GreetRequest"
+            },
+            "response": {
+              "$ref": "#/components/schemas/GreetResponse"
+            }
+          }
+        ],
+        "events": [
+          {
+            "topic": "conformance:greeted",
+            "message": {
+              "$ref": "#/components/schemas/Greeted"
+            }
+          }
+        ],
+        "sends": [],
+        "components": {
+          "schemas": {
+            "GreetRequest": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ]
+            },
+            "GreetResponse": {
+              "type": "object",
+              "properties": {
+                "greeting": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "greeting"
+              ]
+            },
+            "Greeted": {
+              "type": "object",
+              "properties": {
+                "greeting": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "greeting"
+              ]
+            },
+            "LogEntry": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ]
+            },
+            "LookupRequest": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key"
+              ]
+            },
+            "LookupResponse": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "value"
+              ]
+            }
+          }
+        }
+      },
+      "expectedContractHash": "sha256:4f27f0faf25765699031840c58d967aad3b45691d54e3b16c7e8b3f8df58f475",
+      "expectedRegistrationHash": "sha256:60a2d54ac5bef0374b0e74af552b5d1bf6933a394617010dbd67059fd5a2e31e"
+    },
+    {
+      "name": "topic-scoped-projection",
+      "description": "canonical-service projected to the topic conformance:greet (contract-document §5.3): one request, no events or sends, components narrowed.",
+      "document": {
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
+        "requests": [
+          {
+            "topic": "conformance:greet",
+            "request": {
+              "$ref": "#/components/schemas/GreetRequest"
+            },
+            "response": {
+              "$ref": "#/components/schemas/GreetResponse"
+            }
+          }
+        ],
+        "events": [],
+        "sends": [],
+        "components": {
+          "schemas": {
+            "GreetRequest": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ]
+            },
+            "GreetResponse": {
+              "type": "object",
+              "properties": {
+                "greeting": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "greeting"
+              ]
+            }
+          }
+        }
+      },
+      "expectedContractHash": "sha256:b701ecf616ac40c8eab091c703e748f75155768cb8ee4ae84cce0637bbf17fd9",
+      "expectedRegistrationHash": "sha256:5239c95001e6fb166ecc52a750ec1a2928e8e824c7fe0c87531c94418c14e058"
+    },
+    {
+      "name": "include-list-projection",
+      "description": "A two-topic service projected by an include-list of conformance:greet (contract-document §5.2): events, sends and components pass through unnarrowed, so contractHash equals canonical-service's.",
+      "document": {
+        "schemaDialect": "openapi-3.0",
+        "service": "conformance",
+        "requests": [
+          {
+            "topic": "conformance:greet",
+            "request": {
+              "$ref": "#/components/schemas/GreetRequest"
+            },
+            "response": {
+              "$ref": "#/components/schemas/GreetResponse"
+            }
+          }
+        ],
+        "events": [
+          {
+            "topic": "conformance:greeted",
+            "message": {
+              "$ref": "#/components/schemas/Greeted"
+            }
+          }
+        ],
+        "sends": [
+          {
+            "topic": "conformance:log",
+            "request": {
+              "$ref": "#/components/schemas/LogEntry"
+            }
+          },
+          {
+            "topic": "conformance:lookup",
+            "request": {
+              "$ref": "#/components/schemas/LookupRequest"
+            },
+            "response": {
+              "$ref": "#/components/schemas/LookupResponse"
+            }
+          }
+        ],
+        "components": {
+          "schemas": {
+            "GreetRequest": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name"
+              ]
+            },
+            "GreetResponse": {
+              "type": "object",
+              "properties": {
+                "greeting": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "greeting"
+              ]
+            },
+            "Greeted": {
+              "type": "object",
+              "properties": {
+                "greeting": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "greeting"
+              ]
+            },
+            "LogEntry": {
+              "type": "object",
+              "properties": {
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "message"
+              ]
+            },
+            "LookupRequest": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key"
+              ]
+            },
+            "LookupResponse": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "value"
+              ]
+            }
+          }
+        }
+      },
+      "expectedContractHash": "sha256:4f27f0faf25765699031840c58d967aad3b45691d54e3b16c7e8b3f8df58f475",
+      "expectedRegistrationHash": "sha256:ed0a2af39e4bc1e8309d839abee5e158d2ec440e64d7f8461959de7476b2cab3"
     }
   ]
 }
