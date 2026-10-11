@@ -40,7 +40,8 @@ Every binding MUST define:
      acknowledged. A binding SHOULD offer an option that treats an unmatched topic as `ignored`,
      for subscribers on a shared bus that see other services' topics.
    - A middleware that ends the pipeline on a one-way binding MUST set a result; one that does not
-     leaves no result, and the message is redelivered.
+     leaves no result, and the message is redelivered. A scheduled trigger is the exception: a tick
+     carries no message to lose, so a binding MAY acknowledge a tick whose pipeline set no result.
    - A binding MUST offer an at-most-once override that acknowledges whatever the outcome.
    - A stream binding whose retention blocks the partition behind a failed message MAY default to
      skip-and-continue instead, and MUST document that it does.
