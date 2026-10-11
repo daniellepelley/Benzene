@@ -14,8 +14,10 @@ consumes these files.
 ## Spec releases and pinning
 
 The specification is released as git tags of this repository, `spec-<version>`, where `<version>` is
-the content of `docs/specification/VERSION` at that commit. A release is cut whenever the fixtures or
-a contract change, and only then.
+the content of `docs/specification/VERSION` at that commit. Releasing is one edit — bump `VERSION`;
+the `release-spec` workflow tags the commit, and never moves a tag once published. A release is cut
+whenever the fixtures or a contract change, and only then; the workflow warns while `main`'s fixtures
+differ from the release `VERSION` still names.
 
 Every repository that vendors these fixtures records the release it took them from in a
 `SPEC_VERSION` file beside its snapshot: a tag (`spec-0.1.0`) — or, while catching up mid-release, a

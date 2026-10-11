@@ -1,0 +1,62 @@
+name: release-spec
+
+# Cuts a specification release. docs/specification/VERSION names the version; a release is the
+# annotated tag `spec-<version>` on the commit that set it. The repositories that vendor the
+# conformance fixtures pin a release in their SPEC_VERSION (docs/specification/conformance/README.md,
+# "Spec releases and pinning"), so a tag here is what lets a port move forward deliberately instead of
+# being turned red by whatever main last did.
+#
+# Releasing is therefore one edit: bump VERSION. This job creates the tag the first time it sees that
+# version on main, and never moves an existing one - a published release is immutable, because a port
+# pinned to it must keep seeing exactly the fixtures it implemented.
+#
+# It also warns, without failing, when the fixtures on main differ from the release VERSION still
+# names: the fixtures changed and nobody has cut a release for it yet. That is a normal state partway
+# through a phase (several spec PRs land before the tag), so it is a warning, not a red build.
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/specification/VERSION'
+      - 'docs/specification/conformance/**'
+      - '.github/workflows/release-spec.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the existing spec-* tags are needed to decide
+
+      - name: Tag the release VERSION names, if it is new
+        run: |
+          set -euo pipefail
+          version=$(tr -d '[:space:]' < docs/specification/VERSION)
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error file=docs/specification/VERSION::'$version' is not a semantic version (MAJOR.MINOR.PATCH[-pre])"
+            exit 1
+          fi
+          tag="spec-$version"
+
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "$tag already exists at $(git rev-list -n 1 "$tag"); a release is never moved."
+            tagged_tree=$(git rev-parse "$tag:docs/specification/conformance")
+            head_tree=$(git rev-parse "HEAD:docs/specification/conformance")
+            if [ "$tagged_tree" != "$head_tree" ]; then
+              echo "::warning file=docs/specification/VERSION::The conformance fixtures on main differ from $tag. Bump VERSION to release them; until then no port can pin these fixtures."
+              git diff --stat "$tag" HEAD -- docs/specification/conformance
+            fi
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$tag" -m "Benzene specification $version"
+          git push origin "refs/tags/$tag"
+          echo "Released $tag at $(git rev-parse HEAD)."
