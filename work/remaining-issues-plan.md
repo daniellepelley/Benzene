@@ -104,7 +104,7 @@ settles?
 
 ## P1 — the three cross-port design questions: decided 2026-10-11
 
-All three were settled by `spec-simplification-plan.md` (D25, D26) and are in the spec: a client that
+All three were settled by `archive/spec-simplification-plan.md` (D25, D26) and are in the spec: a client that
 receives a problem document MUST rebuild `errors` with `field` and `code` intact, and MAY attach the
 received document (core-concepts §12); `mesh-service-version-cases.json` is the Service Versions
 module's fixture (Provisional: .NET), which the other ports skip with a written reason. **Port work

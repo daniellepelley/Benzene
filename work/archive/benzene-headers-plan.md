@@ -1,5 +1,7 @@
 # `benzene-headers` — implementation plan (deferred, execute after the repo split)
 
+> ARCHIVED 2026-10-11 — actioned. Evidence: the spec release `spec-1.0.0` (Benzene `5dd10f17`); Phase A (the rename) done in spec-0.2.0 and every port; Phase B (packed headers) rejected by D14.
+
 **Status:** PLAN — **deliberately not executed.** Documented now, implemented later.
 **Last Updated:** 2026-07-25
 **Purpose:** The executable plan for `work/benzene-headers-design.md`. Written to be run **after**

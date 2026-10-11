@@ -1,5 +1,7 @@
 # One self-description — design spike
 
+> ARCHIVED 2026-10-11 — actioned. Evidence: the spec release `spec-1.0.0` (Benzene `5dd10f17`); `docs/specification/contract-document.md` and `mesh.md` §1–§2 (spec-0.3.0, spec-0.4.0).
+
 **Status:** DESIGN — **ruled 2026-10-11** (§10.5); Phase 0.2 of
 [`spec-simplification-plan.md`](spec-simplification-plan.md).
 **Written:** 2026-10-11. **Actions:** decision D18, and the review it comes from

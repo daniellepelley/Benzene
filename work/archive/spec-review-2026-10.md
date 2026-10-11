@@ -1,5 +1,7 @@
 # Specification review — October 2026
 
+> ARCHIVED 2026-10-11 — actioned. Evidence: the spec release `spec-1.0.0` (Benzene `5dd10f17`); Actioned by `spec-simplification-plan.md` (archived beside it); the spec released as `spec-1.0.0`.
+
 **Status:** REVIEW — findings and recommendations, not decisions. Written before any 1.0 tag, while
 every contract is still cheap to change.
 **Scope:** every document under `docs/specification/`, with the weight on the higher levels (README,

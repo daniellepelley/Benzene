@@ -1,5 +1,7 @@
 # `benzene-headers` — packed headers, and the chained topic getter
 
+> ARCHIVED 2026-10-11 — actioned. Evidence: the spec release `spec-1.0.0` (Benzene `5dd10f17`); EventBridge's `benzene-headers` key is in wire-contracts §2 (spec-0.2.0, D14); the packed-headers mode for every transport was rejected.
+
 **Status:** PROPOSAL — accepted in shape; **execution plan is `work/benzene-headers-plan.md`**, deferred until after the repo split. Originally: proposal for maintainer ruling — captures the maintainer's design (2026-07-25), grounded
 against the current code, with the edge cases that need a decision called out. Task #33.
 **Last Updated:** 2026-07-25

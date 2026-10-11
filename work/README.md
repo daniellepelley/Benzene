@@ -63,23 +63,17 @@ still cites. Dead plans are one directory away, indexed in [`archive/README.md`]
 The 2026-08-20 sweep moved the actioned set there: the naming-principle ruling, the error-payload
 proposal, the 2026-07-25 spec review, the seven dated mesh feedback/delivery records, the
 design-simplicity note, the React assessment, the two executed mesh plans, and the repo-split
-plan/manifest/status.
+plan/manifest/status. The 2026-10-11 sweep moved the spec-simplification set there once the spec
+was released as `spec-1.0.0`: the October review, its plan, the self-description design and the
+`benzene-headers` design and plan.
 
 ## What is here
 
 - `benzene-vision.md` — the original problem and the design philosophy, cross-language
-- `spec-review-2026-10.md` — the October 2026 review of the whole specification: what is concept,
-  what is narrative, what contradicts itself, and what to simplify before a 1.0 tag; revised after
-  an architecture and core-product-owner second round (its §8)
-- `spec-simplification-plan.md` — the plan that actions that review: decisions D1–D25, Phase 0
-  prerequisites, one wire window, the narrowed self-description, per-repo work including the UI and
-  The Count
-- `benzene-headers-design.md`, `benzene-headers-plan.md` — the header mechanism (plan deliberately
-  deferred; its Phase A rename is now scheduled by `spec-simplification-plan.md` Phase 3)
 - `cloudevents-design.md` — CloudEvents as a wire format
 - `remaining-issues-plan.md` — the current worklist: release state, open cross-port questions, and
   the remainders extracted from archived plans
-- `ceremony-parity-audit.md` — the cross-port ceremony/parity audit backing the open P1 questions
+- `ceremony-parity-audit.md` — the cross-port ceremony/parity audit (its P1 questions are decided)
 - `mesh-ui-aims.md` — the authority on what the mesh UI is for; the rules screens are checked against
 - `mesh-ui-product-vision.md` — the shared Mesh UI: history, rulings, and dated refinement blocks
 - `mesh-user-personas.md`, `mesh-persona-round-method.md` — the personas and the method for

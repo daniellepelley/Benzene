@@ -212,7 +212,7 @@ only; decisions stay with the product owner.
       the app. .NET fails at start-up under `UseBenzeneCloudService` by default. Under manual
       composition it fails on the first spec request unless the application opts in to
       `AddContractDocumentStartUpCheck()` or emits the spec at build time. That is a ruled,
-      deliberate trade (`work/self-description-design.md` §10.2 item 7), off the profile path.
+      deliberate trade (`work/archive/self-description-design.md` §10.2 item 7), off the profile path.
     - **Hoisting** — *deliberate within a SHOULD* (§4.1 rule 1). TypeScript inlines Joi/Yup nested
       objects (Zod hoists), and Go inlines undeclared generic instances. Component names are outside
       the hashes, so the ports still agree on both hashes.
@@ -464,7 +464,7 @@ not merely noted. **Open** flags first.
   collision MUST fail derivation "before any message is handled". Under `UseBenzeneCloudService`
   (the profile path) the start-up check is on by default. Under manual composition, .NET throws on
   the first spec request unless the application opts in or emits the spec at build time. That is
-  the deliberate trade ruled in `work/self-description-design.md` §10.2 item 7, and it stays
+  the deliberate trade ruled in `work/archive/self-description-design.md` §10.2 item 7, and it stays
   flagged because the module is now Stable.
 
 **Not port flags — open questions in the spec**

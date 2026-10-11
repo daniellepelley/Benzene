@@ -1,5 +1,7 @@
 # Spec simplification — implementation plan
 
+> ARCHIVED 2026-10-11 — actioned. Evidence: the spec release `spec-1.0.0` (Benzene `5dd10f17`); every phase done; the spec is `docs/specification/` at `spec-1.0.0`; port follow-ups in `work/remaining-issues-plan.md` and `docs/capabilities.md`.
+
 **Status:** PLAN — revised 2026-10-11 after review by the architecture reviewer and the core product
 owner; ready to execute from Phase 0.
 **Written:** 2026-10-10. **Source:** [`spec-review-2026-10.md`](spec-review-2026-10.md) — the review
@@ -338,5 +340,5 @@ Phase 1  [x] 1a  [x] 1b  [x] 1c  [x] fixtures  [x] spec-0.2.0  [x] ui  [x] .NET 
 Phase 2  [x] spec PR  [x] website green (4 ports)  [x] .NET cookbook
 Phase 3  [x] 3a spec-0.3.0 (ui, .NET, Go, TS, Py green; capabilities.md)  [x] 3b spec-0.4.0  [x] .NET  [x] Go  [x] TS  [x] Py  [x] live interop both ways (Go collector + .NET services, .NET collector + Go services; also Go<->Python, TS->Go)
 Phase 4  [x] spec PR (spec-0.5.0)  [x] .NET  [x] Go  [x] TS  [x] Py
-Phase 5  [ ] VERSION/tag  [ ] capabilities.md full refresh  [ ] archives + README
+Phase 5  [x] Core gaps closed in all four ports  [x] VERSION/tag (spec-1.0.0, 5dd10f17)  [x] capabilities.md full refresh  [x] archives + README
 ```

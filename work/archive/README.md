@@ -26,3 +26,8 @@ others'.
 | `repo-split-plan.md` | The phase-by-phase repo-split checklist | 2026-08-20 | Phases 1–4 done (this repo has no src/); Phase 5 in `work/remaining-issues-plan.md` |
 | `repo-split-manifest.md` | The file-level move/stay manifest for the split | 2026-08-20 | The split it specifies was executed |
 | `repo-split/` | Split execution status + overlay files + populate script | 2026-08-20 | The split completed; kept intact as the execution record |
+| `spec-review-2026-10.md` | The October 2026 review of the whole specification | 2026-10-11 | Actioned by `spec-simplification-plan.md` (archived beside it); the spec released as `spec-1.0.0` |
+| `spec-simplification-plan.md` | The plan that actioned that review: decisions D1–D26, Phases 0–5, spec-0.1.0 → spec-1.0.0 | 2026-10-11 | Every phase done; the spec is `docs/specification/` at `spec-1.0.0`; port follow-ups in `work/remaining-issues-plan.md` and `docs/capabilities.md` |
+| `self-description-design.md` | The one-self-description design spike (D18), ruled with the port champions' review (§10) | 2026-10-11 | `docs/specification/contract-document.md` and `mesh.md` §1–§2 (spec-0.3.0, spec-0.4.0) |
+| `benzene-headers-design.md` | The `benzene-headers` packed-headers and chained-topic-getter proposal | 2026-10-11 | EventBridge's `benzene-headers` key is in wire-contracts §2 (spec-0.2.0, D14); the packed-headers mode for every transport was rejected |
+| `benzene-headers-plan.md` | The execution plan for that proposal | 2026-10-11 | Phase A (the rename) done in spec-0.2.0 and every port; Phase B (packed headers) rejected by D14 |
