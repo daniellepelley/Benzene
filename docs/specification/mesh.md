@@ -77,8 +77,9 @@ transport-shaped.
   invocation. Pinned by the `traceparent` section of `conformance/mesh-trace-cases.json`.
 - Outbound propagation: a downstream Benzene message — a send, one-way or with a reply, or a
   published event — carries `traceparent: 00-<traceId>-<spanId>-01` built from the calling
-  invocation's span — required of a meshed service (§7.1, M2). This is what lets a
-  collector correlate an *observed* message with the declared edge it exercises (§4.2) — propagation
+  invocation's span: the `spanId` its TraceEvent records, whatever other tracing the port also
+  runs, so that the downstream invocation's TraceEvent names it as `parentSpanId`. Required of a
+  meshed service (§7.1, M2), this is what lets a collector correlate an *observed* message with the declared edge it exercises (§4.2) — propagation
   feeds observation, not the graph itself (§4), which comes from the registration (§2) regardless of
   whether any call has ever propagated a trace at all.
 - `status` is the Benzene status verbatim (wire-contracts.md §3); empty only when no downstream
