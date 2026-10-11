@@ -38,10 +38,9 @@ R6) — for such a service, §6 governs runtime degradation, not whether the fee
 
 ## 1. The reserved `benzene:mesh` topic
 
-A mesh-enabled service MUST intercept the reserved topic id `benzene:mesh` (plus any app-chosen aliases)
-the same way health-check interception works (core-concepts.md §10): interception is by topic id
-alone, ignoring version; any other topic passes through unchanged. The response is status `ok`
-with the ServiceDescriptor (§2) as payload.
+A mesh-enabled service MUST intercept the reserved topic id `benzene:mesh` (plus any app-chosen
+aliases) under the interception rule of the reserved topics (wire-contracts.md §7). The response is
+status `ok` with the ServiceDescriptor (§2) as payload.
 
 Provisioning this endpoint is a deployment decision: a service that must not expose it (e.g.
 pending a security review) simply does not install the interception, and every other mesh feed

@@ -136,7 +136,9 @@ porting author cannot tell a mandatory wire contract from a convention of one op
 | `benzene-version` | **C** | both | The message's version: the one signal that selects the handler (core-concepts §2) and the payload's schema version (payload casting, [versioning.md](versioning.md)). One name, read and written as `benzene-version` and configurable like every name in this table — there is no fallback list, so an unrelated `version` or `x-version` header a caller sends is an ordinary header, never a version. Absent means the topic's default handler (core-concepts §2). |
 | `traceparent`, `tracestate` | **C** | both | W3C Trace Context. Benzene does not define these, and Core does not require them (the Cloud Service Profile's R8 does). **If** an implementation propagates trace context, it MUST do so verbatim per the W3C specification — that verbatim-ness is what makes traces from different languages join up, which the mesh depends on. Benzene never fabricates a trace context that wasn't there. |
 | `x-correlation-id` | **C** | outbound | A business correlation value, written by the outbound correlation client decorator when the application populates one. Implementations are NOT required to read it inbound; honouring a partner's correlation header is application middleware, not a framework contract. One convention among several — Benzene does not own this name. |
-| `_benzeneHeaders` | **D** | both (EventBridge) | On transports with no native per-message metadata (EventBridge), wire headers travel as a reserved string→string object named `_benzeneHeaders` at the top level of the payload (`detail`), embedded by the sender only when headers exist and the payload is a JSON object, and lifted back out by the receiver. Its form differs deliberately: it is a **JSON field**, so it follows the camelCase JSON convention rather than the kebab-case header one, with the leading underscore marking it reserved inside a payload the application owns. |
+| `benzene-headers` | **D** | both (EventBridge) | On transports with no native per-message metadata (EventBridge), wire headers travel as a reserved string→string object named `benzene-headers` at the top level of the payload (`detail`), embedded by the sender only when headers exist and the payload is a JSON object, and lifted back out by the receiver. Although its carrier is a payload field, it **names a header** rather than being one of the payload's own fields, so it is spelled like every other header — lowercase kebab-case with the `benzene-` marker. |
+| `benzene-mcp-tool` | **D** | inbound (MCP) | The name of the MCP tool the call came through, set by the MCP binding ([transport-bindings.md](transport-bindings.md) §2). |
+| `benzene-mcp-session` | **D** | inbound (MCP) | The MCP session id, where the transport has one. |
 | `benzene-claim-check` | **C** | both | Carries an opaque reference to a payload that the optional claim-check middleware offloaded to an external store because it exceeded a configured size threshold — see [§2.1](#21-claim-check-add-on). |
 
 `benzene-status` is **not** listed here: it is a gRPC-only trailer, specified with the gRPC mapping
@@ -391,3 +393,39 @@ no check failed (a warning maps to a degraded-but-serving state).
   ([proto3 JSON](https://protobuf.dev/programming-guides/proto3/#json)) between protobuf messages
   and plain types — not a naive reflection round-trip — so enums, well-known types, and oneofs
   convert per protobuf rules. Property matching is against the protobuf JSON names.
+
+## 7. Reserved topics
+
+The `benzene:` prefix is reserved to the framework: an application MUST NOT register a topic under
+it. The topics below are the **interoperable** reserved topics — the ones a tool may rely on across
+ports. A port MAY serve other topics under the prefix; a tool MUST NOT depend on one this section
+does not list.
+
+A reserved topic is **intercepted by its topic id alone, ignoring version**: a message to it never
+reaches version selection (core-concepts §2), and any other topic passes through unchanged. Every
+reserved topic is optional unless a profile requires it (the
+[Cloud Service Profile](cloud-service-profile.md)'s R3, R5 and R6).
+
+| Topic | Request | Success response |
+|---|---|---|
+| `benzene:healthcheck` | none | `ok`, the health response (§5): every registered check |
+| `benzene:liveness` | none | `ok`, the health response, from checks that never depend on anything outside the process |
+| `benzene:readiness` | none | `ok`, the health response, from the checks that decide whether this instance should receive traffic |
+| `benzene:spec` | optional `{ "type"?: string, "format"?: string }` | `ok`, the contract document ([contract-document.md](contract-document.md)), or the format its request names |
+| `benzene:ping` | none | `ok`, no payload |
+| `benzene:mesh` | none | `ok`, the ServiceDescriptor ([mesh.md](mesh.md) §1–§2) |
+| `benzene:mesh:register`, `benzene:mesh:heartbeat`, `benzene:mesh:traces`, `benzene:mesh:issues` | per [mesh.md](mesh.md) §4 | per [mesh.md](mesh.md) §4 — served by a collector, not by every service |
+| `benzene:mesh:dispatch` *(Provisional)* | `{ "service": string, "topic": string, "headers"?: object, "body"?: string }` | the target service's result for that envelope — served by a collector that offers live dispatch; the response shape is not pinned while the topic is Provisional |
+
+- **`benzene:spec`.** An absent body, an empty body, `null` and `{}` all mean `type: "benzene"`,
+  `format: "json"` — the contract document. Values are lowercase ASCII, compared
+  case-insensitively. A `type` or `format` the service does not support is answered
+  `not-implemented`, never with a different document. Other values (`openapi`, `asyncapi`, `yaml`,
+  …) are port extensions.
+- **`benzene:ping`** is a reachability probe: health checks send it into a queue or a function to
+  prove the path to a service works. A service that consumes a one-way transport SHOULD serve it,
+  because an unanswered probe is a `not-found` failure that the transport redelivers until it
+  dead-letters it (transport-bindings §1, obligation 8).
+- The health topics answer `ok` whenever the checks ran; `isHealthy` carries the verdict (§5).
+- The HTTP routes these topics are reachable on by default are the HTTP binding's default
+  mappings (transport-bindings §1), not part of the topics' definition.

@@ -213,11 +213,6 @@ unable to exchange a single queue message with another port. That is not hypothe
 exactly how the .NET and Python ports diverged when the key was briefly `benzene-topic`
 (`work/archive/benzene-naming-principle.md` §3c, since reversed).
 
-The EventBridge embedded-headers key (`_benzeneHeaders`, wire-contracts §2, tier D) is deliberately
-**not** pinned here: it is scheduled to be renamed to `benzene-headers`
-(`work/benzene-headers-plan.md`), and a fixture asserting the current spelling would have to change
-with it.
-
 ## Mesh fixture formats
 
 Subset matching is as for envelope cases, with one addition needed by these fixtures:

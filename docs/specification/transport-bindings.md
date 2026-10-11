@@ -142,7 +142,7 @@ and the raw `BenzeneMessage` envelope (wire-contracts §1) for direct invocation
   one scope; fire-and-forget (no response channel).
 - Body: the raw JSON of `detail` (the domain payload).
 - Headers: envelope metadata under `eventbridge-`-prefixed keys, plus Benzene wire headers lifted
-  from the reserved `_benzeneHeaders` object inside `detail` (wire-contracts §2) — EventBridge has
+  from the reserved `benzene-headers` object inside `detail` (wire-contracts §2) — EventBridge has
   no native per-message attributes, so the outbound client embeds them there. Embedded headers win
   over prefixed envelope keys.
 - Outbound: `PutEvents` with topic → `DetailType`; success requires an OK status **and** zero
@@ -156,7 +156,7 @@ and the raw `BenzeneMessage` envelope (wire-contracts §1) for direct invocation
 - Body: the record's image unmarshalled from DynamoDB AttributeValue format into plain JSON
   (`NewImage`, else `OldImage`, else `Keys` — the most complete state available), so handlers
   deserialize ordinary POCOs.
-- Headers: envelope metadata under `dynamodb-`-prefixed keys. **No** `_benzeneHeaders`
+- Headers: envelope metadata under `dynamodb-`-prefixed keys. **No** `benzene-headers`
   convention: these events originate from table writes, not a Benzene publisher, so there is no
   producer side to embed wire headers.
 - Batching: records are ordered CDC within a shard → processed **sequentially, stopping at the
@@ -199,11 +199,12 @@ AI clients (assistants, IDEs, agents) call a service's handlers as MCP **tools**
 on Streamable HTTP (hosted by any HTTP binding above) or on stdio (hosted by the worker).
 
 - **Tools, not topics.** The binding advertises a curated list of tools the application declares,
-  never every topic (a hundred schemas in front of a model is a worse interface than none). A tool is either **topic-bound** (name → topic, the arguments object is the body) or
-  **custom** (a body the application wrote, which asks the pipeline through the same dispatcher).
+  never every topic (a hundred schemas in front of a model is a worse interface than none). A tool
+  is either **topic-bound** (name → topic, the arguments object is the body) or **custom** (a body
+  the application wrote, which asks the pipeline through the same dispatcher).
 - Topic: the tool's declared topic (+ optional version, sent as `benzene-version`). Headers:
-  `mcp-tool` (the tool name) and `mcp-session` (the session id, where the transport has one);
-  there is no native metadata channel for the caller to set headers on.
+  `benzene-mcp-tool` (the tool name) and `benzene-mcp-session` (the session id, where the transport
+  has one; wire-contracts §2); there is no native metadata channel for the caller to set headers on.
 - Body: the `tools/call` `arguments` object, verbatim, as the request body. Arguments are read
   strictly; a value the model got wrong is refused with a sentence naming what was expected.
 - Result: a success → the response body as the tool's text; a failure → a tool result marked

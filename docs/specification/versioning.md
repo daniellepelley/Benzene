@@ -443,7 +443,7 @@ the source project §2 describes departing from), almost nothing below could wor
 |---|---|---|
 | HTTP / Kubernetes | Yes, natively | `/v{version}` path or `benzene-version` header rule at the ingress/gateway — ordinary canary machinery |
 | SNS | Yes | Subscription **filter policies** on the message attribute the version header maps to; one queue per version |
-| EventBridge | Yes | Rules pattern-match the embedded header (transport-bindings.md's `_benzeneHeaders`) |
+| EventBridge | Yes | Rules pattern-match the embedded header (transport-bindings.md's `benzene-headers`) |
 | Bare queue (SQS, etc.) | **No** — a queue has no routing layer | Front it with a topic/bus that has one, **or** route producer-side (below) |
 | Direct invocation (Lambda invoke, gRPC) | Producer-side only | The caller chooses the callee, so the outbound route must be version-aware |
 
