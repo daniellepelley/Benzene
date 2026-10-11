@@ -50,7 +50,7 @@ Every binding MUST define:
      dead-letter queue or topic). Benzene declines the acknowledgement; the transport decides when
      to give up.
 
-   Each binding's defaults are pinned by `settlementDefaults` in
+   Each binding's shape, and the defaults each shape allows, are pinned by `settlementDefaults` in
    `conformance/transport-metadata-cases.json`. A request/response binding settles by responding.
 
 A binding SHOULD also state its cancellation/deadline source (or that the transport has none) and

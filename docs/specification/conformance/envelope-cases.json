@@ -190,6 +190,53 @@
         },
         "bodyExclude": ["status"]
       }
+    },
+    {
+      "name": "version-exact-match",
+      "request": { "topic": "conformance:versioned", "headers": { "benzene-version": "v2" }, "body": "{}" },
+      "expected": {
+        "statusCode": "ok",
+        "isSuccessful": true,
+        "body": { "version": "v2" }
+      }
+    },
+    {
+      "name": "version-absent-goes-to-default",
+      "request": { "topic": "conformance:versioned", "headers": {}, "body": "{}" },
+      "expected": {
+        "statusCode": "ok",
+        "isSuccessful": true,
+        "body": { "version": "v1" }
+      }
+    },
+    {
+      "name": "version-unknown-is-not-found",
+      "request": { "topic": "conformance:versioned", "headers": { "benzene-version": "v9" }, "body": "{}" },
+      "expected": {
+        "statusCode": "not-found",
+        "isSuccessful": false,
+        "body": { "type": "https://benzene.app/problems/not-found", "benzeneStatus": "not-found" },
+        "bodyExclude": ["status"]
+      }
+    },
+    {
+      "name": "version-on-unversioned-topic-is-not-found",
+      "request": { "topic": "conformance:greet", "headers": { "benzene-version": "v2" }, "body": "{\"name\":\"world\"}" },
+      "expected": {
+        "statusCode": "not-found",
+        "isSuccessful": false,
+        "body": { "type": "https://benzene.app/problems/not-found", "benzeneStatus": "not-found" },
+        "bodyExclude": ["status"]
+      }
+    },
+    {
+      "name": "plain-version-header-is-not-a-version",
+      "request": { "topic": "conformance:versioned", "headers": { "version": "v2" }, "body": "{}" },
+      "expected": {
+        "statusCode": "ok",
+        "isSuccessful": true,
+        "body": { "version": "v1" }
+      }
     }
   ]
 }

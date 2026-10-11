@@ -2,8 +2,10 @@
   "description": "Topic resolution and header mapping on transports that carry Benzene metadata natively (wire-contracts.md §2, transport-bindings.md §1). Every such transport exposes a string->string metadata channel under a different native name — SQS/SNS message attributes, Pub/Sub attributes, Service Bus/Event Hub application properties, Kafka/RabbitMQ headers — so the cases below are written against that neutral dictionary and each runner adapts them to its own native shape. This is the fixture that pins the metadata key names across ports: a port that renames or misspells one still passes every other fixture, because the envelope, status and HTTP mappings never touch native metadata. The names are configurable per service, so the cases assert both the defaults (which is what makes two Benzene services interoperate untouched) and that an override is honoured.",
   "defaultMetadataKeys": {
     "topic": "topic",
-    "version": "benzene-version"
+    "version": "benzene-version",
+    "headers": "benzene-headers"
   },
+  "defaultMetadataKeysNote": "headers is the EventBridge embedded-headers key (wire-contracts.md §2, tier D): the reserved object inside detail that carries the wire headers on a transport with no native per-message metadata. Only ports with an EventBridge binding assert it.",
   "configurable": true,
   "configurableNote": "An implementation MUST expose the reserved names as a single injectable value (wire-contracts §2). The defaults above are the interop baseline; overrideCases assert that a replacement is actually honoured, on inbound bindings and outbound clients alike.",
   "topicSources": [
@@ -147,6 +149,22 @@
         ]
       },
       "note": "benzene-version is tier C — only ports that implement payload versioning run this case."
+    },
+    {
+      "name": "a-bare-version-key-is-a-header-not-a-version",
+      "requires": "versioning",
+      "metadata": {
+        "topic": "conformance:greet",
+        "version": "2"
+      },
+      "expected": {
+        "topic": "conformance:greet",
+        "version": "",
+        "headers": {
+          "version": "2"
+        }
+      },
+      "note": "One version header, no fallback list (wire-contracts.md §2, D10): a producer's own 'version' attribute is an ordinary header and selects nothing."
     }
   ],
   "overrideCases": [
@@ -170,5 +188,34 @@
       },
       "note": "With the name overridden, the default key is an ordinary application header and carries no routing meaning — which is the whole point of overriding it."
     }
-  ]
+  ],
+  "settlementDefaultsNote": "Settlement (transport-bindings.md §1, obligation 8): what a one-way binding does by default with a message whose invocation failed — isSuccessful false, no result, an uncaught error, or (unmatchedTopic) a topic no handler serves, which is a not-found failure. 'shapes' states the required default per binding shape; 'bindings' records each binding's shape. A port asserts, for every binding it ships, that the binding's shape matches and that its default is one the shape allows. A stream binding MAY default to skip-and-continue and MUST then document it; it MUST define its unit of settlement either way. Every one-way binding also offers an at-most-once override and SHOULD offer unmatched-topic-as-ignored; neither is a default, so neither is listed here.",
+  "settlementDefaults": {
+    "shapes": {
+      "queue": { "onFailure": ["redeliver"], "unmatchedTopic": ["redeliver"] },
+      "one-shot": { "onFailure": ["redeliver"], "unmatchedTopic": ["redeliver"] },
+      "stream": { "onFailure": ["redeliver", "skip-and-continue"], "unmatchedTopic": ["redeliver", "skip-and-continue"] },
+      "request-response": { "onFailure": ["n/a"], "unmatchedTopic": ["n/a"] }
+    },
+    "bindings": [
+      { "binding": "sqs", "shape": "queue" },
+      { "binding": "servicebus", "shape": "queue" },
+      { "binding": "queue-storage", "shape": "queue" },
+      { "binding": "pubsub", "shape": "queue" },
+      { "binding": "rabbitmq", "shape": "queue" },
+      { "binding": "sns", "shape": "one-shot" },
+      { "binding": "eventbridge", "shape": "one-shot" },
+      { "binding": "s3", "shape": "one-shot" },
+      { "binding": "event-grid", "shape": "one-shot" },
+      { "binding": "envelope-async", "shape": "one-shot", "note": "the envelope delivered by an asynchronous function invocation (e.g. Lambda Event invocation): there is no caller to answer, so a failure must fail the invocation for the platform to retry it" },
+      { "binding": "kafka", "shape": "stream" },
+      { "binding": "eventhub", "shape": "stream" },
+      { "binding": "kinesis", "shape": "stream" },
+      { "binding": "dynamodb-streams", "shape": "stream" },
+      { "binding": "cosmosdb-changefeed", "shape": "stream" },
+      { "binding": "http", "shape": "request-response" },
+      { "binding": "grpc", "shape": "request-response" },
+      { "binding": "envelope", "shape": "request-response", "note": "the envelope over a synchronous carrier: a direct invocation, or the envelope endpoint over HTTP" }
+    ]
+  }
 }

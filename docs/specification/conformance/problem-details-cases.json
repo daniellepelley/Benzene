@@ -1,5 +1,5 @@
 {
-  "description": "Problem details payload cases (wire-contracts.md sections 1.3, 3.1, 4.1). 'registry' pins the problem-type registry directly. 'envelopeCases' run against the canonical conformance:problem handler (README.md) the same way envelope-cases.json cases do, including bodyExclude negatives. 'httpRules' pins the HTTP-binding-only rules of wire-contracts.md section 4.1 for ports that bind HTTP; it is conditional (README.md). Title/detail wording is never asserted.",
+  "description": "Problem details payload cases (wire-contracts.md sections 1.3, 3.1, 4.1). 'registry' pins the problem-type registry directly. 'envelopeCases' run against the canonical conformance:problem and conformance:validate handlers (README.md) the same way envelope-cases.json cases do, including bodyExclude negatives. 'httpRules' pins the HTTP-binding-only rules of wire-contracts.md section 4.1 and transport-bindings.md section 1 (the envelope endpoint, the health routes) for ports that bind HTTP; it is conditional (README.md). Title/detail wording is never asserted.",
 
   "registry": {
     "description": "wire-contracts.md section 3.1 — directly assertable without building a message: a port compares its own table against these rows.",
@@ -25,14 +25,14 @@
   "envelopeCases": [
     {
       "name": "problem-structured-error-round-trip",
-      "request": { "topic": "conformance:problem", "headers": {}, "body": "{\"message\":\"Name must not be empty\",\"field\":\"Name\",\"code\":\"NotEmptyValidator\"}" },
+      "request": { "topic": "conformance:problem", "headers": {}, "body": "{\"message\":\"Name must not be empty\",\"field\":\"/name\",\"code\":\"NotEmptyValidator\"}" },
       "expected": {
         "statusCode": "validation-error",
         "isSuccessful": false,
         "body": {
           "type": "https://benzene.app/problems/validation-error",
           "benzeneStatus": "validation-error",
-          "errors": [ { "message": "Name must not be empty", "field": "Name", "code": "NotEmptyValidator" } ]
+          "errors": [ { "message": "Name must not be empty", "field": "/name", "code": "NotEmptyValidator" } ]
         },
         "bodyExclude": ["status", "instance"]
       }
@@ -67,15 +67,30 @@
     },
     {
       "name": "problem-app-defined-type-with-field-and-code",
-      "request": { "topic": "conformance:problem", "headers": {}, "body": "{\"message\":\"Custom rule failed\",\"field\":\"Sku\",\"code\":\"CustomRule\",\"appType\":\"https://example.com/problems/custom-rule\"}" },
+      "request": { "topic": "conformance:problem", "headers": {}, "body": "{\"message\":\"Custom rule failed\",\"field\":\"/sku\",\"code\":\"CustomRule\",\"appType\":\"https://example.com/problems/custom-rule\"}" },
       "expected": {
         "statusCode": "validation-error",
         "isSuccessful": false,
         "body": {
           "type": "https://example.com/problems/custom-rule",
           "benzeneStatus": "validation-error",
-          "errors": [ { "message": "Custom rule failed", "field": "Sku", "code": "CustomRule" } ]
+          "errors": [ { "message": "Custom rule failed", "field": "/sku", "code": "CustomRule" } ]
         },
+        "bodyExclude": ["status"]
+      }
+    },
+    {
+      "name": "validation-error-fields-are-json-pointers",
+      "requires": "validation",
+      "request": { "topic": "conformance:validate", "headers": {}, "body": "{\"name\":\"\",\"items\":[{}]}" },
+      "expected": {
+        "statusCode": "validation-error",
+        "isSuccessful": false,
+        "body": {
+          "type": "https://benzene.app/problems/validation-error",
+          "benzeneStatus": "validation-error"
+        },
+        "errorFields": ["/name", "/items/0/sku"],
         "bodyExclude": ["status"]
       }
     }
@@ -100,6 +115,59 @@
       "benzeneStatus": "ok",
       "httpStatus": 200,
       "contentType": "application/json"
+    },
+    "envelopeEndpoint": {
+      "description": "transport-bindings.md section 1. POST request (verbatim, or rawBody when present) to path. Every envelope the endpoint processed answers HTTP 200 with the response envelope as the body, whatever its status: expected.envelope is checked as an envelope-cases.json expectation, and a problem document inside it omits status. A non-2xx status means the carrier failed and no envelope was processed.",
+      "path": "/benzene/invoke",
+      "cases": [
+        {
+          "name": "processed-not-found-is-200",
+          "request": { "topic": "conformance:no-such-topic", "headers": {}, "body": "{}" },
+          "expected": {
+            "httpStatus": 200,
+            "envelope": {
+              "statusCode": "not-found",
+              "isSuccessful": false,
+              "body": { "type": "https://benzene.app/problems/not-found", "benzeneStatus": "not-found" },
+              "bodyExclude": ["status"]
+            }
+          }
+        },
+        {
+          "name": "processed-deleted-is-200-with-its-body",
+          "request": { "topic": "conformance:status", "headers": {}, "body": "{\"status\":\"deleted\"}" },
+          "expected": {
+            "httpStatus": 200,
+            "envelope": { "statusCode": "deleted", "isSuccessful": true, "body": { "applied": "deleted" } }
+          }
+        },
+        {
+          "name": "malformed-envelope-is-a-carrier-failure",
+          "rawBody": "this is not an envelope",
+          "expected": { "httpStatus": 400 }
+        }
+      ]
+    },
+    "healthEndpoint": {
+      "description": "transport-bindings.md section 1 and wire-contracts.md section 5, for ports that ship both an HTTP binding and health checks. The runner registers exactly the checks listed (name and the status each reports) and sends GET path. The status line carries the verdict: 200 when isHealthy is true, 503 when it is false, with the health response as the body either way (expected.body subset-matched).",
+      "path": "/benzene/health",
+      "cases": [
+        {
+          "name": "failing-check-is-503",
+          "checks": [ { "name": "conformance", "status": "failed" } ],
+          "expected": { "httpStatus": 503, "body": { "isHealthy": false, "healthChecks": { "conformance": { "status": "failed" } } } }
+        },
+        {
+          "name": "warning-check-is-200",
+          "checks": [ { "name": "conformance", "status": "warning" } ],
+          "expected": { "httpStatus": 200, "body": { "isHealthy": true, "healthChecks": { "conformance": { "status": "warning" } } } }
+        },
+        {
+          "name": "passing-check-is-200",
+          "checks": [ { "name": "conformance", "status": "ok" } ],
+          "expected": { "httpStatus": 200, "body": { "isHealthy": true, "healthChecks": { "conformance": { "status": "ok" } } } }
+        }
+      ]
     }
   }
 }
