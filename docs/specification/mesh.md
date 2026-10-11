@@ -244,7 +244,8 @@ an edge nobody declared. Both are collector-derived read models over the same tw
   collapsing it to a boolean, so a reader can judge staleness for itself.
 - **Undeclared** — trace parentage between two services on a topic that is not present in the
   caller's registered `events` or `sends` (or, symmetrically, a trace naming a topic absent from
-  the handler's registered `requests`). This is **`contract-drift`** (§4.1's classification vocabulary,
+  the handler's registered `requests`). A reserved (`benzene:`) topic is never undeclared: no
+  document lists one (contract-document §1). This is **`contract-drift`** (§4.1's classification vocabulary,
   which already reserves this class for exactly this collector-derived case): the declared contract
   and the running system disagree, and a reader needs to know which one is stale — the registration
   the last deploy forgot to update, or a caller that shouldn't be doing what it's doing.
