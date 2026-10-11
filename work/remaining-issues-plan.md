@@ -109,7 +109,13 @@ receives a problem document MUST rebuild `errors` with `field` and `code` intact
 received document (core-concepts §12); `mesh-service-version-cases.json` is the Service Versions
 module's fixture (Provisional: .NET), which the other ports skip with a written reason. **Port work
 still open:** .NET's `HttpStatusCode.Convert` and TypeScript's `HttpContextConverter` read nothing from
-a problem body yet — the core-concepts §12 MUST, which may follow 1.0.
+a problem body yet — the core-concepts §12 MUST (closed in Phase 5, before 1.0).
+
+**Open for 1.x (additive):** an HTTP client takes the result status from the §4.1 reverse table, so
+an application-defined status in a received problem document's `benzeneStatus` is lost across an
+HTTP hop (TypeScript's Phase 5 report). Taking `benzeneStatus` when the failure body is a problem
+document would preserve it. Also over gRPC, a problem error's `code` has no slot in
+`BadRequest.FieldViolation` (wire-contracts §4.2; Go's Phase 5 report) — `reason` is a candidate.
 
 ---
 

@@ -237,7 +237,10 @@ response), and the body's `status` member (§1.3) MUST be present and equal the 
 in this table. When another format was negotiated, the problem document is serialized in that
 format (e.g. `application/problem+xml` for XML, per RFC 9457 §11.2; other negotiated formats keep
 their own content type — informative, not enumerated here). Clients MUST accept both
-`application/json` and `application/problem+json` as failure-body content types.
+`application/json` and `application/problem+json` as failure-body content types — neither fails
+the call. A client rebuilds `errors` from an `application/problem+json` body (core-concepts §12),
+and MAY also read an `application/json` failure body as a problem document when it carries
+`benzeneStatus`.
 
 ### 4.2 gRPC
 
