@@ -70,36 +70,29 @@ generalizing beyond the JSON-only source project.
 
 | Transport shape | Carrier | Notes |
 |---|---|---|
-| HTTP | A route parameter, conventionally named `version` (e.g. `/v{version}/orders/{id}`, mirroring the existing `/orders/{id}` route-parameter mechanism — transport-bindings.md §2 HTTP, `HttpTopicRoute.Parameters`) | Falls back to the header fallback list below if the matched route declares no `version` parameter, so a service can support both a path-versioned and a header-versioned surface for the same topic without duplicating routes. |
-| Every other transport (queues, gRPC, direct invocation, the `BenzeneMessage` envelope) | A header, resolved from an **ordered, configurable fallback list of header names** — default `benzene-version`, then `version`, then `x-version`; the first of these present in the header dictionary wins | Same case-insensitive-on-read, lower-case-on-write rule as every other header in that table. |
+| HTTP | A route parameter, conventionally named `version` (e.g. `/v{version}/orders/{id}`, mirroring the existing `/orders/{id}` route-parameter mechanism — transport-bindings.md §2 HTTP, `HttpTopicRoute.Parameters`) | Sugar for the header: the binding supplies the segment exactly as if `benzene-version` had been sent. Where the matched route declares no `version` parameter, the header is read, so a service can support both a path-versioned and a header-versioned surface for the same topic without duplicating routes. The parameter's name is the port's business. |
+| Every other transport (queues, gRPC, direct invocation, the `BenzeneMessage` envelope) | The `benzene-version` header (wire-contracts.md §2) — **one name**, configurable in one place like every reserved name | Same case-insensitive-on-read, lower-case-on-write rule as every other header in that table. |
 
-Why a fallback list rather than one fixed name: `benzene-version` is the unambiguous, collision-free
-default (same reasoning as the `/benzene/` HTTP prefix, design-principles.md §5.1), but plenty of
-producers already emit a plain `version`/`x-version` header for their own purposes (API/client SDK
-version, not payload schema version) before ever adopting Benzene — the fallback list lets a
-service opt into recognizing those without forcing every producer to rename a header first. Because
-that is also exactly how it can go wrong — a pre-existing `version` header meaning something else
-entirely would be silently misread as the payload schema version — **the fallback list MUST be
-configurable**: an application with its own conflicting use of `version` restricts the list to
-`["benzene-version"]` only, and one with a different existing convention entirely (say
-`schema-version`) replaces the list wholesale. This is the same "default steer, always overridable"
-shape as everything else in design-principles.md §4, applied to the list contents rather than to the
-getter as a whole — see §2.3.
+Why one name rather than a list of recognised names: many producers already send a plain
+`version`/`x-version` header for their own purposes (an API or client SDK version, not a payload
+schema version). A receiver that also read those would silently misroute such a message to another
+version's handler — the failure versioning exists to prevent. So an unrelated `version` header is an
+ordinary header, never a version. An application whose producers already use a different name
+configures that one name instead; a configured name replaces the default, it does not join a list.
 
 This adds one row to wire-contracts.md §2's header table:
 
 | Header | Direction | Meaning |
 |---|---|---|
-| `benzene-version` | inbound (request), outbound (response) | The payload schema version. Absent (and no configured fallback header present either) means "the topic's default version" — see §2.2. `version`/`x-version` are recognized fallback names by default (§2.1), not separate headers with distinct meaning. |
+| `benzene-version` | inbound (request), outbound (response) | The message's version: it selects the handler (core-concepts.md §2) and names the payload's schema version (§4). Absent means the topic's default handler — see §2.2. |
 
 ### 2.2 Default version and absence
 
-A message with no version signal (no route parameter, no `benzene-version` header) is treated as
-the topic's **default version** — by convention the oldest version the topic still accepts, so
-that pre-versioning producers keep working unmodified after versioning is turned on for a topic.
-This mirrors the existing rule for handler-version dispatch (core-concepts.md §2: "when a message
-arrives without a version, the unversioned handler... handles it") — the same absent-means-default
-principle, applied consistently across both axes.
+A message with no version signal (no route parameter, no `benzene-version` header) goes to the
+topic's **default handler** — the unversioned handler, or else the one the application declared as
+the default (core-concepts.md §2) — and its payload is taken to be in that handler's version, so no
+cast applies. Declaring the oldest version the topic still accepts as the default is what lets
+pre-versioning producers keep working unmodified once versioning is turned on for a topic.
 
 ### 2.3 The extension point: `IMessageVersionGetter<TContext>` *(informative, .NET)*
 
@@ -120,28 +113,19 @@ public interface IMessageVersionGetter<TContext>
 This is deliberately the same shape as the already-shipped `IMessageTopicGetter<TContext>`
 (`Benzene.Abstractions.Messages.Mappers`) — same namespace, same one-method extraction contract,
 same "null means absent, not an error" rule. Every transport binding registers a default
-implementation (HTTP: route parameter then the header fallback list; every other transport: the
-header fallback list only), replaceable exactly like a topic getter is.
+implementation (HTTP: route parameter, then the header; every other transport: the header),
+replaceable exactly like a topic getter is.
 
-The header fallback list (§2.1) is a constructor/options parameter on the default implementation —
-e.g. `new HeaderMessageVersionGetter<TContext>(headersGetter, headerNames: ["benzene-version",
-"version", "x-version"])` — not a hard-coded scan order, so an application can narrow, reorder, or
-fully replace it via its own DI registration without writing a new `IMessageVersionGetter<TContext>`
-from scratch, while still being free to replace the whole getter (e.g. for a version signal that
-isn't a header/route parameter at all) exactly as any other extension point permits. Because the
-fallback list is an **application-wide** contract (the same regardless of transport, unlike a
-transport's topic attribute/property key), it is set in **one place** rather than per transport:
-`services.AddMessageVersionHeaderNames("schema-version", ...)` registers a
-`MessageVersionHeaderNames` override that every transport's version getter resolves at message-handle
-time (each transport registers its getter via `AddHeaderMessageVersionGetter<TContext>()`, the HTTP
-transports via their `HttpMessageVersionGetterBase` subclasses). Registration order relative to the
-transport `UseXxx`/`AddXxx` calls does not matter, and when no override is registered every getter
-falls back to `HeaderMessageVersionGetter<TContext>.DefaultHeaderNames`. Because every
+The header name (§2.1) is an option on the default implementation, not a hard-coded constant, so
+an application can rename it without writing a new `IMessageVersionGetter<TContext>`, while still
+being free to replace the whole getter (e.g. for a version signal that isn't a header or route
+parameter at all). Because the name is an **application-wide** contract — the same regardless of
+transport, unlike a transport's topic attribute/property key — it is set in **one place** that
+every transport's getter resolves at message-handle time, rather than per transport. Because every
 transport already registers an `IMessageHeadersGetter<TContext>` mapping its native metadata onto
 the flat header dictionary (wire-contracts.md §2), one generic `HeaderMessageVersionGetter<TContext>`
-built against that (not the native transport type) can serve as the default for every transport
-except HTTP — which layers the route-parameter check in front of the same generic header fallback,
-rather than needing its own from-scratch header scan.
+built against that (not the native transport type) serves as the default for every transport
+except HTTP — which layers the route-parameter check in front of the same header read.
 
 **This closes a real gap in the current implementation, independent of which mechanism (§3 or §4)
 a service adopts**: every existing `IMessageTopicGetter<TContext>` implementation constructs
@@ -165,8 +149,9 @@ public class CreateOrderV1MessageHandler : IMessageHandler<CreateOrderRequestV1,
 public class CreateOrderV2MessageHandler : IMessageHandler<CreateOrderRequestV2, CreateOrderResponseV2> { ... }
 ```
 
-`IVersionSelector` (default: exact match, else highest available version — `VersionSelector.cs`)
-picks between them per message once §2.3 wires the incoming version onto `ITopic`. This is exactly
+`IVersionSelector` picks between them per message by core-concepts.md §2's selection rule —
+exact match, then a handler the version can be cast to, then `not-found`; never the highest
+available version. This is exactly
 the "much simpler" option: no casting, no new abstractions, real duplicate handler code — but that
 duplication is usually thin, because the divergent part is normally just request/response shape
 and mapping to a shared internal service/domain call, not the business logic itself.

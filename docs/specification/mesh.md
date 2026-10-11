@@ -326,8 +326,9 @@ transport-shaped.
   segment count or length, non-hex, or the all-zero ids the W3C spec defines as invalid — MUST
   yield a fresh trace-id and no parent: a bad caller header degrades correlation, never the
   invocation. Pinned by the `traceparent` section of `conformance/mesh-trace-cases.json`.
-- Outbound propagation: a handler making a downstream Benzene call SHOULD forward
-  `traceparent: 00-<traceId>-<spanId>-01` built from its own invocation's span. This is what lets a
+- Outbound propagation: a downstream Benzene call carries
+  `traceparent: 00-<traceId>-<spanId>-01` built from the calling invocation's span — required of a
+  profiled service by the [Cloud Service Profile](cloud-service-profile.md)'s R8. This is what lets a
   collector correlate an *observed* call with the declared edge it exercises (§4.2) — propagation
   feeds observation, not the graph itself (§4), which comes from `produces` (§2) regardless of
   whether any call has ever propagated a trace at all.

@@ -124,7 +124,7 @@ The catalog of extension points every transport binding carries (see
 | Status readers (mesh) | Read the transport's Benzene status field | Implement the status-reader interface for your context type |
 | DI container | The implementation's first-party or platform container | The container abstraction ([core-concepts.md](core-concepts.md) §8) — bring your own |
 | Handler discovery | Attribute/reflection scanning where idiomatic | Explicit registration is the concept; scanning is sugar ([README](README.md), "the one design rule") |
-| Version getter (per transport) | Transport-specific well-known location (HTTP: `version` route parameter, else the header fallback below; every other transport: a configurable ordered header fallback, default `benzene-version` → `version` → `x-version` — [versioning.md](versioning.md) §2) | Replace the version-getter registration for that context type, or just reconfigure its header fallback list |
+| Version getter (per transport) | The `benzene-version` header (HTTP: a `version` route parameter where the route declares one, else the header) — [versioning.md](versioning.md) §2 | Rename the header in one place, or replace the version-getter registration for that context type |
 
 Rules for feature authors:
 
@@ -221,24 +221,19 @@ exactly as specified).
 
 ### 5.2 Well-known HTTP surfaces
 
+Every framework-provided HTTP surface defaults to a path under `/benzene/`, and every path is
+configurable per service.
+
 | Path | Surface | Notes |
 |---|---|---|
-| `/benzene/invoke` | Wire-envelope endpoint (`{topic, headers, body}` in, `{statusCode, headers, body}` out per [wire-contracts.md](wire-contracts.md)) | The service-to-service and collector-query surface |
-| `/benzene/spec` | The derived spec document | Requires rung 3 (section 3) |
-| `/benzene/health` | Health check (the reserved `benzene:healthcheck` topic's response shape, over HTTP) | Liveness/readiness variants MAY nest beneath it (`/benzene/health/live`, `/benzene/health/ready`) |
-| `/benzene/spec-ui` | Human-readable spec browser | Optional UI |
+| `/benzene/invoke` | The envelope endpoint (`{topic, headers, body}` in, `{statusCode, isSuccessful, headers, body}` out — [wire-contracts.md](wire-contracts.md) §1) | The service-to-service and collector-query surface; HTTP 200 for every processed envelope ([transport-bindings.md](transport-bindings.md) §1) |
+| `/benzene/spec` | The derived contract document | The HTTP binding's default route for the reserved `benzene:spec` topic. Requires rung 3 (section 3) |
+| `/benzene/health` | Health check | The HTTP binding's default route for `benzene:healthcheck`, answering 503 when unhealthy; `/benzene/health/live` and `/benzene/health/ready` for the optional liveness and readiness topics ([transport-bindings.md](transport-bindings.md) §1) |
+| `/benzene/spec-ui` | Human-readable spec browser | Optional UI. Its default spec URL is `/benzene/spec?type=benzene` |
 | `/benzene/mesh-ui` | Mesh artifact viewer | Optional UI |
 | `/benzene/fleet-ui` | Live fleet view (collector-hosted) | Optional UI; collectors are ordinary Benzene services, so the standard applies to them too |
+| `/benzene/mcp` | The MCP endpoint (Provisional) | Optional; [transport-bindings.md](transport-bindings.md) §2 |
 
-Reserved *topics* (`benzene:healthcheck`, `benzene:mesh`, `benzene:mesh:query:*`) are already namespaced by their own
-registries ([wire-contracts.md](wire-contracts.md), [mesh.md](mesh.md) §1/§4) and take no
-prefix — the prefix is an HTTP-surface concern.
-
-### 5.3 Conformance and migration
-
-- New framework-provided HTTP surfaces MUST default to a `/benzene/`-prefixed path.
-- Every path MUST remain configurable per service; the prefix is the steer, not a cage.
-- *(informative)* Pre-existing .NET defaults that predate this standard (`/mesh-ui`,
-  `/spec-ui`) keep their current defaults for compatibility and are migration candidates for
-  the 1.0 release; the Fleet view and wire-envelope defaults (`/benzene/fleet-ui`,
-  `/benzene/invoke`), which shipped after this standard, already follow it.
+Reserved *topics* ([wire-contracts.md](wire-contracts.md) §7) are namespaced by their own
+`benzene:` prefix and take no path prefix — the paths above are the HTTP binding's default routes
+for them, not part of the topics' definition.

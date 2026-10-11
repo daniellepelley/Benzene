@@ -130,7 +130,7 @@ surface (§4 below) — fleet tooling is entitled to assume the defaults.
 
 The service MUST join inbound W3C trace context per [core-concepts.md](core-concepts.md) §10 and
 mesh §3, and its outbound Benzene clients MUST forward `traceparent` built from the current
-invocation's span (promoted from the SHOULD of mesh §3). Consumer edges in the mesh are derived
+invocation's span (the format of mesh §3). Consumer edges in the mesh are derived
 from trace parentage; a profiled fleet where propagation is optional would have holes in its
 topology through no fault of the collector.
 

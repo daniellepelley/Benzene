@@ -33,8 +33,26 @@ A topic identifies a message type and routes it to a handler.
   case-insensitively — but the topic itself, once resolved, is a literal string.)
 - A (topic id, version) pair maps to **at most one** handler. Registering two handlers for the
   same pair is a startup error, not a runtime dispatch ambiguity.
-- Version selection: when a message arrives without a version, the unversioned handler (version =
-  empty) handles it. Versioned handlers are selected only by an exact version match.
+- **The version signal** is the message's `benzene-version` header (wire-contracts §2) — one header,
+  which drives both which handler runs (here) and which shape the payload arrives in (payload
+  casting, [versioning.md](versioning.md)). On HTTP a route segment MAY carry it instead; the
+  binding then supplies it exactly as if the header had been sent.
+- **Version selection** for a message carrying version *v*, in order:
+  1. the handler registered for exactly (topic id, *v*);
+  2. otherwise, a handler of that topic the service can **cast** *v* to — a payload cast from *v* to
+     that handler's version is registered (versioning.md). Where *v* can be cast to more than one
+     handler, the topic's default handler (below) is chosen if it is among them; a configuration
+     where it is not is a start-up error, because casts are known at registration;
+  3. otherwise, `not-found`, with an error naming the topic and *v*.
+
+  There is no "nearest" or "highest available" fallback: serving another version's behaviour to a
+  caller that named a version is the failure versioning exists to prevent. (A port MAY offer a
+  different selection policy as an explicit, replaceable option; it is never the default.)
+- **A message without a version** goes to the topic's **default handler**: the unversioned handler
+  (version empty) if one is registered, otherwise the handler the application explicitly declared
+  as the default. With neither, it is `not-found`. A topic whose handlers are all versioned and none
+  declared default SHOULD be reported at start-up: it is valid, but every unversioned message to it
+  will fail.
 
 Topic ids SHOULD be lower-case with `:` or `_` separators (e.g. `order:create`, `say_hello`);
 this is a convention, not a requirement.
@@ -96,20 +114,19 @@ Every handler invocation produces a result:
 | Field | Type | Meaning |
 |---|---|---|
 | `status` | string | One of the status vocabulary values (see [wire-contracts.md §3](wire-contracts.md#3-status-vocabulary)), or an application-defined extension |
-| `isSuccessful` | boolean | Derived from status class |
+| `isSuccessful` | boolean | Whether the invocation succeeded. Set by whoever sets the status; for a status in the vocabulary it MUST equal that status's class, and for an application-defined status it is the only signal of success — see [wire-contracts.md §1.2](wire-contracts.md#12-response) |
 | `payload` | `TResponse?` | Present on success (and optionally on failure) |
 | `errors` | structured, ordered list | Zero or more errors, populated on failure; each carries a human-readable message plus optional producer-owned `field`/`code`. A message-only projection remains available for readers that just want text. |
 
-- The status vocabulary is **strings, not enums**, so applications can extend it; unknown statuses
-  map to the transport's generic-error code (each binding defines its default).
+- The status vocabulary is **strings, not enums**, so applications can extend it; an unknown status
+  maps to the transport's generic success or generic error code according to `isSuccessful` (each
+  binding defines both).
 - Results are values, not exceptions. Transport adapters translate a non-success status into the
   transport's native failure signal (HTTP status code, gRPC `RpcException`, ...) per the mapping
   tables in [wire-contracts.md](wire-contracts.md).
 - `errors` is structured, not `string[]`, precisely so a caller can act on a failure rather than
   merely display it (render against the field that caused it, branch on a machine-readable code).
-  The wire shape this serializes to — including which member is authoritative, `code` vs. the mesh
-  issue plane's `classification` — is [wire-contracts.md §1.3](wire-contracts.md#13-problem-details-payload)
-  and [§3.1](wire-contracts.md#31-problem-type-registry); this section does not repeat it.
+  The wire shape it serializes to is [wire-contracts.md §1.3](wire-contracts.md#13-problem-details-payload).
 
 ## 6. Context and request mapping
 
@@ -179,12 +196,15 @@ path; scanning is optional. Route-level attributes for specific transports (e.g.
 ## 10. Cross-cutting middleware guaranteed to be portable
 
 These features are defined purely in terms of sections 2–8 and the header conventions in
-[wire-contracts.md §2](wire-contracts.md#2-header-conventions), so they MUST behave identically on
-every transport and every vendor:
+[wire-contracts.md §2](wire-contracts.md#2-header-conventions). Each is optional; an implementation
+that offers one MUST make it behave identically on every transport and every vendor:
 
-- **W3C trace context** — continue a trace from `traceparent`/`tracestate` headers. This is the
-  cross-service correlation mechanism. (A per-invocation correlation value settable by application
-  middleware and forwardable on outbound clients MAY additionally be offered, but inbound pickup of
-  legacy correlation headers is not a framework contract.)
-- **Health checks** — intercept the reserved `benzene:healthcheck` topic (plus an app-chosen alias), run
-  registered checks, respond with the standard response format.
+- **W3C trace context** — continue a trace from inbound `traceparent`/`tracestate` headers and
+  forward it on outbound calls. An implementation that propagates trace context MUST do so verbatim
+  per the W3C specification (wire-contracts §2); whether a service must propagate it at all is the
+  [Cloud Service Profile](cloud-service-profile.md)'s R8, not a Core rule. (A per-invocation
+  correlation value settable by application middleware and forwardable on outbound clients MAY
+  additionally be offered, but inbound pickup of legacy correlation headers is not a framework
+  contract.)
+- **Health checks** — intercept the reserved health topics (wire-contracts §7), run the registered
+  checks, and respond with the health response (wire-contracts §5).

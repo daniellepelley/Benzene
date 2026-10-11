@@ -49,18 +49,15 @@ is normative.)*
 | Field | Type | Rules |
 |---|---|---|
 | `statusCode` | string | A status vocabulary value (§3) — the *Benzene* status, not an HTTP code. Clients MAY additionally tolerate numeric HTTP codes here for interop with older or HTTP-shaped services, but MUST NOT write them. |
-| `isSuccessful` | boolean | Required. The authoritative success/failure signal. For a status in §3's vocabulary this MUST match that status's Success? column. **A receiver MUST prefer this field over any classification it derives from `statusCode` text** — necessary for an application-defined status (§3), which is outside the sender's and receiver's shared vocabulary and therefore means nothing to a receiver classifying by string alone. A receiver reading an envelope from a sender that predates this field (absent `isSuccessful`) MAY fall back to classifying `statusCode` against §3, accepting that an application-defined status from such a sender classifies as failure (there is no other signal to trust it with). |
+| `isSuccessful` | boolean | Required. **The** success/failure signal, set by whoever sets the status. For a status in §3's vocabulary it MUST equal that status's Success? column — there are no exceptions; a result that wants to carry a payload with a failure status is a failure. For an application-defined status it is the only signal there is. **A receiver MUST take this field as authoritative and MUST NOT reclassify from `statusCode` text**, which means nothing to a receiver for a status outside the shared vocabulary. |
 | `headers` | object (string→string) | Response headers, including `content-type` when set. |
 | `body` | string | Pre-serialized response payload: on success, the handler's response payload; on failure, the error payload (§1.3). |
 
 ### 1.3 Problem details payload
 
-When a result is unsuccessful, the response `body` **is** the serialized problem document —
-**replace, not wrap**: the failure payload takes the place a success payload would otherwise
-occupy, exactly as today (a `DefaultResponsePayloadMapper` never emits both). The one existing
-carve-out is unchanged: a result marked `isSuccessful: true` (the `Set<T>(status, payload,
-isSuccessful)` escape hatch some health-check-shaped results use) still renders its payload, never
-a problem document — the branch is on `isSuccessful` (§1.2), not on status class.
+When a result is unsuccessful (`isSuccessful: false`, §1.2), the response `body` **is** the
+serialized problem document — **replace, not wrap**: the failure payload takes the place a success
+payload would otherwise occupy, and a response never carries both.
 
 The payload is a **valid [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) problem document** on
 every transport — not "problem-details-shaped", the genuine standard, adopted as a
@@ -84,7 +81,7 @@ transport-neutral profile:
 |---|---|---|
 | `type` | string (URI ref) | Framework-produced failures MUST use the registry URI for the status (§3.1). Application-authored problems SHOULD use their own absolute URI; absent or `about:blank` is tolerated on read. Readers treat it as an **opaque identifier** — comparison is string equality, never dereference (the registry URIs are not live pages). |
 | `title` | string | Short human summary of the *type*, fixed per type (the registry's value for framework types). Never asserted by conformance fixtures — wording is free. |
-| `status` | integer | **HTTP bindings only.** MUST equal the actual HTTP response status code (§4.1). MUST be **omitted** — not emitted as `null` — where no HTTP response exists (the envelope over a non-HTTP transport, a queue reply). Benzene clients MUST NOT classify a result from this member; classification is envelope-first (§1.2). |
+| `status` | integer | **Only where the problem document is itself an HTTP response body** (a route-mapped HTTP response, §4.1), and then it MUST equal that response's status code. Everywhere else it MUST be **omitted** — not emitted as `null`: inside an envelope on any carrier, HTTP included (the envelope endpoint answers 200, transport-bindings §1), and in a queue reply. Benzene clients MUST NOT classify a result from this member; classification is envelope-first (§1.2). |
 | `detail` | string | Human-readable occurrence detail — the result's error messages joined with `", "`, unchanged from every prior version of this document. The compatibility member: every existing reader can keep using only this one. |
 | `instance` | string (URI ref) | Optional, application-owned. The framework never fabricates it. |
 | `benzeneStatus` | string | **Required.** The §3 status string, mirroring the envelope's `statusCode` (§1.2). The transport-neutral discriminator — present on every transport regardless of whether `status` is. It carries the `benzene` marker because this member namespace is shared with RFC 9457 itself and with applications (the naming rule of §2's "Naming" paragraph); `errors`, below, is Benzene's own extension and stays unmarked. |
@@ -136,8 +133,8 @@ porting author cannot tell a mandatory wire contract from a convention of one op
 |---|---|---|---|
 | `topic` | **A** | inbound (queue/stream transports) | On transports where the envelope isn't used but native metadata exists (SQS/SNS message attributes, Service Bus/Event Hub properties, Kafka/RabbitMQ headers, Pub/Sub attributes), the topic travels as an attribute of this name — the same spelling as the envelope field, so one concept has one name wherever it appears. The routing key: without it such a transport cannot dispatch. **Configurable** — see *Reserved names are defaults* below. |
 | `content-type` | **A** | outbound | Response content type where the transport has no native slot for it. A borrowed name (HTTP/MIME), used verbatim. |
-| `benzene-version` | **C** | both | The payload's schema version, for topics using payload versioning. Read from an ordered, configurable fallback list — default `benzene-version`, then `version`, then `x-version` — and written as `benzene-version`. Only meaningful for a service that opted into versioning; see [versioning.md](versioning.md) for the fallback-list rules and why the list must be configurable. |
-| `traceparent`, `tracestate` | **C** | both | W3C Trace Context. Benzene does not define these and does not require them. **If** an implementation propagates trace context, it MUST do so verbatim per the W3C specification — that verbatim-ness is what makes traces from different languages join up, which the mesh depends on. Benzene never fabricates a trace context that wasn't there. |
+| `benzene-version` | **C** | both | The message's version: the one signal that selects the handler (core-concepts §2) and the payload's schema version (payload casting, [versioning.md](versioning.md)). One name, read and written as `benzene-version` and configurable like every name in this table — there is no fallback list, so an unrelated `version` or `x-version` header a caller sends is an ordinary header, never a version. Absent means the topic's default handler (core-concepts §2). |
+| `traceparent`, `tracestate` | **C** | both | W3C Trace Context. Benzene does not define these, and Core does not require them (the Cloud Service Profile's R8 does). **If** an implementation propagates trace context, it MUST do so verbatim per the W3C specification — that verbatim-ness is what makes traces from different languages join up, which the mesh depends on. Benzene never fabricates a trace context that wasn't there. |
 | `x-correlation-id` | **C** | outbound | A business correlation value, written by the outbound correlation client decorator when the application populates one. Implementations are NOT required to read it inbound; honouring a partner's correlation header is application middleware, not a framework contract. One convention among several — Benzene does not own this name. |
 | `_benzeneHeaders` | **D** | both (EventBridge) | On transports with no native per-message metadata (EventBridge), wire headers travel as a reserved string→string object named `_benzeneHeaders` at the top level of the payload (`detail`), embedded by the sender only when headers exist and the payload is a JSON object, and lifted back out by the receiver. Its form differs deliberately: it is a **JSON field**, so it follows the camelCase JSON convention rather than the kebab-case header one, with the leading underscore marking it reserved inside a payload the application owns. |
 | `benzene-claim-check` | **C** | both | Carries an opaque reference to a payload that the optional claim-check middleware offloaded to an external store because it exceeded a configured size threshold — see [§2.1](#21-claim-check-add-on). |
@@ -297,6 +294,10 @@ fingerprint-based merge.
 | `service-unavailable` | 503 |
 | `timeout` | 504 |
 
+This table maps a result onto a native HTTP response — a route the binding maps to a topic. The
+envelope endpoint does not use it: it answers 200 for every envelope it processed, because the
+envelope in the body carries the status (transport-bindings §1).
+
 Reverse (HTTP → Benzene, used by HTTP clients): 200→`ok`, 201→`created`, 202→`accepted`,
 204→`deleted`, 400→`bad-request`, 401→`unauthorized`, 403→`forbidden`, 404→`not-found`,
 408→`timeout`, 409→`conflict`, 422→`validation-error`, 429→`too-many-requests`,
@@ -351,7 +352,11 @@ has passed, else `Cancelled`.
 
 ## 5. Health check response
 
-Returned for the reserved topic `benzene:healthcheck` (and any app-configured alias):
+Returned for the reserved health topics (§7) and any app-configured alias. The result's status is
+`ok` whenever the checks ran — an unhealthy service is still a successful health query — and
+`isHealthy` in the payload carries the verdict. A transport that has a status of its own maps the
+verdict onto it where that is the convention: the HTTP binding answers `GET /benzene/health` with
+**503** when `isHealthy` is false (transport-bindings §1), and gRPC uses `grpc.health.v1` (below).
 
 ```json
 {
