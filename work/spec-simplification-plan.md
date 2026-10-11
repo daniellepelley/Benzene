@@ -155,6 +155,16 @@ conversion.
 | benzene (website, mesh UI) | Re-vendor the rebuilt pages into `mesh-ui/` and `website/demos/` (the mesh-ui drift check gates it); blog/demo examples that spell old paths. |
 | the-count | Take the .NET release; it sets its MCP path explicitly, so D4's MCP default does not move it. |
 
+**Landed 2026-10-11** (`1ac37823`, `41f86bbe`, `befdef01`, fixtures `1579790b`). Three things the
+text settled that this table did not spell out, each now owed by every port: `benzene:spec` answers an
+unsupported `type` or `format` with `not-implemented` (wire §7); a service consuming a one-way transport
+SHOULD serve `benzene:ping`, because .NET's queue and Lambda health checks send it and settlement would
+otherwise redeliver every probe until it dead-letters; and `settlementDefaults` pins each binding's
+**shape** and the defaults a shape allows, not one value per binding — .NET's own stream workers default
+to skip-and-continue while its Lambda-hosted streams redeliver, and both are conformant. VERSION moves to
+`0.2.0` once the .NET reference passes the new fixtures, so a fixture mistake costs a commit, not a
+`spec-0.2.1`.
+
 **Exit:** every port and benzene-ui green on `spec-0.2.0`; `docs/capabilities.md` divergence notes 3
 (settlement) and 8 (version selection) and the "settlement is not in the spec" flag close.
 
@@ -271,7 +281,7 @@ adapters, unconfirmed fixture runner), then Python (settlement unknown across ~1
 
 ```
 Phase 0  [x] 0.1 audit (Go, Py, TS)  [x] 0.2 spike + champion review, ruled  [x] 0.3 tags + pinned checks (4 ports + ui)  [x] 0.4 .NET fixture (bug fixed; D26 ruled, lands in Phase 1)  [x] 0.5 canary
-Phase 1  [ ] 1a  [ ] 1b  [ ] 1c  [ ] spec-0.2.0  [ ] ui  [ ] .NET  [ ] Go  [ ] TS  [ ] Py  [ ] the-count  [ ] capabilities.md
+Phase 1  [x] 1a  [x] 1b  [x] 1c  [x] fixtures  [ ] spec-0.2.0  [ ] ui  [ ] .NET  [ ] Go  [ ] TS  [ ] Py  [ ] the-count  [ ] capabilities.md
 Phase 2  [ ] spec PR  [ ] website green (4 ports)  [ ] .NET cookbook
 Phase 3  [ ] 3a spec-0.3.0  [ ] 3b spec-0.4.0  [ ] ui  [ ] .NET  [ ] Go  [ ] TS  [ ] Py  [ ] live interop both ways
 Phase 4  [ ] spec PR  [ ] .NET  [ ] Go  [ ] TS  [ ] Py
