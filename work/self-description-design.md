@@ -593,3 +593,123 @@ a Go collector with a .NET service, and the reverse.
 7. **contractHash today covers `info`, entry order and component names** (contract-document §6.2:
    "`info` … hashed as they stand"). Together with .NET's #170 narrowing, this is why the drift check
    fails in practice (F4, F5). The review did not list it. It strengthens D18's case.
+
+---
+
+## 10. Port champion review (2026-10-11)
+
+The design was reviewed, before ruling, by each port's DX champion — Go, TypeScript, Python, and
+the .NET DX champion — against its own port's code (the plan's 0.2 asks for exactly this). All four
+endorse the core design: two outbound lists, one algorithm over a dereferenced projection, names
+outside the hash, the `{type, format}` request, reserved entries dropped. Three of them reproduced
+parts of it independently (Python's prototype yields Ex 1's three hashes exactly; .NET's and Go's
+scratch probes confirm the derivation claims). What they changed is the **cost** and a set of
+**amendments**, below. Where this section and §0–§9 disagree, this section wins.
+
+### 10.1 Revised cost
+
+| Repo | §8 said | Now | Why it moved |
+|---|---|---|---|
+| benzene-dotnet | M–L, critical path | **M**, not critical | Swashbuckle does not need replacing: `SupportNonNullableReferenceTypes` + `UseAllOfToExtendReferenceSchemas` + one ~15-line schema filter produce §4.3's `GreetRequest` and §4.4's nullable ref exactly (probed), and bring-your-own schemas, validation constraints, polymorphism options, the collision error and `SchemaIdSelector` all stay. One generator then serves the benzene, OpenAPI and AsyncAPI formats, which also keeps their nullability in agreement. |
+| benzene-go | L | **M** for the 3a exit; naming trails | Q1 takes names out of the hash, and Go's current all-inline schemas already give the canonical hashes. The 3a exit needs the existing walker, the OpenAPI-3.0 nullable rewrite (reuse `openapi.toOpenAPISchema`), `struct{}` → absent response, the projection, a canonicaliser, the topic and the registration split. Hoisting, naming and the name hook gate only `namingCases` and may trail as a recorded matrix gap; gengo's nullable/inline-object typing (S–M) was uncounted. |
+| benzene-typescript | S–M | **M** | Zod output is draft 2020-12, not the OpenAPI-3.0 dialect (`anyOf` nullables, `additionalProperties:false`, recursive `$ref: "#"` that the port's own codegen rejects); class names do not survive bundling (esbuild renames a clash `Item2`, `--minify` renames it `e`); there is no outbound registry to split — `withProduces` feeds only the descriptor. |
+| benzene-python | S–M | **M** | The hash needs RFC 8785 in the dependency-free `benzene-core`; `GET /benzene/spec` bypasses the pipeline; and real services serve `ContractDocument.from_spec`, not the `derive` path §2.4 changes. |
+
+No port is L. The riskiest single items are TypeScript's Zod normalisation and Python's
+merge of three producer paths into one, not .NET.
+
+### 10.2 Amendments the four agree on
+
+1. **Q4, wider strip list.** Strip the JSON Schema metadata vocabulary before hashing: `title`,
+   `description`, `default`, `examples`, `example`, `deprecated`, `readOnly`, `writeOnly`,
+   `$comment`, `$id`, `$schema`, and `x-*`. Pydantic writes `default` on every defaulted field and
+   uses plural `examples`; Zod passes `.meta()` keys through. State that **validation constraints
+   stay in the hash** — adding a validation rule is a contract change — and that other custom keys
+   count too.
+2. **Q5, `format`.** Producers SHOULD emit a `format` they know (`int64`, `uuid`): .NET's generated
+   clients need it, or `long` becomes `int` — silent 64-bit truncation — and `Guid` becomes
+   `string`. §3.2 step 4 strips `format` on every schema, so it never reaches the hash. (Go's and
+   TypeScript's "never emit it" stays conformant.)
+3. **Q5, no response.** An **absent** `requests[].response` means "no payload", exactly as in
+   `sends`; `{}` keeps meaning "any payload". Emitting `{}` for a no-response handler makes .NET
+   codegen produce `IBenzeneResult<>`, which does not compile. In Go, an unnamed `struct{}` maps to
+   absent; a named empty struct stays an object.
+4. **Q5, enums.** A port that knows the values emits a typed `enum` (Zod; a `str`/`int`-mixin
+   Python `Enum`); one that cannot list them falls back to the **base type** (Go's
+   `type Level string` → `{"type":"string"}`), and only an unserializable type falls back to `{}`.
+5. **Nullable references.** OAS 3.0.3 ignores `nullable` without a `type`, so the derivation rule
+   emits `{"type":"object","nullable":true,"allOf":[…]}`. A reference cut at a cycle normalises to
+   `{}` in P whether or not it was marked nullable. `derivationCases` pins both shapes.
+6. **§3.2 step 5.** Upper-case `httpMappings[].method` in P, not only sort by it — one .NET document
+   already holds both `"POST"` and `"get"`. TypeScript also attaches `httpMappings` by topic,
+   ignoring version; fix it now that they are in P.
+7. **Collisions fail before the first message, not lazily.** .NET, TypeScript and Python build the
+   spec on the first `benzene:spec` call. The rule is D23's: verified before any message is handled
+   — at build time where the port has one (.NET's `benzene-descriptor` / CodeGen.Build, with an
+   opt-in start-up check to spare Lambda cold starts), at wire-up otherwise (Go: `Derive(...)
+   (Document, error)`). The error names the types, the topics that use them, and the fix.
+8. **The hash moves into each runtime package** (Q7). .NET: `ContractHash`/`JsonCanonicalizer` into
+   `Benzene.Schema.OpenApi`, type-forwarded from `Benzene.CodeGen.Core` (and
+   `Benzene.HealthChecks.Schema` stops shipping codegen into deployed services); TypeScript: a new
+   `@benzenejs/codegen-core`; Python: `benzene-core`; Go: a root package. Every private hash goes:
+   TypeScript's aggregator HMAC (`MeshSnapshotBuilder.ts`, a fourth hash), Python's poller
+   `_spec_hash`, and .NET's `SchemaHealthCheck`, which rebuilds the hash per call from a plain
+   `SchemaBuilder` — another cause of F4. Health checks and pollers read the **served** hash.
+9. **Q6 has a precondition two ports miss.** `benzene:spec` behind the same pipeline and
+   authentication only holds if `GET /benzene/spec` goes through the pipeline. Python's
+   `_handle_standard` serves it before the pipeline runs; Go's `mesh.SpecHandler` is a plain
+   `http.Handler`. Both must route it through the pipeline before `sends` appears in the document.
+10. **benzene-ui reads both shapes during the transition.** .NET's `mesh-ui-drift-check` clones
+    benzene-ui's default branch, so a UI that only reads the new document turns .NET red until it
+    re-vendors.
+
+### 10.3 Per-port API shapes (idiom, recorded for each port's 3a)
+
+| | Event / send declaration | Declared-name hook |
+|---|---|---|
+| .NET | Already exists: events from `AddResponseEventDeclarations` (`ResponseEventCatalog`), sends from `MeshOutboundRegistry` via the existing `IMessageDefinitionFinder<IMessageSenderDefinition>` — no `Publish<T>`, no new project reference. Rename `WithConsumes` → `WithSends` (keep an `[Obsolete]` alias). Generated clients register their own sends from `RequiredTopics`. | Swashbuckle `SchemaIdSelector`, surfaced as `[SchemaName("…")]` |
+| Go | Delete `RegisterOutbound` before 1.0 so every call site chooses (today's `RegisterOutbound[T, any]` would silently become `response: {}`). `RegisterEvent[T](r, topic)`, `RegisterSend[TReq](r, topic, opts...)` with `WithResponse[TRes]()`; `Must*` twins; one registry map, so "not in both" is the existing duplicate check. A root `contract` package holds document, derivation, middleware and hashing (avoids a mesh import cycle); alias `mesh.OutboundRegistry` for one release. | `BenzeneSchemaName() string` (value receiver, constant); undeclared generic instances inline |
+| TypeScript | Port `MeshOutboundRegistry`, registered in the container so `SpecBuilder` and the announcer both read it; discriminated `{ kind: 'event' \| 'send' }`; `withProduces` a deprecated alias. | `MapTypeJsonSchemaSource.register(T, schema, { name })` and Zod `.meta({ id })`, then `ctor.name`; cookbooks set `keepNames: true` |
+| Python | `register_event(topic, message_type=None, *, version="")` and `register_send(topic, request_type=None, response_type=None, *, version="")` — not `publish`/`send`, which read as actions next to `send_message`; no kind-less `register` (a `TypeError` names both); `OutboundRegistry` moves to `benzene.core`; the bare-string-is-a-send shortcut goes. | `@schema_name("…")` class decorator (pydantic `title` is stripped by Q4 and never renames a `$defs` key) |
+
+Cross-port naming: where a port has a `register` verb, `register_event` / `register_send` (Go and
+Python agree); the spec names the two concepts **event** and **send** declarations and leaves the
+API to each port.
+
+### 10.4 Per-port additions to 3a
+
+- **.NET:** the upgrade path — the documented compatibility gate (`contract-testing.md`) would fail
+  every user's CI: `SchemaCompatibilityComparer` must ignore `benzene:` topics, a baseline with no
+  `schemaDialect` produces one "re-baseline" error rather than dozens of false breaking changes,
+  and the reader accepts legacy documents with a warning. `IApplicationInfo` becomes the single
+  source for `service`/`serviceVersion` (`CloudService/Extensions.cs` already sets the name). The
+  dereferencer is `MeshAggregator.InlineSchema`, with its cycle cut changed to `{}`. The conformance
+  type `GreetReply` is renamed or used for `namingCases`.
+- **Go:** `clienthealthcheck` reads `contractHash` from `benzene:spec` in 3a (Go's actual F4 fix);
+  `asyncapi.Generate` reads `events` from the document and `WithSentEvent` goes (it lives in
+  `asyncapi`, not `openapi`); `cloudservice.New` returns an error; the probe waits for 3b.
+- **TypeScript:** Zod with `{ io: 'input', target: 'openapi-3.0' }`, `$defs` hoisted into
+  `components.schemas` and `#` rewritten — after which the runner passes `derivationCases` on real
+  Zod output instead of hand-mapped schemas; Joi and Yup converters keep nullability (both drop it
+  today); `SchemaHealthCheck` hashes the full document; `Benzene.Spec.Ui`'s inline page stops
+  reading `info.title`/`reserved`.
+- **Python:** derive one document at the composition root (`AppDefinition` holds both registry and
+  router) and serve it on both surfaces; retire `ServiceSpec`, `from_spec` and `?type=native`
+  pre-1.0; `specdoc` cuts cycles with `{}`; codegen rejects an unknown `schemaDialect` and drops
+  `--include-reserved`; the poller reads `registrationHash`.
+
+### 10.5 Rulings, restated after review
+
+| # | Ruling | Recommendation now |
+|---|---|---|
+| Q1 | Name-independent (dereferenced) hashing | **Yes** — unanimous; TypeScript's bundler finding makes it essential |
+| Q2 | `httpMappings` in both hashes | **Yes**, with method upper-casing and TS's version fix |
+| Q3 | Drop reserved topics from the document | **Yes** — unanimous; .NET's upgrade-path fixes land with it |
+| Q4 | Strip metadata before hashing | **Yes, the wider list** of 10.2.1; validation constraints stay in |
+| Q5 | Derivation details | **Amended:** absent response = no payload; `format` SHOULD be emitted and is stripped; enums typed where known, else base type |
+| Q6 | `sends` public on `/benzene/spec` | **Yes**, once Go and Python route `GET /benzene/spec` through the pipeline |
+| Q7 | Both hashes in the document | **Yes**; the hash moves into each runtime package |
+| Q8 | How each port gets RFC 8785 | **Reframed:** the spec requires RFC 8785 output, proven by `contract-hash-cases.json`; each port chooses how. Two need your approval because they touch dependency rules: **Python** takes `rfc8785` (≈280 lines, no dependencies) into `benzene-core`; **Go** hand-writes `internal/jcs` (~100 lines) with a differential fuzz test against `gowebpki/jcs` inside `codegen`, which already depends on it — `gowebpki/jcs` itself would pull an unpruned test-dependency graph into the zero-dependency root |
+| Q9 | Derivation rule in 3a | **Yes** — unanimous |
+| Q10 | Heartbeat gains `serviceVersion` | **Yes** — unanimous |
+| Q11 | *new:* Python's pydantic models describe themselves as `{}` today (`json_schema` returns `{}` for a `BaseModel`) | **Defer** past 3a as a recorded Python gap: fixing it is M on its own (a schema-source hook in `benzene-pydantic`, validation vs serialization mode, rejecting pydantic's silent `orders__Item` renaming) and is orthogonal to the merge |

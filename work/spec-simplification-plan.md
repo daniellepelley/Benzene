@@ -70,7 +70,7 @@ review's §8 has the reasons).
 | D15 | **Profile:** one profile, `cloud-service`, of R1–R5 and R7 — pull-able by any tool, no collector needed. R6 (feeds) and R8 (propagation) become the mesh module's own conformance claim. The `profile` field moves to the self-description served at `benzene:spec`. | amended | 4 |
 | D16 | **Settlement** (transport-bindings §1, obligation 8): a one-way binding MUST NOT acknowledge a message whose invocation ended with `isSuccessful: false`, no result, or an uncaught error; success results, `ignored` included, are acknowledged — so handlers on one-way bindings must be idempotent. An unmatched topic is a `not-found` failure; a binding SHOULD offer to treat unmatched topics as `ignored` (shared-bus subscribers). A middleware that ends the pipeline on a one-way binding MUST set a result. A binding MUST offer an at-most-once override; a stream binding whose retention blocks the partition MAY default to skip-and-continue and MUST document it. A binding that checkpoints a batch or position MUST define its unit of settlement. Dead-lettering is the transport's redrive configuration, said explicitly. | amended | 1 |
 | D17 | **Envelope over HTTP:** every envelope the endpoint processed returns HTTP **200**, whatever its status; non-2xx only for carrier failures (malformed envelope, authentication on the carrier). The inner problem document omits `status`. | amended (was: status line carries the status) | 1 |
-| D18 | **One self-description, narrowed:** the contract document gains the identity fields and becomes the `benzene:mesh:register` body; `benzene:mesh` and `descriptorHash` go. Outbound splits into `events[]` (published) and `sends[]` (dependencies, with response schemas). One algorithm (JCS + SHA-256), two projections: `contractHash` (requests + events + components) and a registration hash (adds `sends`). A normative component-naming rule. `benzene:spec` keeps its format selector; the contract document is the only conformance-tested output. Details settled by the Phase 0 spike; the JSON Schema 2020-12 dialect is a separate decision after 1.0. | amended (was: full merge) | 0 (spike), 3 |
+| D18 | **One self-description, narrowed:** the contract document gains the identity fields and becomes the `benzene:mesh:register` body; `benzene:mesh` and `descriptorHash` go. Outbound splits into `events[]` (published) and `sends[]` (dependencies, with response schemas). One algorithm (JCS + SHA-256), two projections: `contractHash` (requests + events + components) and a registration hash (adds `sends`). A normative component-naming rule. `benzene:spec` keeps its format selector; the contract document is the only conformance-tested output. Details settled by the Phase 0 spike; the JSON Schema 2020-12 dialect is a separate decision after 1.0. *Spike done:* `work/self-description-design.md` — hashes over a dereferenced projection, so component names leave the hash (Q1); providers are events **and** sends; ten rulings plus one new (Q1–Q11, its §10.5), reviewed by all four port champions. | amended (was: full merge); **awaiting ruling** | 0 (spike), 3 |
 | D19 | **Proposals and Provisional modules:** version-aware routing (versioning §5.4, §5.7), §6 and §7 → `work/side-by-side-service-versions.md`. A module or binding with one implementation is labelled **Provisional** with its implementing ports — MCP, claim-check, service versions — until a second port implements it. | amended | 2 |
 | D20 | **Spec version and stability:** a `docs/specification/VERSION` file and `spec-x.y.z` tags (Phase 0, needed by rule 1). Each document carries a stability label: Core and the profile frozen under semver from 1.0; each module Stable or Provisional; guidance unversioned. | amended | 0 (tags), 2 (labels) |
 | D21 | **Envelope endpoint security:** the endpoint runs the same pipeline, and so the same authentication middleware, as the service's other transports, and MUST support restricting which topics are reachable through it. | new | 1 |
@@ -99,7 +99,7 @@ module when a second port implements it.
 | # | Work | Where | Output |
 |---|---|---|---|
 | 0.1 | **Settlement audit.** `capability-scribe` states, per binding, the default on a failure result, a missing result and an unmatched topic, and the override knob — in Go and Python (both `unknown` today; Python has no settlement section) and confirming TypeScript's. | benzene-go, benzene-python, benzene-typescript | each port's matrix; sizes Phase 1's port work |
-| 0.2 | **Self-description spike.** Rule on: `events[]`/`sends[]` (names and shapes); the two hash projections and which feeds each; the component-naming and hoisting rule (with cross-port examples); the `{type, format}` request; and, per candidate field (`openapi`, `info`, `reserved`, `example`), keep or drop with its consumers named (benzene-ui reads `requests[].reserved`; the Spec UI shows `example`). Plan with each port's DX champion (`port-quality-standards.md` §1). | here, `work/self-description-design.md` | a ruled design; Phase 2's Outbound section uses its vocabulary |
+| 0.2 | **Self-description spike.** Rule on: `events[]`/`sends[]` (names and shapes); the two hash projections and which feeds each; the component-naming and hoisting rule (with cross-port examples); the `{type, format}` request; and, per candidate field (`openapi`, `info`, `reserved`, `example`), keep or drop with its consumers named (benzene-ui reads `requests[].reserved`; the Spec UI shows `example`). Plan with each port's DX champion (`port-quality-standards.md` §1). | here, `work/self-description-design.md` | a ruled design; Phase 2's Outbound section uses its vocabulary. *Done, pending ruling:* the design (6ae9da20) and its §10 port-champion review; every port's 3a cost is now **M** (none L); the rulings are §10.5 |
 | 0.3 | **Spec tags and pinned drift-checks.** Tag `spec-0.1.0` at current `main`; add `docs/specification/VERSION`. Each port's `conformance-drift-check` compares against its `SPEC_VERSION` ref, plus a non-blocking "behind latest" job. The same for benzene-ui's `contracts/`. | here, four ports, benzene-ui | rule 1 in force. *Done:* `spec-0.1.0` cut by the new `release-spec` workflow (tags are cut from `VERSION`, never by hand); all five checks green on the pin; benzene-ui pinned to the commit its four fixtures match, behind by design until Phase 1 |
 | 0.4 | **Claim the service-version fixture.** Run `mesh-service-version-cases.json` in `Benzene.Conformance.Test`. *Outcome:* .NET keys the catalog by version, but running the fixture failed 3 of 4 cases — one a real bug (re-registering one version erased an edge a sibling still declared; fixed, benzene-dotnet `174bde89`), two a read-model disagreement (fleet rows per name vs per version) that needs a ruling, D26. Not claimed yet. | benzene-dotnet | P1.3 narrowed to D26 |
 | 0.5 | **Canary and release notes.** Add The Count to the .NET release checklist (rule 2); the TypeScript beta.2 condition (rule 3). | benzene-dotnet, the-count, benzene-typescript | — |
@@ -187,24 +187,33 @@ there.
 Decision: D18, as ruled by spike 0.2. Opens only when every port and benzene-ui are green on
 `spec-0.2.0`. Two spec PRs, two tags.
 
-**3a — The document (`spec-0.3.0`).** `contract-document.md`: the spike's outbound split
-(`events[]`/`sends[]`), the component-naming rule, the field decisions, the `{type, format}`
-request, the two hash projections (§6). Fixtures: `contract-document-cases.json` and
-`contract-hash-cases.json` re-cut (naming-rule cases; recomputed hashes). Ports: the four contract
-generators and the four codegen clients; .NET's OpenAPI/AsyncAPI exports and the fleet AsyncAPI
-compositor keep working through the format selector. Consumers: benzene-ui's spec readers and the
-Spec UI.
+**3a — The document (`spec-0.3.0`).** `contract-document.md` per the ruled design
+(`self-description-design.md`, §10 winning over §0–§9): `events[]`/`sends[]`, the two hash
+projections over a dereferenced, metadata-stripped projection, the naming rule (normative but
+outside the hash), the field decisions, the `{type, format}` request, and **§2.1's derivation rule
+with a `derivationCases` group** (it moves here from 3b: the cross-port derivation is first tested
+on the contract document). Fixtures: `contract-document-cases.json` and `contract-hash-cases.json`
+re-cut with recomputed hashes, plus `derivationCases`, `namingCases` and `specTopicCases`. Ports, all
+**M**: .NET configures Swashbuckle to the rule rather than replacing it, and adds the upgrade path
+for committed contracts and compatibility baselines; **Go builds a contract-document producer** (it
+has none — its `/benzene/spec` serves the descriptor), inline-first, with naming trailing;
+TypeScript normalises Zod output and ports an outbound registry; Python merges its three producer
+paths into one. Go and Python route `GET /benzene/spec` through the pipeline before `sends` is
+served (Q6). The hash moves into each runtime package. Consumers: benzene-ui — **first, reading
+both document shapes during the transition**, since it never reads a register body this is all of
+its Phase 3 work — and the Spec UI.
 
 **3b — The register body (`spec-0.4.0`).** The contract document gains the identity fields and
 becomes the `benzene:mesh:register` body; `benzene:mesh` (mesh §1) and `descriptorHash` (§2.2) go;
 mesh §2 reduces to "the register body is the contract document"; §2.1's type mapping moves into
 contract-document as the derivation rule; heartbeats carry the registration hash; the collector's
-graph reads `sends` for providers. The interception rule already lives in the reserved-topic
+graph's providers are **events ∪ sends** (a published event's publisher is its provider). The interception rule already lives in the reserved-topic
 section (D13). Fixtures: `mesh-descriptor-cases.json` folds into `contract-document-cases.json`;
 `mesh-collector-cases.json`, `mesh-service-version-cases.json` and `mesh-issue-cases.json` take the
 new register body. Ports: one builder for spec and register; the four collectors (`meshd`, .NET
-`Benzene.Mesh.Collector`, TypeScript, Python). Consumers: benzene-ui first (it reads `produces`),
-then the mesh UI rebuild and re-vendor.
+`Benzene.Mesh.Collector`, TypeScript, Python). Consumers: none in benzene-ui (it reads aggregator
+artifacts, not register bodies); the mesh UI only if the fleet read model's `binding` → `transports`
+lands.
 
 **Exit:** every port passes the re-cut fixtures; a Go collector hosts a .NET service and the reverse
 on the new body (the live-interop form); the "Spec endpoint" and "Mesh — service side" rows of
@@ -261,7 +270,7 @@ adapters, unconfirmed fixture runner), then Python (settlement unknown across ~1
 ## 5. Checklist
 
 ```
-Phase 0  [x] 0.1 audit (Go, Py, TS)  [ ] 0.2 spike ruled  [x] 0.3 tags + pinned checks (4 ports + ui)  [~] 0.4 .NET fixture (bug fixed; D26 open)  [x] 0.5 canary
+Phase 0  [x] 0.1 audit (Go, Py, TS)  [~] 0.2 spike + champion review (awaiting ruling)  [x] 0.3 tags + pinned checks (4 ports + ui)  [~] 0.4 .NET fixture (bug fixed; D26 open)  [x] 0.5 canary
 Phase 1  [ ] 1a  [ ] 1b  [ ] 1c  [ ] spec-0.2.0  [ ] ui  [ ] .NET  [ ] Go  [ ] TS  [ ] Py  [ ] the-count  [ ] capabilities.md
 Phase 2  [ ] spec PR  [ ] website green (4 ports)  [ ] .NET cookbook
 Phase 3  [ ] 3a spec-0.3.0  [ ] 3b spec-0.4.0  [ ] ui  [ ] .NET  [ ] Go  [ ] TS  [ ] Py  [ ] live interop both ways
