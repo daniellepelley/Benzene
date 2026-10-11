@@ -119,7 +119,7 @@ claim.
 
 The well-known HTTP surfaces the service exposes MUST default to their
 [transport-bindings.md](transport-bindings.md) §1 default paths under the `/benzene/` prefix. For a
-Core-level service §5 is a SHOULD; under this profile it is a MUST-by-default. Every path
+Core-level service these defaults are a SHOULD (transport-bindings §1); under this profile they are a MUST-by-default. Every path
 remains configurable per deployment (the extension-point rule of
 [wire-contracts.md](wire-contracts.md) §2 and [core-concepts.md](core-concepts.md) §11 are not suspended by this profile), but a
 deployment that relocates or blocks a surface accepts the documented degradation for that

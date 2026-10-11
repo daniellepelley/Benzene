@@ -25,7 +25,7 @@ Every binding MUST define:
 5. **Result mapping** — the handler's result → the native response: payload conversion plus the
    status mapping (wire-contracts §4 for HTTP/gRPC; queue/event transports define their
    acknowledge/reject behavior instead).
-6. **Scope rule** — exactly one pipeline invocation and one DI scope per unit of work (per
+6. **Scope rule** — exactly one pipeline invocation and one scope per unit of work (per
    request, per call, per message — *not* per batch).
 7. **Failure rule** — an uncaught error inside the pipeline maps to the transport's native
    failure signal without crashing the host (and, for queue transports, without poisoning the

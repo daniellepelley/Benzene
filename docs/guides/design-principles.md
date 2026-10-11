@@ -125,9 +125,9 @@ The catalog of extension points every transport binding carries (see
 | Outbound client conventions | Mirror of the consumer defaults (e.g. `ISqsClient` tags `topic`) | Implement the client interface |
 | Status vocabulary | The string statuses of [wire-contracts.md](../specification/wire-contracts.md) | **Statuses are strings precisely so you can add your own.** Custom statuses flow through the pipeline, the envelope, and the mesh untouched; only protocol mappings (e.g. HTTP status codes) need a mapping entry for them, and unmapped statuses take the documented fallback |
 | Status readers (mesh) | Read the transport's Benzene status field | Implement the status-reader interface for your context type |
-| DI container | The implementation's first-party or platform container | The container abstraction ([core-concepts.md](../specification/core-concepts.md) §8) — bring your own |
+| DI container | The implementation's first-party or platform container | Per-invocation scope and replaceable defaults ([core-concepts.md](../specification/core-concepts.md) §8) — bring your own container |
 | Handler discovery | Attribute/reflection scanning where idiomatic | Explicit registration is the concept; scanning is sugar ([README](../specification/README.md), "the one design rule") |
-| Version getter (per transport) | The `benzene-version` header (HTTP: a `version` route parameter where the route declares one, else the header) — [versioning.md](../specification/versioning.md) §2 | Rename the header in one place, or replace the version-getter registration for that context type |
+| Version getter (per transport) | The `benzene-version` header (HTTP: a version route segment where the route has one, else the header) — [versioning.md](../specification/versioning.md) §2 | Rename the header in one place, or replace the version-getter registration for that context type |
 
 Advice for feature authors:
 
@@ -157,14 +157,14 @@ Both failures are real, and a framework usually has one or the other:
 The way out is not a compromise between them. It is a **ladder**, and the framework owes both ends
 of it.
 
-**Every capability MUST have an explicit form.** Every step visible, nothing inferred. This is the
+**Every capability must have an explicit form.** Every step visible, nothing inferred. This is the
 contract; the shorthand is a convenience over it.
 
-**Every capability a service needs *routinely* MUST have a shorthand.** A capability that exists
+**Every capability a service needs *routinely* should have a shorthand.** A capability that exists
 only in explicit form is unfinished, not minimal. The existing rule ("sugar must have an explicit
 equivalent") is only half a policy — on its own it permits a framework with no sugar at all.
 
-**A shorthand MUST be composed from the public explicit form, never parallel to it.** This is the
+**A shorthand must be composed from the public explicit form, never parallel to it.** This is the
 whole anti-magic guarantee, and it is testable three ways:
 
 1. A user could have written the shorthand themselves, in their own code, using only public API.
@@ -182,7 +182,7 @@ exactly to the degree that it is **verified before any message is handled**, and
 it was *finding out late*. A convention that can first fail on the message path has not paid for
 itself.
 
-**The ladder MUST be visible from the top.** A shorthand's documentation MUST name the explicit
+**The ladder must be visible from the top.** A shorthand's documentation names the explicit
 form it composes. An escape hatch nobody can find is, from the user's seat, indistinguishable from
 no escape hatch — and the user will conclude the framework cannot do the thing.
 
@@ -197,7 +197,7 @@ stricter rule than production code:
 
 - **Every line is domain or intent.** A line that is neither is one of two things: a missing
   shorthand — which is a **framework** bug, not an example bug — or a deliberate demonstration of
-  the explicit form, which MUST say so in a comment. There is no third category, and "that is just
+  the explicit form, which says so in a comment. There is no third category, and "that is just
   the setup you have to write" is the first category wearing a disguise.
 - **Duplicated plumbing across examples is a framework bug.** When two examples hand-roll the same
   adapter, that is a missing seam, and the count is the evidence: the second copy is a signal, the

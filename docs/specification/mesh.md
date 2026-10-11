@@ -183,6 +183,10 @@ and its order when a `versionScheme` is declared, are the
 [Service Versions](service-versions.md) module (Provisional); a descriptor that omits it is one
 service version, so an estate whose services never declare one is unaffected.
 
+### 2.5 Service version order
+
+Defined in [Service Versions](service-versions.md) §2.
+
 ## 3. TraceEvent
 
 One pipeline invocation as the mesh sees it — semantic (topic + Benzene status), not
@@ -245,15 +249,17 @@ transport (transport-bindings.md):
 
 - `service` is REQUIRED on register, heartbeat, and issues → `bad-request` when missing. A
   `benzene:mesh:traces` or `benzene:mesh:issues` batch of any size, including empty, MUST be accepted.
-- **The catalog is keyed by `(service, serviceVersion)`** (§2.4), not by `service` alone. A
-  descriptor that omits `serviceVersion` has one service version, so an estate whose services never
-  declare one keys exactly as it did before this rule existed.
+- **The catalog key.** A collector keys its catalog by `service`; one that implements the
+  [Service Versions](service-versions.md) module keys it by `(service, serviceVersion)` instead. A
+  descriptor that omits `serviceVersion` has one service version, so for an estate whose services
+  never declare one the two keys agree.
 - Re-registration replaces the previous registration for **that key** wholesale, including the claim
   to consume *and* the claim to produce each topic — a redeploy that drops a topic from `topics`
   drops the consumer edge with it, and a redeploy that drops a topic from `produces` drops the
-  provider edge with it, the same rule applied symmetrically to both declared lists (§2). It MUST NOT
-  disturb a *different* service version of the same service: two releases deployed side by side are
-  two entries, and registering one never deletes the other.
+  provider edge with it, the same rule applied symmetrically to both declared lists (§2). In a
+  collector implementing Service Versions it MUST NOT disturb a *different* service version of the
+  same service: two releases deployed side by side are two entries, and registering one never
+  deletes the other.
 - **The producer/consumer graph MUST be built from the latest registered `ServiceDescriptor` alone**
   — `produces` for providers, `topics` for consumers (§2, §2.3). A collector MUST report this graph
   in full for a service that has registered but never sent or received a single message: the graph
@@ -402,7 +408,8 @@ A heartbeat whose `descriptorHash` differs from the registered descriptor's hash
 instance runs a contract the collector hasn't learned. The collector MUST surface the mismatch
 (the Go collector reports per-instance `hashMatches`) rather than silently keeping stale topics.
 
-This comparison is scoped to **one service version** (§2.4): the heartbeat's hash is compared against
+In a collector implementing [Service Versions](service-versions.md), this comparison is scoped to
+**one service version**: the heartbeat's hash is compared against
 the descriptor registered for the *same* `(service, serviceVersion)` key, never against a different
 release of the same service. Two releases deployed side by side legitimately report different hashes,
 and a collector that compared across them would report drift for every side-by-side deployment — the

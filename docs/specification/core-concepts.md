@@ -163,8 +163,8 @@ between the transport's native type (zero-copy) and its own plain type (converte
   This is what lets one definition move between vendors (transport-bindings §3).
 - **Registration completes before the first message.** Handlers, middleware and mounts are
   registered, and the registration is validated, before the first invocation. A configuration
-  error — two handlers for one (topic, version), two declared defaults, a convention that resolves
-  nothing — fails start-up, never the first message.
+  error — two handlers for one (topic, version), a convention whose start-up verification fails
+  (section 11) — fails start-up, never the first message.
 - **No binding is required.** A pipeline can be invoked in process, with no transport at all, and
   is still a Benzene application.
 
@@ -194,10 +194,10 @@ path; scanning is optional. Route-level attributes for specific transports (e.g.
 ## 10. Optional capabilities
 
 Some capabilities are optional, and a port need not offer them. One that does offers it in exactly
-the shape the spec defines, on every transport and every vendor:
+the shape the spec defines:
 
-- **Versioning** — versioned handlers and payload casting: selection per section 2, the header and
-  its absence per [versioning.md](versioning.md).
+- **Versioning** — registering versioned handlers, and payload casting ([versioning.md](versioning.md)
+  §5). Reading `benzene-version` and selecting by section 2 is not optional: every port does it.
 - **W3C trace context** — continue a trace from inbound `traceparent`/`tracestate` headers and
   forward it on outbound calls. An implementation that propagates trace context MUST do so per the
   W3C Trace Context specification (wire-contracts §2); whether a service must propagate it at all is
@@ -228,24 +228,25 @@ Three rules make that safe:
   names what was looked for, where, and what to add. A convention that can first fail on the
   message path is not permitted.
 
-Every name a convention puts on the wire is configurable in one place and applies in both
-directions (wire-contracts §2).
+Every reserved header name is configurable in one place and applies in both directions
+(wire-contracts §2).
 
 ## 12. Outbound
 
 A service sends messages as well as receiving them.
 
 - **The sender.** Every outbound client implements one operation —
-  `send(topic, headers, message) → result` — over its own pipeline, with the transport at the
-  bottom. Cross-cutting client behaviour (trace context, retry, correlation) is middleware on that
-  pipeline, so it is the same for every transport. What a client must do on the wire is
+  `send(topic, headers, message) → result` — whatever the transport underneath. Cross-cutting
+  client behaviour (trace context, retry, correlation) is typically middleware on a send pipeline
+  with the transport at the bottom, so it is the same for every transport. What a client must do on the wire is
   transport-bindings §1's rule for outbound clients.
 - **Routing.** Which sender carries a topic is the application's choice. A port MAY offer a
   routing table from topic to sender, so that application code names only a topic and a message;
   it is not required.
-- **Declared sends.** What a service sends is declared, as handlers are: each outbound topic with
-  its request type and, where a reply is expected, its response type. Declarations are what let a
-  service describe what it produces ([mesh.md](mesh.md) §2) without anyone reading its code.
+- **Declared sends.** A service MAY declare what it sends, as it registers handlers: each outbound
+  topic with its request type and, where a reply is expected, its response type. Declarations are
+  what let a service describe what it produces without anyone reading its code; the mesh module
+  requires them for a service that wants its sends in the graph ([mesh.md](mesh.md) §2.3).
 - **Error fidelity.** A client that receives a problem document — the body of a failure envelope,
   or an `application/problem+json` response — MUST rebuild the result's `errors` from it with
   `field` and `code` intact (wire-contracts §1.3). It MAY also attach the received document

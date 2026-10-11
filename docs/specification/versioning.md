@@ -1,7 +1,9 @@
 # Versioning
 
-**Core — an optional capability** ([core-concepts.md](core-concepts.md) §10): a port need not offer
-versioning, and one that does offers it in exactly this shape.
+**Core.** Every port reads `benzene-version` and selects handlers by core-concepts §2 — including
+`not-found` for a version no handler serves — so §1–§4 apply to every port. What is optional
+([core-concepts.md](core-concepts.md) §10) is registering versioned handlers and payload casting
+(§5); a port that offers them offers them in exactly this shape.
 
 A topic's request and response shapes change over a service's life. Versioning lets a producer keep
 sending a shape the topic still accepts, and a service keep serving it, without releasing every
@@ -55,10 +57,10 @@ handler can serve producers on several versions:
   from the message's version to the handler's request type before the handler runs. The handler
   only ever sees its own type.
 - **Response.** By default the response is cast back to the request's version, so a producer on an
-  older version receives the shape it understands. A port MAY let the application replace that
+  older version receives the shape it understands. A port MUST let the application replace that
   default.
-- **Degradation.** A topic with no casts registered behaves as an unversioned topic does: exact
-  selection only, nothing cast, no error.
+- **Degradation.** For a topic with no casts registered, selection uses only steps 1 and 3 of
+  core-concepts §2 (exact match, else `not-found`); nothing is cast, and it is not an error.
 
 *(Informative.)* Casts compose: a port that can chain registered casts (v1→v2, v2→v3) can serve v1
 without a direct v1→v3 cast, and a shorter registered chain is preferred over a longer one.

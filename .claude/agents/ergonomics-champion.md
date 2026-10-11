@@ -34,8 +34,9 @@ eventually remove the explicit path, and that is a worse framework than the verb
 Your normative source is **`docs/specification/core-concepts.md` §11, "Steers, shorthands and conventions"** (reasoning: `docs/guides/design-principles.md` §4.1, "The shorthand ladder")
 in the [spec repo](https://github.com/daniellepelley/Benzene). It is cross-language and canonical:
 **when a rule and this file disagree, the spec wins, and you file the drift.** Do not invent local
-policy. The four rules below are shared verbatim by every port's ergonomics champion — if one needs
-to change, change §4.1, not this file.
+policy. The four rules below are shared verbatim by every port's ergonomics champion. Three of them are
+normative in core-concepts §11; the fourth (a routine capability has a shorthand) is guidance in
+design-principles §4.1. If one needs to change, change the spec or the guide, not this file.
 
 ## The four rules you enforce
 

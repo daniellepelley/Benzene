@@ -8,10 +8,11 @@ of it is running*. When two releases are deliberately deployed side by side — 
 behaviour change, a gradual cutover — the mesh must be able to tell them apart rather than see one
 service that keeps changing its mind. This module adds that layer: a service version is an identity
 (§1) and, when declared with a scheme, an order (§2). Routing a message to a particular release is
-not specified; the proposal is `work/side-by-side-service-versions.md` in the Benzene repo.
+not specified.
 
-The collector rules that use the identity — the catalog keyed by `(service, serviceVersion)`,
-re-registration scoped to one version, graph membership by service — are in [mesh.md](mesh.md) §4.
+A collector that implements this module keys its catalog by `(service, serviceVersion)`, scopes
+re-registration and the heartbeat hash comparison to one version, and keeps graph membership by
+service — [mesh.md](mesh.md) §4–§5.
 Pinned by `conformance/mesh-service-version-cases.json` (identity) and
 `conformance/mesh-version-order-cases.json` (order).
 
@@ -68,7 +69,7 @@ only report that they differ; with it the same comparison reports an **upgrade**
 which is the question anyone planning a deployment is actually asking. It is also what lets a reader
 say "four versions behind" and what makes "the newest version of this service" mean anything.
 
-**A declared `serviceVersion` MUST carry a `versionScheme`** naming the comparison rule, from exactly
+**A declared `serviceVersion` that is to be ordered MUST carry a `versionScheme`** naming the comparison rule, from exactly
 this closed set:
 
 | `versionScheme` | Value form | Comparison |

@@ -55,8 +55,8 @@ naming and file layout stay idiom, same rule of thumb as above.
 member table, the replace-not-wrap rule, and the `problem-details-cases.json` /
 `envelope-cases.json` fixtures that pin it (see [conformance/](../specification/conformance/README.md)). The
 problem-type registry ([wire-contracts.md §3.1](../specification/wire-contracts.md#31-problem-type-registry)) is
-**data to copy**, not a taxonomy to invent — eleven rows keyed by the existing status vocabulary,
-nothing to design.
+one rule, not a taxonomy to invent — `type` is the registry prefix plus the status, nothing to
+design.
 
 ## 3. Conformance testing
 

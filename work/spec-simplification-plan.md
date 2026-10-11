@@ -207,6 +207,13 @@ guidance; and contract-document §6's numbering is kept (§6.1 became a two-line
 because fixture descriptions cite §6.x and Phase 2 changes no fixture. The .NET material from
 versioning is `docs/cookbooks/versioning-internals.md` in benzene-dotnet.
 
+**Fixture-text debt for the next fixture window (Phase 3):** fixture descriptions are not edited in
+Phase 2, so four now cite text that moved — `mesh-version-order-cases.json` and
+`mesh-service-version-cases.json` cite mesh §2.4–§2.5 (now `service-versions.md`; mesh keeps stubs at
+both numbers so the citations still resolve), and `transport-metadata-cases.json` cites "tier D" and
+says names MUST be "a single injectable value" (the spec now says "configurable in one place, both
+directions"). Re-word them when 3a re-cuts fixtures.
+
 **Ports:** link fixes; .NET takes the versioning cookbook. **Exit:** the website builds green with all
 four ports; `remaining-issues-plan.md` P1.1 and P1.2 move to "decided" (D25), port work tracked
 there.

@@ -141,8 +141,8 @@ admits it, regardless of any separate "include reserved" setting. When the inclu
 
 **Fail loud:** if the include-list names a topic the document does not have among its `requests[]`
 entries, the generator MUST fail (non-zero exit / thrown error), not silently skip it, and the
-error MUST list the topic(s) it couldn't find. Listing the document's actual topic ids in the error
-is REQUIRED by the parity checklist; the exact message wording is not — the fixture asserts only
+error MUST list the topic(s) it couldn't find. The error MUST also list the document's actual topic ids;
+the exact message wording is not asserted — the fixture asserts only
 the unknown-topic set and the valid-topic set.
 
 The include-list scopes `requests[]` only. It has no effect on `events[]`, `components`, or any of
@@ -197,8 +197,7 @@ why these are two different, non-interchangeable hash inputs.
 ### 5.4 Transport-agnostic output
 
 Generated code's only runtime dependency MUST be the consuming port's **transport-agnostic message
-sender abstraction** (the concept behind .NET's `IBenzeneMessageSender`, wire-contracts.md's sender
-side) plus its result type — never a transport-specific client (no direct SQS/HTTP/Kafka client
+sender abstraction** (the concept behind .NET's `IBenzeneMessageSender`; core-concepts.md §12) plus its result type — never a transport-specific client (no direct SQS/HTTP/Kafka client
 type in generated code). Transport binding is the consumer's own outbound-routing configuration,
 wired separately; the generated client must work unmodified regardless of which transport the
 consumer's outbound route resolves to at runtime.

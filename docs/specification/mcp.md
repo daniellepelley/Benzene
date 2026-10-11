@@ -1,6 +1,6 @@
 # MCP Binding
 
-**Module — Provisional: .NET** (`Benzene.Mcp`). A transport binding that satisfies
+**Binding — Provisional: .NET** (`Benzene.Mcp`), documented like a module. A transport binding that satisfies
 [transport-bindings.md](transport-bindings.md) §1, so that AI clients — assistants, IDEs, agents —
 can call a service's handlers as MCP **tools**, over JSON-RPC 2.0 on Streamable HTTP (hosted by any
 HTTP binding, default path `/benzene/mcp`) or on stdio (hosted by a worker).

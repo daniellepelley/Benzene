@@ -4,8 +4,10 @@
 routing between two co-deployed releases of one service. The identity layer it needs is specified,
 Provisional, in [`docs/specification/service-versions.md`](../docs/specification/service-versions.md);
 what follows is the unbuilt part, kept here until a port builds it. Section numbers below are the
-ones this text had as `versioning.md` §5.4, §5.7, §6 and §7; references to "§5.x" mean that old
-numbering.
+ones this text had as `versioning.md` §5.4, §5.7, §6 and §7. Every section reference below (§2.x,
+§3, §4.x, §5.x) is to that old `versioning.md`, as of `spec-0.2.0`; its §2–§4 are now the short
+`versioning.md` and the .NET versioning-internals cookbook, its §5.1–§5.3 and §5.5–§5.6
+`service-versions.md`. "design-principles.md §5.1" is now `docs/guides/design-principles.md` §5.
 
 ## 1. The idea (versioning.md §5 intro)
 

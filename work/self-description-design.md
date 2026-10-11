@@ -85,7 +85,7 @@ why, the cost per port and the consumers affected. §9 lists what the maintainer
 - **F6. Python already dereferences, for exactly this reason.** `specdoc._resolve` inlines `$ref`s
   before the collector stores schemas, because "a reference into a catalogue the collector never sees
   would compare as 'the shape changed' the moment a producer renamed a class."
-- **F7. `versionScheme` is required but has no field.** mesh §2.5 says a declared `serviceVersion`
+- **F7. `versionScheme` is required but has no field.** service-versions §2 says a declared `serviceVersion`
   MUST carry a `versionScheme`. §2's shape has no such field and no port emits one. 3b adds it to the
   wire; nothing moves.
 - **F8. benzene-ui never reads the descriptor.** It reads the aggregator's artifacts (`topics.json`
@@ -221,7 +221,7 @@ Then:
 | events | — | in | in | in | clients subscribe to them |
 | sends / produces | in | — | **out** | in | a dependency is not client-visible (review §2.1) |
 | `httpMappings` | — | in | in | in | HTTP is a Core binding; a route change reaches HTTP callers (ruling Q2) |
-| `service`, `serviceVersion`, `versionScheme` | in | — (`info` was in) | out | out | a version is an entity, not a shape (mesh §2.4); comparisons always happen inside one `(service, serviceVersion)` key |
+| `service`, `serviceVersion`, `versionScheme` | in | — (`info` was in) | out | out | a version is an entity, not a shape (service-versions §1); comparisons always happen inside one `(service, serviceVersion)` key |
 | `info` | — | **in** | out (gone, §6) | out | F5 |
 | `runtime`, `placement`, `binding`/`transports` | in, in, in | —, —, out | out | out | deployment facts: two regions of one release, under one key, would otherwise report `hashMatches: false` against each other |
 | `instanceId`, `degraded`, `profile` | out | — | out | out | unchanged |
@@ -457,7 +457,7 @@ the `benzene-descriptor --emit spec` tool.
 | `transports` | **Keep**, OPTIONAL; absorbs the descriptor's `binding` | 3a / 3b | collectors' fleet read model `binding` → `transports` (Provisional, D5); benzene-ui's `FleetView` type only |
 | `components` | **Keep**, REQUIRED: codegen type names; benzene-ui's schema reference section | — | — |
 | `service` | REQUIRED, the catalog key | 3a | all collectors |
-| `serviceVersion` + `versionScheme` | Keep `serviceVersion`; **add** `versionScheme` (F7), REQUIRED when `serviceVersion` is present (mesh §2.5) | 3a / 3b | collectors' ordering; .NET `Benzene.Descriptor` stops discarding `--version-scheme` |
+| `serviceVersion` + `versionScheme` | Keep `serviceVersion`; **add** `versionScheme` (F7), REQUIRED when `serviceVersion` is present (service-versions §2) | 3a / 3b | collectors' ordering; .NET `Benzene.Descriptor` stops discarding `--version-scheme` |
 | `instanceId` | **Drop** from the document. Heartbeats and traces carry it, and no collector reads it at registration (.NET, Go `meshd`, TypeScript and Python all key instances off heartbeats). It would also make a served document differ per replica. | 3b | none |
 | `runtime`, `placement` | **Keep**, OPTIONAL; now outside the hash | 3b | collectors' fleet view |
 | `profile` | **Keep**, OPTIONAL (documented in Phase 4) | 3b | Go adds it; probes |

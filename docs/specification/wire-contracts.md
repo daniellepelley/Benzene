@@ -76,7 +76,7 @@ transport-neutral profile:
 | Field | Type | Rules |
 |---|---|---|
 | `type` | string (URI ref) | Framework-produced failures MUST use the registry URI for the status (§3.1). Application-authored problems SHOULD use their own absolute URI; absent or `about:blank` is tolerated on read. Readers treat it as an **opaque identifier** — comparison is string equality, never dereference (the registry URIs are not live pages). |
-| `title` | string | Short human summary of the *type*, fixed per type (the registry's value for framework types). Never asserted by conformance fixtures — wording is free. |
+| `title` | string | Short human summary of the *type*, fixed per type; the wording is free. Never asserted by conformance fixtures — wording is free. |
 | `status` | integer | **Only where the problem document is itself an HTTP response body** (a route-mapped HTTP response, §4.1), and then it MUST equal that response's status code. Everywhere else it MUST be **omitted** — not emitted as `null`: inside an envelope on any carrier, HTTP included (the envelope endpoint answers 200, transport-bindings §1), and in a queue reply. Benzene clients MUST NOT classify a result from this member; classification is envelope-first (§1.2). |
 | `detail` | string | Human-readable occurrence detail — the result's error messages joined with `", "`, unchanged from every prior version of this document. The compatibility member: every existing reader can keep using only this one. |
 | `instance` | string (URI ref) | Optional, application-owned. The framework never fabricates it. |
@@ -115,8 +115,8 @@ field) to and from this flat string→string dictionary.
 
 Every header below is classified by who must implement it: **Core** (every implementation that
 uses the capability — an implementation that omits it cannot interoperate), a **Module** (only an
-implementation of that module, e.g. MCP or claim check), or a **Binding** (only that transport
-binding).
+implementation of that module, e.g. claim check), or a **Binding** (only that transport binding,
+e.g. EventBridge or MCP).
 
 | Header | Class | Direction | Meaning |
 |---|---|---|---|
@@ -126,8 +126,8 @@ binding).
 | `traceparent`, `tracestate` | Core | both | W3C Trace Context. Benzene does not define these, and Core does not require them (the Cloud Service Profile's R8 does). **If** an implementation propagates trace context, it MUST follow the W3C Trace Context format and semantics: the trace-id and `tracestate` are carried forward unchanged, and the parent-id is set to the participant's own span. That is what makes traces from different languages join up, which the mesh depends on. |
 | `x-correlation-id` | Core | outbound | A business correlation value, written by the outbound correlation client decorator when the application populates one. Implementations are NOT required to read it inbound; honouring a partner's correlation header is application middleware, not a framework contract. One convention among several — Benzene does not own this name. |
 | `benzene-headers` | Binding: EventBridge | both (EventBridge) | On transports with no native per-message metadata (EventBridge), wire headers travel as a reserved string→string object named `benzene-headers` at the top level of the payload (`detail`), embedded by the sender only when headers exist and the payload is a JSON object, and read back into the header dictionary by the receiver. The body the handler receives is `detail` unchanged, the embedded member included, so a handler's request type must tolerate it. Although its carrier is a payload field, it **names a header** rather than being one of the payload's own fields, so it is spelled like every other header — lowercase kebab-case with the `benzene-` marker. |
-| `benzene-mcp-tool` | Module: MCP | inbound (MCP) | The name of the MCP tool the call came through, set by the MCP binding ([mcp.md](mcp.md)). |
-| `benzene-mcp-session` | Module: MCP | inbound (MCP) | The MCP session id, where the transport has one. |
+| `benzene-mcp-tool` | Binding: MCP | inbound (MCP) | The name of the MCP tool the call came through, set by the MCP binding ([mcp.md](mcp.md)). |
+| `benzene-mcp-session` | Binding: MCP | inbound (MCP) | The MCP session id, where the transport has one. |
 | `benzene-claim-check` | Module: claim check | both | Carries an opaque reference to a payload that the optional claim-check middleware offloaded to an external store because it exceeded a configured size threshold — see [claim-check.md](claim-check.md). |
 
 `benzene-status` is a gRPC trailer, specified with the gRPC mapping it serves in [§4.2](#42-grpc).
@@ -343,7 +343,7 @@ reserved topic is optional unless a profile requires it (the
 | `benzene:ping` | none | `ok`, no payload — its body is unspecified, and a caller reads only the status |
 | `benzene:mesh` | none | `ok`, the ServiceDescriptor ([mesh.md](mesh.md) §1–§2) |
 | `benzene:mesh:register`, `benzene:mesh:heartbeat`, `benzene:mesh:traces`, `benzene:mesh:issues` | per [mesh.md](mesh.md) §4 | per [mesh.md](mesh.md) §4 — served by a collector, not by every service |
-| `benzene:mesh:query:*` *(Provisional)* | per collector | the collector's read models ([mesh.md](mesh.md) §4) — served by a collector; the shapes are not pinned |
+| `benzene:mesh:query:fleet`, `benzene:mesh:query:service`, `benzene:mesh:query:topic` *(Provisional)* | per collector | the collector's read models ([mesh.md](mesh.md) §4) — served by a collector; the shapes are not pinned |
 | `benzene:mesh:dispatch` *(Provisional)* | informative: `{ "service": string, "topic": string, "headers"?: object, "body"?: string }` | the target service's result for that envelope — served by a collector that offers live dispatch; neither shape is pinned while the topic is Provisional |
 
 - **`benzene:spec`.** An absent body, an empty body, `null` and `{}` all mean `type: "benzene"`,

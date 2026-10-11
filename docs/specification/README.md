@@ -13,9 +13,10 @@ port's conformance fixtures pin the release they implement ([conformance](confor
 | **Profile** | The Cloud Service Profile: a named conformance target that raises chosen SHOULDs and MAYs to MUSTs for deployed services | Frozen under semver from 1.0, like Core |
 | **Guidance** | Informative: strategy, porting advice, quality standards | Unversioned; lives in [`docs/guides/`](../guides/index.md) |
 
-**Optional capabilities.** Core also names a few capabilities a port need not offer — versioning,
-W3C trace context, and health checks ([core-concepts.md](core-concepts.md) §10). One that does offers
-it in exactly the shape the spec defines.
+**Optional capabilities.** Core also names a few capabilities a port need not offer — versioned
+handlers and payload casting, W3C trace context, and health checks
+([core-concepts.md](core-concepts.md) §10). One that does offers it in exactly the shape the spec
+defines. (Reading the version header and selecting a handler by it is not optional.)
 
 "Conforms to Benzene" means Core. "Is a Benzene Cloud Service" means Core plus the profile.
 
@@ -35,7 +36,7 @@ it in exactly the shape the spec defines.
 | [mesh.md](mesh.md) | Stable | Service self-description, trace events, collector topics, heartbeats and degradation |
 | [contract-document.md](contract-document.md) | Stable | The derived contract document served at `/benzene/spec`, the client-generation rules and the contract hash |
 | [service-versions.md](service-versions.md) | Provisional: .NET | Service-version identity and order, for releases deployed side by side |
-| [mcp.md](mcp.md) | Provisional: .NET | The MCP binding: a service's handlers as tools for AI clients |
+| [mcp.md](mcp.md) | Provisional: .NET | A binding (claimed per binding, documented like a module): a service's handlers as tools for AI clients |
 | [claim-check.md](claim-check.md) | Provisional: .NET | Large payloads passed by reference to an external store |
 
 ### Profile
