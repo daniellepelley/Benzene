@@ -208,38 +208,10 @@ token); the self-hosted worker exposes a real checkpoint hook, the Azure Functio
 checkpoints on successful return only. Present as two bindings sharing one pipeline shape, matching
 the Functions-trigger / self-hosted-worker split every other Azure transport has.
 
-### MCP (Model Context Protocol) — `Benzene.Mcp`
+### MCP (Model Context Protocol)
 
-AI clients (assistants, IDEs, agents) call a service's handlers as MCP **tools**, over JSON-RPC 2.0
-on Streamable HTTP (hosted by any HTTP binding above) or on stdio (hosted by the worker).
-
-- **Tools, not topics.** The binding advertises a curated list of tools the application declares,
-  never every topic (a hundred schemas in front of a model is a worse interface than none). A tool
-  is either **topic-bound** (name → topic, the arguments object is the body) or **custom** (a body
-  the application wrote, which asks the pipeline through the same dispatcher).
-- Topic: the tool's declared topic (+ optional version, sent as `benzene-version`). Headers:
-  `benzene-mcp-tool` (the tool name) and `benzene-mcp-session` (the session id, where the transport
-  has one; wire-contracts §2); there is no native metadata channel for the caller to set headers on.
-- Body: the `tools/call` `arguments` object, verbatim, as the request body. Arguments are read
-  strictly; a value the model got wrong is refused with a sentence naming what was expected.
-- Result: a success → the response body as the tool's text; a failure → a tool result marked
-  `isError` whose text is `"{status}: {detail}"` (wire-contracts §1.3's problem `detail`), which the
-  model reads. JSON-RPC errors are reserved for the protocol itself (parse, invalid request/params,
-  unknown method) and for an unexpected exception, which carries a short reference and never the
-  detail.
-- Scope: one pipeline invocation and one DI scope per tool call (a custom tool that asks the
-  pipeline twice makes two). Cancellation: the HTTP request's abort signal; stdio has none.
-- Sessions: `Mcp-Session-Id` is issued on `initialize` and echoed on later requests. The binding
-  keeps no session state; the id is passed to tools and is the application's to interpret.
-- Annotations: `readOnlyHint`/`idempotentHint` are the inverse of the tool's declared `writes`,
-  `destructiveHint` its declared `destructive`, so a client can gate the writers.
-- Not offered: the server-to-client stream (`GET` → `405`), resources, prompts.
-- A start-up check fails when a topic-bound tool names a topic no handler answers.
-
-*Holding note — MCP is Provisional (one port, .NET) and gets its own document.* Until then, an MCP
-binding MUST NOT advertise every topic as a tool; MUST return a handler failure as a tool result
-marked `isError`, never as a JSON-RPC error; and MUST fail start-up when a topic-bound tool names a
-topic no handler answers.
+AI clients call a service's handlers as MCP tools. MCP is a binding that satisfies §1, specified in
+its own document: [mcp.md](mcp.md) (Provisional).
 
 ### Outbound clients (the reverse direction)
 

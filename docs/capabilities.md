@@ -82,7 +82,7 @@ only; decisions stay with the product owner.
    papers over it, so this is not drift — but it is the largest capability fork in the estate.
 2. **Claim check — staged.** .NET ships `Benzene.ClaimCheck` (+ S3/Blob stores); Go, TypeScript and
    Python all say unbuilt, plainly, with no design reason. The `benzene-claim-check` header is now
-   specified as an optional add-on (wire-contracts §2.1); .NET is still its only implementation.
+   specified as an optional add-on ([claim-check.md](specification/claim-check.md), Provisional); .NET is still its only implementation.
 3. **Settlement of returned failure results — the spec gap and the safety divergence are closed;
    what remains is deliberate.** Obligation 8 of transport-bindings §1 (spec-0.2.0, D16) states the
    rule, `settlementDefaults` pins each binding's shape, and all four matrices now claim it: on every

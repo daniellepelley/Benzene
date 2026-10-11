@@ -146,7 +146,7 @@ porting author cannot tell a mandatory wire contract from a convention of one op
 | `benzene-headers` | **D** | both (EventBridge) | On transports with no native per-message metadata (EventBridge), wire headers travel as a reserved string→string object named `benzene-headers` at the top level of the payload (`detail`), embedded by the sender only when headers exist and the payload is a JSON object, and read back into the header dictionary by the receiver. The body the handler receives is `detail` unchanged, the embedded member included, so a handler's request type must tolerate it. Although its carrier is a payload field, it **names a header** rather than being one of the payload's own fields, so it is spelled like every other header — lowercase kebab-case with the `benzene-` marker. |
 | `benzene-mcp-tool` | **D** | inbound (MCP) | The name of the MCP tool the call came through, set by the MCP binding ([transport-bindings.md](transport-bindings.md) §2). |
 | `benzene-mcp-session` | **D** | inbound (MCP) | The MCP session id, where the transport has one. |
-| `benzene-claim-check` | **C** | both | Carries an opaque reference to a payload that the optional claim-check middleware offloaded to an external store because it exceeded a configured size threshold — see [§2.1](#21-claim-check-add-on). |
+| `benzene-claim-check` | **C** | both | Carries an opaque reference to a payload that the optional claim-check middleware offloaded to an external store because it exceeded a configured size threshold — see [claim-check.md](claim-check.md). |
 
 `benzene-status` is **not** listed here: it is a gRPC-only trailer, specified with the gRPC mapping
 it serves in [§4.2](#42-grpc). It appeared in this table historically, which made it read as a
@@ -178,33 +178,6 @@ are normative:
 
 Binary metadata (e.g. gRPC `-bin` keys) is excluded from the dictionary in both directions.
 Duplicate keys: last value wins.
-
-### 2.1 Claim check (add-on)
-
-`benzene-claim-check` is written by an **optional** outbound middleware when a payload exceeds a
-configured size threshold, letting a large payload bypass a transport's message-size limit.
-
-- The header's value is an **opaque, URI-form reference** of the shape `scheme://location/key`,
-  issued by the sender's payload store (e.g. `s3://bucket/key`, `azblob://container/key`).
-- The message **body** of an offloaded message is **unspecified** — a consumer MUST NOT interpret
-  it directly, and MUST treat the header as authoritative.
-- A consumer with the claim-check add-on wired MUST replace the body with the stored content
-  verbatim **before** deserialization; every other header (including `content-type`) applies to
-  the **hydrated** body, not the placeholder.
-- A consumer MUST resolve a claim-check reference only through its own configured store, and MUST
-  fail the message loud — never silently skip it — when the reference cannot be resolved or lies
-  outside that store's own configuration. This is a security boundary: a consumer MUST NOT fetch
-  an attacker-supplied arbitrary location.
-- Deleting the stored payload at read time is **forbidden**. A fan-out transport (e.g. pub/sub) may
-  have multiple consumers reading the same offloaded message, and at-least-once redelivery would
-  find the blob already gone if the first reader deleted it. Retention is store-side expiry (e.g. a
-  lifecycle rule) agreed between the communicating services — not specified further here; that is
-  deployment-specific.
-
-Porting implication: Tier C means each language port adopts this add-on on its own schedule; a
-service that offloads is only interoperable with consumers that have wired the add-on and share
-access to the same store — an explicit deployment agreement, exactly like any other Tier C
-middleware.
 
 ## 3. Status vocabulary
 
