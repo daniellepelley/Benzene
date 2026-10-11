@@ -239,7 +239,15 @@ served (Q6). The hash moves into each runtime package. Consumers: benzene-ui —
 both document shapes during the transition**, since it never reads a register body this is all of
 its Phase 3 work — and the Spec UI.
 
-**Open from 3a (rule before 3b):** what `required` means for a property that has a default. §4.2
+**Follow-ups from 3b (none blocks Phase 4):** Go's collector serialises a never-observed edge's
+`lastObservedAt` as the zero time instead of omitting it (mesh §4.2); TypeScript's k8s example
+sends `payment:take` undeclared and reports `placement.region: "in-cluster"` (contract-document §1:
+never guess), and its `SpecUiMiddleware` captures scoped services; collector read-model field names
+differ across ports (Provisional — settle when the query shapes are pinned); Go's and Python's
+matrices don't state the reserved-topic drift exemption; .NET's matrix contradicts itself on rate
+limiting (`capabilities.md` note).
+
+**Open from 3a (rule before 3b; still open):** what `required` means for a property that has a default. §4.2
 says "always emitted" (the output view); Python marks a defaulted field not required, and
 TypeScript derives Zod with `io: 'input'` — the input view, which is what a client of a request
 type wants (it may omit a defaulted field). No fixture is affected (no canonical type has a
@@ -316,7 +324,7 @@ adapters, unconfirmed fixture runner), then Python (settlement unknown across ~1
 Phase 0  [x] 0.1 audit (Go, Py, TS)  [x] 0.2 spike + champion review, ruled  [x] 0.3 tags + pinned checks (4 ports + ui)  [x] 0.4 .NET fixture (bug fixed; D26 ruled, lands in Phase 1)  [x] 0.5 canary
 Phase 1  [x] 1a  [x] 1b  [x] 1c  [x] fixtures  [x] spec-0.2.0  [x] ui  [x] .NET  [x] Go  [x] TS  [x] Py  [ ] the-count  [x] capabilities.md
 Phase 2  [x] spec PR  [x] website green (4 ports)  [x] .NET cookbook
-Phase 3  [x] 3a spec-0.3.0 (ui, .NET, Go, TS, Py green; capabilities.md)  [ ] 3b spec-0.4.0  [ ] .NET  [ ] Go  [ ] TS  [ ] Py  [ ] live interop both ways
+Phase 3  [x] 3a spec-0.3.0 (ui, .NET, Go, TS, Py green; capabilities.md)  [x] 3b spec-0.4.0  [x] .NET  [x] Go  [x] TS  [x] Py  [x] live interop both ways (Go collector + .NET services, .NET collector + Go services; also Go<->Python, TS->Go)
 Phase 4  [ ] spec PR  [ ] .NET  [ ] Go  [ ] TS  [ ] Py
 Phase 5  [ ] VERSION/tag  [ ] capabilities.md full refresh  [ ] archives + README
 ```
