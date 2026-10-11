@@ -247,7 +247,7 @@ differ across ports (Provisional — settle when the query shapes are pinned); G
 matrices don't state the reserved-topic drift exemption; .NET's matrix contradicts itself on rate
 limiting (`capabilities.md` note).
 
-**Open from 3a (rule before 3b; still open):** what `required` means for a property that has a default. §4.2
+**Open from 3a — ruled 2026-10-11, "always emitted" (Phase 5):** what `required` means for a property that has a default. §4.2
 says "always emitted" (the output view); Python marks a defaulted field not required, and
 TypeScript derives Zod with `io: 'input'` — the input view, which is what a client of a request
 type wants (it may omit a defaulted field). No fixture is affected (no canonical type has a
@@ -293,6 +293,13 @@ are retired, not reused; R5 absorbs "answer `benzene:spec`" wherever the transpo
   `spec-review-2026-10.md`, `self-description-design.md`. `work/README.md` updated.
 - `remaining-issues-plan.md` P1.1–P1.3 removed.
 
+**Ruled 2026-10-11 (maintainer):** fix the known Core gaps first, then tag 1.0 with Core and the
+profile frozen. Before the tag: .NET's and TypeScript's HTTP clients rebuild `errors` from a received
+problem document (core-concepts §12's MUST), and `required` keeps its "always emitted" meaning,
+stated for defaulted properties (contract-document §4.2), with Python and TypeScript following. Left
+as recorded follow-ups, not blockers: The Count canary, .NET's M2 parent span, Go's `lastSeen` zero
+time, Python's R3 self-check.
+
 **Minimum before 1.0:** Phases 0–4. If Phase 3 slips, freeze Core only, and mark the profile and
 every module Provisional for the 1.0 tag.
 
@@ -330,6 +337,6 @@ Phase 0  [x] 0.1 audit (Go, Py, TS)  [x] 0.2 spike + champion review, ruled  [x]
 Phase 1  [x] 1a  [x] 1b  [x] 1c  [x] fixtures  [x] spec-0.2.0  [x] ui  [x] .NET  [x] Go  [x] TS  [x] Py  [ ] the-count  [x] capabilities.md
 Phase 2  [x] spec PR  [x] website green (4 ports)  [x] .NET cookbook
 Phase 3  [x] 3a spec-0.3.0 (ui, .NET, Go, TS, Py green; capabilities.md)  [x] 3b spec-0.4.0  [x] .NET  [x] Go  [x] TS  [x] Py  [x] live interop both ways (Go collector + .NET services, .NET collector + Go services; also Go<->Python, TS->Go)
-Phase 4  [ ] spec PR  [ ] .NET  [ ] Go  [ ] TS  [ ] Py
+Phase 4  [x] spec PR (spec-0.5.0)  [x] .NET  [x] Go  [x] TS  [x] Py
 Phase 5  [ ] VERSION/tag  [ ] capabilities.md full refresh  [ ] archives + README
 ```
