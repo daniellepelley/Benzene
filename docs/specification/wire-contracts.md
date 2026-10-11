@@ -71,8 +71,8 @@ transport-neutral profile:
   "detail": "Name must not be empty, Age must be greater than 0",
   "benzeneStatus": "validation-error",
   "errors": [
-    { "message": "Name must not be empty",     "field": "Name", "code": "NotEmptyValidator" },
-    { "message": "Age must be greater than 0", "field": "Age",  "code": "GreaterThanValidator" }
+    { "message": "Name must not be empty",     "field": "/name", "code": "NotEmptyValidator" },
+    { "message": "Age must be greater than 0", "field": "/age",  "code": "GreaterThanValidator" }
   ]
 }
 ```
@@ -85,8 +85,17 @@ transport-neutral profile:
 | `detail` | string | Human-readable occurrence detail — the result's error messages joined with `", "`, unchanged from every prior version of this document. The compatibility member: every existing reader can keep using only this one. |
 | `instance` | string (URI ref) | Optional, application-owned. The framework never fabricates it. |
 | `benzeneStatus` | string | **Required.** The §3 status string, mirroring the envelope's `statusCode` (§1.2). The transport-neutral discriminator — present on every transport regardless of whether `status` is. It carries the `benzene` marker because this member namespace is shared with RFC 9457 itself and with applications (the naming rule of §2's "Naming" paragraph); `errors`, below, is Benzene's own extension and stays unmarked. |
-| `errors` | array | Optional. When present, **authoritative and ordered** — supersedes the "recover `errors` from `detail`" rule this document carried previously (withdrawn, see below). Each item: `message` (string, required), `field` (string, optional — the producer's property path; JSON Pointer for schema-based validators, the host language's property path for others — document which per integration), `code` (string, optional — a machine-readable, producer-owned rule identifier, emitted verbatim, never normalized or reworded by the framework). |
+| `errors` | array | Optional. When present, **authoritative and ordered** — supersedes the "recover `errors` from `detail`" rule this document carried previously (withdrawn, see below). Each item: `message` (string, required), `field` (string, optional — see **The `field` pointer** below), `code` (string, optional — a machine-readable, producer-owned rule identifier, emitted verbatim, never normalized or reworded by the framework). |
 | *(extensions)* | any | Applications MAY add further members (RFC 9457 §3.2). Readers MUST ignore unknown members. **Neither `code` nor `type` participates in the mesh issue fingerprint** — see §3.1. |
+
+**The `field` pointer.** `errors[].field` is a [JSON Pointer](https://www.rfc-editor.org/rfc/rfc6901)
+to the offending value in the handler's request, addressed in the request type's **JSON form** —
+property names as the service's serializer writes them, its naming policy and any rename
+attributes applied — so a caller can resolve it against the body it sent: `/name`,
+`/items/0/sku`. After a payload cast (versioning.md) it addresses the handler's version of the
+type. A rule that cannot be resolved to a single location (a cross-field rule, a rule on the whole
+request) omits `field` rather than inventing one. Every validation integration emits pointers; one
+whose library reports host-language property paths converts them.
 
 **Unknown-member tolerance.** A reader MUST ignore any problem-document member it does not
 recognize, framework-defined or application-added alike — this is what lets applications extend
@@ -342,6 +351,9 @@ joined `errors` (or the raw status if `errors` is empty). There is no JSON probl
 gRPC; the problem's information (§1.3) maps onto gRPC's own error model instead — the
 `benzene-status` trailer already carries `benzeneStatus`, and structured `errors` map onto
 `google.rpc.BadRequest` in the `grpc-status-details-bin` trailer, one `FieldViolation` per error.
+`FieldViolation.field` is a dotted path, so the binding converts the §1.3 pointer: its segments,
+unescaped per RFC 6901, joined with `.`, with an array index written `[n]` (`/items/0/sku` →
+`items[0].sku`). An error with no `field` has an empty `FieldViolation.field`.
 
 Reverse (client): a `benzene-status` trailer, when present, wins verbatim. Otherwise: `OK`→`ok`,
 `InvalidArgument`→`bad-request`, `Unauthenticated`→`unauthorized`, `PermissionDenied`→`forbidden`,
