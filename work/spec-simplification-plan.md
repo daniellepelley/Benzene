@@ -165,6 +165,18 @@ to skip-and-continue while its Lambda-hosted streams redeliver, and both are con
 `0.2.0` once the .NET reference passes the new fixtures, so a fixture mistake costs a commit, not a
 `spec-0.2.1`.
 
+**Released 2026-10-11 as `spec-0.2.0`** (`2d4fe4d8`), cut once the merged .NET reference passed every
+new fixture. Every port and benzene-ui is pinned to it with CI green — benzene-ui `1e3e41c`, .NET
+`9e48b356`, Go `ef287d5`, TypeScript `c977776`, Python `07b2bfe` — and the rebuilt mesh UI is
+vendored everywhere it is embedded (which also turned TypeScript's and Python's mesh-ui drift checks,
+already red, green). The port work raised four more spec points, all inside the tag: an envelope
+without `isSuccessful` is unsuccessful; a scheduled tick with no result MAY be acknowledged;
+`benzene:ping`'s body is unspecified; and `settlementDefaults` names `blob-storage` and `cloudevents`.
+`docs/capabilities.md` is row-refreshed, notes 3 and 8 closed, and the remaining divergences recorded
+as notes 11–16 (none blocks the exit). **Open:** The Count's canary run waits for a published .NET
+release; .NET's `Build Mesh Host` workflow fails at its kubectl dry-run step, red on main before this
+phase and unrelated to it.
+
 **Exit:** every port and benzene-ui green on `spec-0.2.0`; `docs/capabilities.md` divergence notes 3
 (settlement) and 8 (version selection) and the "settlement is not in the spec" flag close.
 
@@ -281,7 +293,7 @@ adapters, unconfirmed fixture runner), then Python (settlement unknown across ~1
 
 ```
 Phase 0  [x] 0.1 audit (Go, Py, TS)  [x] 0.2 spike + champion review, ruled  [x] 0.3 tags + pinned checks (4 ports + ui)  [x] 0.4 .NET fixture (bug fixed; D26 ruled, lands in Phase 1)  [x] 0.5 canary
-Phase 1  [x] 1a  [x] 1b  [x] 1c  [x] fixtures  [ ] spec-0.2.0  [ ] ui  [ ] .NET  [ ] Go  [ ] TS  [ ] Py  [ ] the-count  [ ] capabilities.md
+Phase 1  [x] 1a  [x] 1b  [x] 1c  [x] fixtures  [x] spec-0.2.0  [x] ui  [x] .NET  [x] Go  [x] TS  [x] Py  [ ] the-count  [x] capabilities.md
 Phase 2  [ ] spec PR  [ ] website green (4 ports)  [ ] .NET cookbook
 Phase 3  [ ] 3a spec-0.3.0  [ ] 3b spec-0.4.0  [ ] ui  [ ] .NET  [ ] Go  [ ] TS  [ ] Py  [ ] live interop both ways
 Phase 4  [ ] spec PR  [ ] .NET  [ ] Go  [ ] TS  [ ] Py
