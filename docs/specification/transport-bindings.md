@@ -70,9 +70,17 @@ carries the problem document like any other response body.
 result's status, with the response envelope as the body: the envelope carries the outcome
 (`statusCode`, `isSuccessful`), and a client reads it, never the HTTP status line. A `deleted`
 result is 200 with its envelope, not 204. A non-2xx status means the carrier failed and no envelope
-was processed: a malformed envelope (400), or authentication on the carrier (401, 403). A problem
+was processed: a malformed envelope (400), or authentication the HTTP host enforces before it reads
+the envelope (401, 403). An `unauthorized` or `forbidden` result from the pipeline's own
+authentication middleware is a processed envelope, and so 200. A problem
 document inside the envelope omits `status` (wire-contracts §1.3). The same holds for the envelope
 over any other request/response carrier.
+
+An envelope delivered by an **asynchronous** function invocation (a Lambda `Event` invocation, for
+example) has no caller to answer, so it is a one-way binding and settles by obligation 8: a failure
+fails the invocation, and the platform retries it. Platforms do not reveal to the function which kind
+of invocation it received, so the asynchronous envelope is a separately configured entry point that
+the application selects, not a runtime detection.
 
 The envelope endpoint runs the same pipeline as the service's other transports, and so the same
 authentication and authorization middleware. Because it reaches every handler the service
@@ -86,11 +94,11 @@ as if no handler matched.
 | Route | Topic |
 |---|---|
 | `GET /benzene/health` | `benzene:healthcheck` |
-| `GET /benzene/health/live`, `GET /benzene/health/ready` | `benzene:liveness`, `benzene:readiness`, where served |
 | `GET /benzene/spec` | `benzene:spec`; the `type` and `format` query parameters are its request |
 
-The health routes answer **200** when the payload's `isHealthy` is true and **503** when it is
-false, with the health response (wire-contracts §5) as the body either way. They are the one place
+Routes for `benzene:liveness` and `benzene:readiness` are the port's choice. Any route mapped to a
+health topic answers **200** when the payload's `isHealthy` is true and **503** when it is false,
+with the health response (wire-contracts §5) as the body either way. Health routes are the one place
 an HTTP binding maps a payload field rather than the result's status, so that load balancers and
 orchestrators that read only the status line see the verdict. A health invocation that itself
 failed maps through wire-contracts §4.1 as usual.

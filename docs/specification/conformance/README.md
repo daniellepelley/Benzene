@@ -56,7 +56,7 @@ Which fixtures a given conformance claim requires
 
 | Claim | Required fixtures |
 |---|---|
-| Benzene Core | `status-vocabulary.json`, the mapping tables for each protocol the port binds, `envelope-cases.json`, `transport-metadata-cases.json` for each metadata-carrying transport the port binds, and `problem-details-cases.json`'s `registry` and `envelopeCases` groups |
+| Benzene Core | `status-vocabulary.json`, the mapping tables for each protocol the port binds, `envelope-cases.json`, `transport-metadata-cases.json` for each metadata-carrying transport the port binds and its `settlementDefaults` for every one-way binding the port ships, and `problem-details-cases.json`'s `registry` and `envelopeCases` groups |
 | HTTP binding conformance | additionally `problem-details-cases.json`'s `httpRules` group — required only for each HTTP binding a port ships (the same conditional shape as `transport-metadata-cases.json` above); a port with no HTTP binding is unaffected. Within it, `envelopeEndpoint` applies to a port that serves the envelope over HTTP, and `healthEndpoint` to a port that also ships health checks |
 | Cloud Service Profile support | Core, plus `mesh-descriptor-cases.json` and `mesh-trace-cases.json` |
 | Collector implementations | additionally `mesh-collector-cases.json` (collector-only; not part of the profile) |
@@ -162,10 +162,12 @@ its own row regardless) and MUST be omitted there.
   run against the canonical `conformance:problem` handler (see Canonical handlers). They pin
   structured `errors` round-tripping through the problem document, application-defined `type`
   passthrough via `appType`, and (via `bodyExclude`) that framework-produced problem documents
-  carry no `instance` and no numeric `status` off an HTTP transport.
+  carry no `instance`, and no numeric `status` anywhere but a route-mapped HTTP response — not
+  inside an envelope, whatever carries it.
 - **`httpRules`** — required only for ports that ship an HTTP binding (see the fixture-claims
   table above; the same conditional shape as `transport-metadata-cases.json`). `failureCases`
-  lists, per Benzene status, the `httpStatus` an HTTP-bound failure response for that status MUST
+  lists, per Benzene status, the `httpStatus` that the response of a **route-mapped** topic (not
+  the envelope endpoint, which answers 200) MUST
   carry both as its response line and as the problem document's `status` member — the two MUST
   come from the same mapping (wire-contracts §4.1) so they can never disagree. The response's
   `content-type` MUST be `application/problem+json` for a JSON-negotiated failure response.
@@ -208,8 +210,8 @@ case to its own native message before decoding it.
 - `expected.headersExclude` lists keys that must **not** appear as headers — a metadata key the
   binding consumed as routing information must not also leak into the header dictionary.
 - `expected.version`, where present, is the resolved payload version.
-- A case with `"requires": "versioning"` applies only to ports implementing payload versioning
-  (`benzene-version` is tier C).
+- `benzene-version` is the one version header (wire-contracts §2, tier A): every port resolves it,
+  so the version cases here run unconditionally.
 
 `defaultMetadataKeys` names the keys themselves, and `topicSources` records where each binding
 gets its topic. Both are directly assertable: a port can compare its own constant against
@@ -253,7 +255,8 @@ Subset matching is as for envelope cases, with one addition needed by these fixt
 array (`[]`) matches an actual array that is empty *or absent* (writers may omit empty
 collections).
 
-- `mesh-descriptor-cases.json` — the runner registers the two canonical envelope handlers and the
+- `mesh-descriptor-cases.json` — the runner registers two canonical envelope handlers,
+  `conformance:greet` and `conformance:status` (and no others), and the
   one canonical outbound registration (both above) natively, builds the service descriptor with
   the fixture's `serviceInfo`, and subset-compares `expectedDescriptor` (`topics` from the
   handlers, `produces` from the outbound registration). `runtime` and the hash value are per-port
@@ -286,9 +289,11 @@ collections).
   descriptor omitting `serviceVersion` keys exactly as it did before the rule existed. That last
   case is why this fixture is separate: it is the compatibility guarantee that lets an existing
   collector keep passing `mesh-collector-cases.json` untouched. The entries are observed through
-  the **service** query, whose `versions` array lists the live versions oldest registration first;
-  the fleet query keeps one row per service (graph membership is by service, mesh §4), headlined by
-  the most recently registered version.
+  the **service** query, whose `versions` array lists the live versions; in this fixture it is
+  compared as a **set keyed by `serviceVersion`** (same length, and each expected element
+  subset-matches the actual element with its `serviceVersion`), because no order is pinned. The
+  fleet query keeps one row per service (graph membership is by service, mesh §4); which version
+  the row headlines is not pinned.
 
 ## Contract Document and contract hash case formats
 

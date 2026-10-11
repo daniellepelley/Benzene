@@ -262,7 +262,7 @@ The scheme is **declared, never inferred from the value.** `"10"` and `"9"` orde
 and the opposite way as strings, so a port that guesses will disagree with a port that guesses
 differently — about which release is newer, in a tool used to decide deployments. There is no default:
 a descriptor declaring a `serviceVersion` without a `versionScheme` is declaring an identity, not an
-order, and §2.4 case 3's rules apply to it unchanged.
+order: §2.4 case 1 still keys it, and it is simply not orderable.
 
 A `serviceVersion` that does not parse under its declared `versionScheme` is **invalid** and MUST be
 rejected at the point of declaration rather than carried and compared later.

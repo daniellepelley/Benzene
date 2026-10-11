@@ -39,10 +39,11 @@ A topic identifies a message type and routes it to a handler.
   binding then supplies it exactly as if the header had been sent.
 - **Version selection** for a message carrying version *v*, in order:
   1. the handler registered for exactly (topic id, *v*);
-  2. otherwise, a handler of that topic the service can **cast** *v* to — a payload cast from *v* to
-     that handler's version is registered (versioning.md). Where *v* can be cast to more than one
-     handler, the topic's default handler (below) is chosen if it is among them; a configuration
-     where it is not is a start-up error, because casts are known at registration;
+  2. otherwise, a handler of that topic the service can **cast** *v* to: a registered payload cast
+     (versioning.md) takes a payload of version *v* to that handler's request type. An unversioned
+     handler is such a target like any other. Where *v* can be cast to more than one handler, the
+     topic's default handler (below) is chosen if it is among them; otherwise the choice is the
+     port's, and MUST be deterministic and documented;
   3. otherwise, `not-found`, with an error naming the topic and *v*.
 
   There is no "nearest" or "highest available" fallback: serving another version's behaviour to a
@@ -115,7 +116,7 @@ Every handler invocation produces a result:
 |---|---|---|
 | `status` | string | One of the status vocabulary values (see [wire-contracts.md §3](wire-contracts.md#3-status-vocabulary)), or an application-defined extension |
 | `isSuccessful` | boolean | Whether the invocation succeeded. Set by whoever sets the status; for a status in the vocabulary it MUST equal that status's class, and for an application-defined status it is the only signal of success — see [wire-contracts.md §1.2](wire-contracts.md#12-response) |
-| `payload` | `TResponse?` | Present on success (and optionally on failure) |
+| `payload` | `TResponse?` | Present on success. On failure the wire carries the problem document in its place ([wire-contracts.md §1.3](wire-contracts.md#13-problem-details-payload)) |
 | `errors` | structured, ordered list | Zero or more errors, populated on failure; each carries a human-readable message plus optional producer-owned `field`/`code`. A message-only projection remains available for readers that just want text. |
 
 - The status vocabulary is **strings, not enums**, so applications can extend it; an unknown status
@@ -197,11 +198,11 @@ path; scanning is optional. Route-level attributes for specific transports (e.g.
 
 These features are defined purely in terms of sections 2–8 and the header conventions in
 [wire-contracts.md §2](wire-contracts.md#2-header-conventions). Each is optional; an implementation
-that offers one MUST make it behave identically on every transport and every vendor:
+that offers one offers it in exactly the shape below:
 
 - **W3C trace context** — continue a trace from inbound `traceparent`/`tracestate` headers and
-  forward it on outbound calls. An implementation that propagates trace context MUST do so verbatim
-  per the W3C specification (wire-contracts §2); whether a service must propagate it at all is the
+  forward it on outbound calls. An implementation that propagates trace context MUST do so per the
+  W3C Trace Context specification (wire-contracts §2); whether a service must propagate it at all is the
   [Cloud Service Profile](cloud-service-profile.md)'s R8, not a Core rule. (A per-invocation
   correlation value settable by application middleware and forwardable on outbound clients MAY
   additionally be offered, but inbound pickup of legacy correlation headers is not a framework

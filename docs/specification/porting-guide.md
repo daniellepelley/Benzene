@@ -62,9 +62,10 @@ nothing to design.
 
 A language-neutral test suite that every implementation runs:
 
-- **Fixture form** (exists — see [conformance/](conformance/README.md)): JSON fixtures for the
-  status vocabulary, the HTTP/gRPC mapping tables in both directions, and end-to-end envelope
-  cases run against a canonical handler set. The .NET reference runner is
+- **Fixture form** (exists — see [conformance/](conformance/README.md), which lists the fixtures
+  each conformance claim requires): JSON fixtures for the status vocabulary, the HTTP/gRPC mapping
+  tables in both directions, end-to-end envelope cases run against a canonical handler set, native
+  metadata and settlement, problem details, and the mesh. The .NET reference runner is
   `test/Benzene.Conformance.Test/`; a port writes its own runner over the same files.
 - **Interop form** (future): a docker-composed pair — reference .NET service + candidate
   implementation — exercising envelope round-trips, correlation/trace propagation, and the

@@ -169,9 +169,9 @@ questions, and both stay in force:
 
 ## 5. Conformance testing
 
-- **Benzene Core** (implementation-level): pass `status-vocabulary.json`, the mapping-table
-  fixtures for each protocol the port binds, and `envelope-cases.json` — see
-  [conformance/](conformance/README.md).
+- **Benzene Core** (implementation-level): pass the Core fixtures listed in
+  [conformance/README.md](conformance/README.md) ("Which fixtures a given conformance claim
+  requires").
 - **Benzene Cloud Service** (profile support): additionally pass `mesh-descriptor-cases.json`
   and `mesh-trace-cases.json`. (`mesh-collector-cases.json` remains collector-only and is not
   part of the profile.)

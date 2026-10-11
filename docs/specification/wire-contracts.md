@@ -91,9 +91,8 @@ transport-neutral profile:
 **The `field` pointer.** `errors[].field` is a [JSON Pointer](https://www.rfc-editor.org/rfc/rfc6901)
 to the offending value in the handler's request, addressed in the request type's **JSON form** —
 property names as the service's serializer writes them, its naming policy and any rename
-attributes applied — so a caller can resolve it against the body it sent: `/name`,
-`/items/0/sku`. After a payload cast (versioning.md) it addresses the handler's version of the
-type. A rule that cannot be resolved to a single location (a cross-field rule, a rule on the whole
+attributes applied: `/name`, `/items/0/sku`. Without a payload cast a caller can resolve it against
+the body it sent; after one (versioning.md) it addresses the handler's version of the type. A rule that cannot be resolved to a single location (a cross-field rule, a rule on the whole
 request) omits `field` rather than inventing one. Every validation integration emits pointers; one
 whose library reports host-language property paths converts them.
 
@@ -102,9 +101,8 @@ recognize, framework-defined or application-added alike — this is what lets ap
 the document (RFC 9457 §3.2) without breaking older readers, and what lets a future framework
 member arrive without a version bump.
 
-**Signalling.** The envelope (§1.2) is the failure signal, not the body's content type: a
-non-`ok`-class `statusCode` / `isSuccessful: false` is what tells a receiver this body is a
-problem document. The envelope's inner `headers.content-type` SHOULD be `application/problem+json`
+**Signalling.** The envelope (§1.2) is the failure signal, not the body's content type:
+`isSuccessful: false` is what tells a receiver this body is a problem document. The envelope's inner `headers.content-type` SHOULD be `application/problem+json`
 when the response has one; readers MUST NOT require it — the outer transport content-type (e.g.
 the HTTP body carrying the envelope itself) is a separate concern and stays whatever it already is
 (§4.1 covers the case where the transport response itself *is* the problem document, i.e. HTTP).
@@ -142,10 +140,10 @@ porting author cannot tell a mandatory wire contract from a convention of one op
 |---|---|---|---|
 | `topic` | **A** | inbound (queue/stream transports) | On transports where the envelope isn't used but native metadata exists (SQS/SNS message attributes, Service Bus/Event Hub properties, Kafka/RabbitMQ headers, Pub/Sub attributes), the topic travels as an attribute of this name — the same spelling as the envelope field, so one concept has one name wherever it appears. The routing key: without it such a transport cannot dispatch. **Configurable** — see *Reserved names are defaults* below. |
 | `content-type` | **A** | outbound | Response content type where the transport has no native slot for it. A borrowed name (HTTP/MIME), used verbatim. |
-| `benzene-version` | **C** | both | The message's version: the one signal that selects the handler (core-concepts §2) and the payload's schema version (payload casting, [versioning.md](versioning.md)). One name, read and written as `benzene-version` and configurable like every name in this table — there is no fallback list, so an unrelated `version` or `x-version` header a caller sends is an ordinary header, never a version. Absent means the topic's default handler (core-concepts §2). |
-| `traceparent`, `tracestate` | **C** | both | W3C Trace Context. Benzene does not define these, and Core does not require them (the Cloud Service Profile's R8 does). **If** an implementation propagates trace context, it MUST do so verbatim per the W3C specification — that verbatim-ness is what makes traces from different languages join up, which the mesh depends on. Benzene never fabricates a trace context that wasn't there. |
+| `benzene-version` | **A** | both | The message's version: the one signal that selects the handler (core-concepts §2) and the payload's schema version (payload casting, [versioning.md](versioning.md)). One name, read and written as `benzene-version` and configurable like every name in this table — there is no fallback list, so an unrelated `version` or `x-version` header a caller sends is an ordinary header, never a version. Absent means the topic's default handler (core-concepts §2). |
+| `traceparent`, `tracestate` | **B** | both | W3C Trace Context. Benzene does not define these, and Core does not require them (the Cloud Service Profile's R8 does). **If** an implementation propagates trace context, it MUST follow the W3C Trace Context format and semantics: the trace-id and `tracestate` are carried forward unchanged, and the parent-id is set to the participant's own span. That is what makes traces from different languages join up, which the mesh depends on. |
 | `x-correlation-id` | **C** | outbound | A business correlation value, written by the outbound correlation client decorator when the application populates one. Implementations are NOT required to read it inbound; honouring a partner's correlation header is application middleware, not a framework contract. One convention among several — Benzene does not own this name. |
-| `benzene-headers` | **D** | both (EventBridge) | On transports with no native per-message metadata (EventBridge), wire headers travel as a reserved string→string object named `benzene-headers` at the top level of the payload (`detail`), embedded by the sender only when headers exist and the payload is a JSON object, and lifted back out by the receiver. Although its carrier is a payload field, it **names a header** rather than being one of the payload's own fields, so it is spelled like every other header — lowercase kebab-case with the `benzene-` marker. |
+| `benzene-headers` | **D** | both (EventBridge) | On transports with no native per-message metadata (EventBridge), wire headers travel as a reserved string→string object named `benzene-headers` at the top level of the payload (`detail`), embedded by the sender only when headers exist and the payload is a JSON object, and read back into the header dictionary by the receiver. The body the handler receives is `detail` unchanged, the embedded member included, so a handler's request type must tolerate it. Although its carrier is a payload field, it **names a header** rather than being one of the payload's own fields, so it is spelled like every other header — lowercase kebab-case with the `benzene-` marker. |
 | `benzene-mcp-tool` | **D** | inbound (MCP) | The name of the MCP tool the call came through, set by the MCP binding ([transport-bindings.md](transport-bindings.md) §2). |
 | `benzene-mcp-session` | **D** | inbound (MCP) | The MCP session id, where the transport has one. |
 | `benzene-claim-check` | **C** | both | Carries an opaque reference to a payload that the optional claim-check middleware offloaded to an external store because it exceeded a configured size threshold — see [§2.1](#21-claim-check-add-on). |
@@ -315,8 +313,8 @@ Reverse (HTTP → Benzene, used by HTTP clients): 200→`ok`, 201→`created`, 2
 501→`not-implemented`, 502→`service-unavailable`, 503→`service-unavailable`, 504→`timeout`,
 anything else→`unexpected-error`.
 
-**Problem details on failure.** When the negotiated response format is JSON, an HTTP failure
-response's `content-type` MUST be `application/problem+json` (charset as for any other JSON
+**Problem details on failure.** When the negotiated response format is JSON, the HTTP response for
+an unsuccessful result has a `content-type` that MUST be `application/problem+json` (charset as for any other JSON
 response), and the body's `status` member (§1.3) MUST be present and equal the HTTP response code
 in this table. When another format was negotiated, the problem document is serialized in that
 format (e.g. `application/problem+xml` for XML, per RFC 9457 §11.2; other negotiated formats keep
@@ -352,8 +350,8 @@ gRPC; the problem's information (§1.3) maps onto gRPC's own error model instead
 `benzene-status` trailer already carries `benzeneStatus`, and structured `errors` map onto
 `google.rpc.BadRequest` in the `grpc-status-details-bin` trailer, one `FieldViolation` per error.
 `FieldViolation.field` is a dotted path, so the binding converts the §1.3 pointer: its segments,
-unescaped per RFC 6901, joined with `.`, with an array index written `[n]` (`/items/0/sku` →
-`items[0].sku`). An error with no `field` has an empty `FieldViolation.field`.
+unescaped per RFC 6901, joined with `.`, and a segment made only of decimal digits written `[n]`
+(`/items/0/sku` → `items[0].sku`). An error with no `field` has an empty `FieldViolation.field`.
 
 Reverse (client): a `benzene-status` trailer, when present, wins verbatim. Otherwise: `OK`→`ok`,
 `InvalidArgument`→`bad-request`, `Unauthenticated`→`unauthorized`, `PermissionDenied`→`forbidden`,
@@ -408,7 +406,7 @@ no check failed (a warning maps to a degraded-but-serving state).
 
 ## 7. Reserved topics
 
-The `benzene:` prefix is reserved to the framework: an application MUST NOT register a topic under
+The `benzene:` prefix is reserved to the framework, and a port MAY reject an application topic under
 it. The topics below are the **interoperable** reserved topics — the ones a tool may rely on across
 ports. A port MAY serve other topics under the prefix; a tool MUST NOT depend on one this section
 does not list.
@@ -427,7 +425,8 @@ reserved topic is optional unless a profile requires it (the
 | `benzene:ping` | none | `ok`, no payload |
 | `benzene:mesh` | none | `ok`, the ServiceDescriptor ([mesh.md](mesh.md) §1–§2) |
 | `benzene:mesh:register`, `benzene:mesh:heartbeat`, `benzene:mesh:traces`, `benzene:mesh:issues` | per [mesh.md](mesh.md) §4 | per [mesh.md](mesh.md) §4 — served by a collector, not by every service |
-| `benzene:mesh:dispatch` *(Provisional)* | `{ "service": string, "topic": string, "headers"?: object, "body"?: string }` | the target service's result for that envelope — served by a collector that offers live dispatch; the response shape is not pinned while the topic is Provisional |
+| `benzene:mesh:query:*` *(Provisional)* | per collector | the collector's read models ([mesh.md](mesh.md) §4) — served by a collector; the shapes are not pinned |
+| `benzene:mesh:dispatch` *(Provisional)* | informative: `{ "service": string, "topic": string, "headers"?: object, "body"?: string }` | the target service's result for that envelope — served by a collector that offers live dispatch; neither shape is pinned while the topic is Provisional |
 
 - **`benzene:spec`.** An absent body, an empty body, `null` and `{}` all mean `type: "benzene"`,
   `format: "json"` — the contract document. Values are lowercase ASCII, compared

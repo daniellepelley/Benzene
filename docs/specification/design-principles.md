@@ -228,7 +228,7 @@ configurable per service.
 |---|---|---|
 | `/benzene/invoke` | The envelope endpoint (`{topic, headers, body}` in, `{statusCode, isSuccessful, headers, body}` out — [wire-contracts.md](wire-contracts.md) §1) | The service-to-service and collector-query surface; HTTP 200 for every processed envelope ([transport-bindings.md](transport-bindings.md) §1) |
 | `/benzene/spec` | The derived contract document | The HTTP binding's default route for the reserved `benzene:spec` topic. Requires rung 3 (section 3) |
-| `/benzene/health` | Health check | The HTTP binding's default route for `benzene:healthcheck`, answering 503 when unhealthy; `/benzene/health/live` and `/benzene/health/ready` for the optional liveness and readiness topics ([transport-bindings.md](transport-bindings.md) §1) |
+| `/benzene/health` | Health check | The HTTP binding's default route for `benzene:healthcheck`, answering 503 when unhealthy ([transport-bindings.md](transport-bindings.md) §1). Liveness/readiness variants MAY nest beneath it (`/benzene/health/live`, `/benzene/health/ready`) |
 | `/benzene/spec-ui` | Human-readable spec browser | Optional UI. Its default spec URL is `/benzene/spec?type=benzene` |
 | `/benzene/mesh-ui` | Mesh artifact viewer | Optional UI |
 | `/benzene/fleet-ui` | Live fleet view (collector-hosted) | Optional UI; collectors are ordinary Benzene services, so the standard applies to them too |

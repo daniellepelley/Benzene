@@ -70,7 +70,7 @@ generalizing beyond the JSON-only source project.
 
 | Transport shape | Carrier | Notes |
 |---|---|---|
-| HTTP | A route parameter, conventionally named `version` (e.g. `/v{version}/orders/{id}`, mirroring the existing `/orders/{id}` route-parameter mechanism — transport-bindings.md §2 HTTP, `HttpTopicRoute.Parameters`) | Sugar for the header: the binding supplies the segment exactly as if `benzene-version` had been sent. Where the matched route declares no `version` parameter, the header is read, so a service can support both a path-versioned and a header-versioned surface for the same topic without duplicating routes. The parameter's name is the port's business. |
+| HTTP | A route parameter, conventionally named `version` (e.g. `/v{version}/orders/{id}`, mirroring the existing `/orders/{id}` route-parameter mechanism — transport-bindings.md §2 HTTP, `HttpTopicRoute.Parameters`) | Sugar for the header: the binding supplies the segment exactly as if `benzene-version` had been sent. Where the matched route has no version segment, the header is read, so a service can support both a path-versioned and a header-versioned surface for the same topic without duplicating routes. The parameter's name is the port's business. |
 | Every other transport (queues, gRPC, direct invocation, the `BenzeneMessage` envelope) | The `benzene-version` header (wire-contracts.md §2) — **one name**, configurable in one place like every reserved name | Same case-insensitive-on-read, lower-case-on-write rule as every other header in that table. |
 
 Why one name rather than a list of recognised names: many producers already send a plain
@@ -80,11 +80,7 @@ version's handler — the failure versioning exists to prevent. So an unrelated 
 ordinary header, never a version. An application whose producers already use a different name
 configures that one name instead; a configured name replaces the default, it does not join a list.
 
-This adds one row to wire-contracts.md §2's header table:
-
-| Header | Direction | Meaning |
-|---|---|---|
-| `benzene-version` | inbound (request), outbound (response) | The message's version: it selects the handler (core-concepts.md §2) and names the payload's schema version (§4). Absent means the topic's default handler — see §2.2. |
+The header is defined once, in wire-contracts.md §2.
 
 ### 2.2 Default version and absence
 
@@ -576,12 +572,12 @@ Specific to Mechanism C (§5):
   presentation rule — most likely: mark a substrate-derived identity as such rather than letting it
   read like a name someone chose, and render a service with no version identity exactly as services
   are rendered today, with no empty "version" affordance implying something is missing.
-- **What counts as the "default version" for absent-version routing.** §2.2 says the topic's
-  default is by convention the oldest still accepted, and §5.4 requires routing rules to encode
-  it. Nothing currently *declares* which version that is — it is a convention held in an operator's
-  head and duplicated into a routing rule. Candidate: an explicit marker on the descriptor, so the
-  mesh can show which version absent-version traffic actually lands on, and flag the case where two
-  live versions both believe they are the default.
+- **What counts as the "default version" for absent-version routing.** Within one service the
+  default is now declared (core-concepts §2, §2.2 above), and §5.4 requires routing rules to encode
+  it across deployments. Nothing yet carries that declaration to the mesh, so across releases it is
+  still held in an operator's head and duplicated into a routing rule. Candidate: an explicit marker
+  on the descriptor, so the mesh can show which version absent-version traffic actually lands on, and
+  flag the case where two live versions both believe they are the default.
 - **Where the version identity is applied.** §5.5 keys the collector by `(service, serviceVersion)`,
   but every existing read model, artifact document and UI surface is keyed by service name alone
   (`services/{name}.json`, the topic graph's node identity, issue fingerprints — mesh.md §4.1 —

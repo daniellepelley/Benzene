@@ -97,7 +97,7 @@
   ],
 
   "httpRules": {
-    "description": "Required only for ports that ship an HTTP binding (README.md conditionality note). For each failure row, the port's HTTP-bound response for that Benzene status MUST have content-type application/problem+json (JSON negotiated) and the body's status member (wire-contracts.md section 1.3) MUST equal httpStatus. successCase pins that success responses are unaffected: no problem document, ordinary content type.",
+    "description": "Required only for ports that ship an HTTP binding (README.md conditionality note). For each failure row, the port's response on a route-mapped topic (not the envelope endpoint, which answers 200 — envelopeEndpoint below) for that Benzene status MUST have content-type application/problem+json (JSON negotiated) and the body's status member (wire-contracts.md section 1.3) MUST equal httpStatus. successCase pins that success responses are unaffected: no problem document, ordinary content type.",
     "failureCases": [
       { "benzeneStatus": "bad-request",        "httpStatus": 400 },
       { "benzeneStatus": "unauthorized",        "httpStatus": 401 },

@@ -136,7 +136,6 @@
     },
     {
       "name": "version-travels-alongside-the-topic",
-      "requires": "versioning",
       "metadata": {
         "topic": "conformance:greet",
         "benzene-version": "2"
@@ -148,11 +147,10 @@
           "topic"
         ]
       },
-      "note": "benzene-version is tier C — only ports that implement payload versioning run this case."
+      "note": "benzene-version is the one version header (wire-contracts.md §2): it travels as native metadata like the topic, and is consumed as the version rather than left as a header."
     },
     {
       "name": "a-bare-version-key-is-a-header-not-a-version",
-      "requires": "versioning",
       "metadata": {
         "topic": "conformance:greet",
         "version": "2"
@@ -207,6 +205,7 @@
       { "binding": "eventbridge", "shape": "one-shot" },
       { "binding": "s3", "shape": "one-shot" },
       { "binding": "event-grid", "shape": "one-shot" },
+      { "binding": "timer", "shape": "one-shot", "note": "a scheduled tick (e.g. the Azure Functions Timer trigger): no message and no topic to match, so unmatchedTopic does not arise; a failure fails the invocation so the platform's retry policy applies" },
       { "binding": "envelope-async", "shape": "one-shot", "note": "the envelope delivered by an asynchronous function invocation (e.g. Lambda Event invocation): there is no caller to answer, so a failure must fail the invocation for the platform to retry it" },
       { "binding": "kafka", "shape": "stream" },
       { "binding": "eventhub", "shape": "stream" },
