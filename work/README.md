@@ -69,9 +69,11 @@ plan/manifest/status.
 
 - `benzene-vision.md` — the original problem and the design philosophy, cross-language
 - `spec-review-2026-10.md` — the October 2026 review of the whole specification: what is concept,
-  what is narrative, what contradicts itself, and what to simplify before a 1.0 tag
-- `spec-simplification-plan.md` — the seven-phase plan that actions that review (decisions D1–D20,
-  per-phase spec/fixture/port edits, the spec-first sequencing rule)
+  what is narrative, what contradicts itself, and what to simplify before a 1.0 tag; revised after
+  an architecture and core-product-owner second round (its §8)
+- `spec-simplification-plan.md` — the plan that actions that review: decisions D1–D25, Phase 0
+  prerequisites, one wire window, the narrowed self-description, per-repo work including the UI and
+  The Count
 - `benzene-headers-design.md`, `benzene-headers-plan.md` — the header mechanism (plan deliberately
   deferred; its Phase A rename is now scheduled by `spec-simplification-plan.md` Phase 3)
 - `cloudevents-design.md` — CloudEvents as a wire format
