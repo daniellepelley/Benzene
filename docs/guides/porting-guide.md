@@ -34,7 +34,7 @@ language.
 Client generation (the `codegen` row above) has its own pinned contract: the `.spec.json` a
 service derives and serves ([contract-document.md](../specification/contract-document.md)), the topic-scoping and
 schema-closure rules a generator must implement identically, and the language-neutral
-`contractHash` algorithm — all conformance-pinned by `contract-document-cases.json` and
+`contractHash` and `registrationHash` algorithm — all conformance-pinned by `contract-document-cases.json` and
 `contract-hash-cases.json`. A port that ships a client generator implements that document; method
 naming and file layout stay idiom, same rule of thumb as above.
 

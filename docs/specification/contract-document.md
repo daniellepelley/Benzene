@@ -70,7 +70,7 @@ One entry per topic the service serves:
 | Field | Presence | Meaning |
 |---|---|---|
 | `topic` | REQUIRED | The topic id (core-concepts §2). |
-| `version` | OPTIONAL | The handler version (core-concepts §2). **Absent and empty differ**: absence means the unversioned handler, and a producer MUST NOT write `"version": ""`. |
+| `version` | OPTIONAL | The handler version (core-concepts §2). An unversioned entry omits `version`; a producer MUST NOT write `"version": ""`. |
 | `httpMappings[]` | OPTIONAL, omitted when empty | `{ "method": "<HTTP verb>", "path": "<route>" }` pairs: the topic's HTTP routes. A topic without them is not reachable over HTTP. |
 | `request` | REQUIRED | The request payload's schema. |
 | `response` | OPTIONAL | The response payload's schema. **Absent means the handler returns no payload**; `{}` means it returns a payload whose shape is unconstrained. |
@@ -166,11 +166,12 @@ language-neutral construct; each port applies it to its own type system):
 | string-keyed map of T | `{"type":"object","additionalProperties":T}` |
 | object or record | `{"type":"object","properties":{…},"required":[…]}`, with no `additionalProperties` |
 | nullable primitive, array or map T | T's schema plus `"nullable": true` |
-| nullable reference to a named type T | `{"type":<T's type>,"nullable":true,"allOf":[{"$ref":…}]}` |
+| nullable named object or enum type T | `{"type":<T's type>,"nullable":true,"allOf":[<T's $ref, or T's schema if inlined>]}`, whether or not T is hoisted |
 | raw or unknown JSON, dynamic values, custom serializers, anything the marshaler cannot serialize | `{}` |
 
 - Property names, and whether a property can be omitted, are exactly what the port's JSON marshaler
-  does. A property the marshaler always emits is `required`; one it may omit is not.
+  does. A property the marshaler always emits is `required`, even when its value may be `null`; one
+  it may omit is not.
 - Inherited or embedded members are flattened the way the marshaler flattens them.
 - A producer SHOULD emit a `format` it knows (`int64`, `double`, `uuid`) — generated clients need it
   to choose a type — and MAY omit it. `format` never reaches a hash (§6.2).
@@ -199,7 +200,8 @@ the generator MUST fail (non-zero exit or thrown error), not skip it, and the er
 the topics it could not find and the document's actual topic ids. The wording is not asserted.
 
 The include-list scopes `requests[]` only. `events[]`, `sends[]`, `components` and the document-level
-fields pass through unchanged, except where §5.3's topic-scoped projection narrows them.
+fields pass through unchanged, except `contractHash` and `registrationHash`, which are recomputed over
+the projection (§6.4).
 
 ### 5.3 Topic-scoped schema closure
 
@@ -217,8 +219,8 @@ component schemas that topic's request and response reach. Given those two schem
 5. **`allOf` / `anyOf` / `oneOf`**: walk every member.
 
 The **topic-scoped projection** of the document is: `requests` with exactly that topic's entry;
-`events` and `sends` empty; `components.schemas` exactly the reached set; every other field
-unchanged.
+`events` and `sends` empty; `components.schemas` exactly the reached set; `contractHash` and
+`registrationHash` recomputed over the projection; every other field unchanged.
 
 A **service-level client** over an include-list (§5.2) is a different projection: it filters
 `requests[]` and leaves everything else — including `events`, `sends` and `components` — unnarrowed.
@@ -266,26 +268,32 @@ The projection P is built from the document by:
 2. **Entries.** Drop any entry whose topic starts with `benzene:`. Keep only these members:
    `requests {topic, version?, httpMappings?, request, response?}`, `events {topic, version?,
    message}`, `sends {topic, version?, request, response?}`.
-3. **Dereference.** Replace each `{"$ref":"#/components/schemas/N"}` with N's schema, normalized by
-   these same steps, recursively. A reference to a component already being expanded on the current
-   path becomes `{}`; a nullable reference wrapper (§4.2) around such a reference becomes `{}` as a
-   whole.
-4. **Annotations.** At every schema position (the schema itself, each `properties` value, `items`,
-   `additionalProperties`, `not`, and each member of `allOf`/`anyOf`/`oneOf`), remove the keywords
-   `title`, `description`, `default`, `examples`, `example`, `deprecated`, `readOnly`,
-   `writeOnly`, `$comment`, `$id`, `$schema` and `format`, and every keyword starting `x-`. Sort
-   every `required` array, and remove it if empty; remove an empty `properties` object. Every other
-   keyword stays — validation constraints and unknown keywords are contract.
-5. **Order.** Sort entries by topic, then version (an absent version first), ordinally. In each
-   entry, upper-case every `httpMappings[].method` and sort the mappings by (method, path).
+3. **Dereference.** At every schema position (step 4), an object with a `$ref` is replaced by the
+   referenced component's schema, normalized by steps 3–4, recursively; the object's other members
+   are ignored, as OpenAPI 3.0 ignores a Reference Object's siblings. A reference to a component
+   already being expanded on the current path is **cut**: it becomes `{}`.
+4. **Annotations.** The schema positions are exactly: an entry's `request`, `response` and `message`;
+   and, within a schema at a position, each `properties` value, `items`, `additionalProperties` (when
+   an object), `not`, and each member of `allOf`, `anyOf` and `oneOf`. Any other keyword's value is
+   kept as written. At every position, remove the keywords `title`, `description`, `default`,
+   `examples`, `example`, `deprecated`, `readOnly`, `writeOnly`, `$comment`, `$id`, `$schema` and
+   `format`, every keyword starting `x-`, and `discriminator.mapping` (it holds component names).
+   Sort every `required` array, and remove it if empty; remove an empty `properties` object. Every
+   other keyword stays — validation constraints and unknown keywords are contract. Then, a schema
+   whose members are exactly `nullable: true`, optionally `type`, and an `allOf` of one member that
+   was a cut reference — the §4.2 nullable wrapper around a cycle — becomes `{}`.
+5. **Order.** Sort entries by topic, then version (an absent version first). In each entry,
+   upper-case every `httpMappings[].method` and sort the mappings by (method, path).
+
+Every sort in steps 4–5 compares strings by UTF-16 code units, as JCS sorts member names.
 
 `JCS` is **RFC 8785** (the JSON Canonicalization Scheme): members sorted by UTF-16 code units, the
 ECMAScript number format, no insignificant whitespace. `sha256` is taken over the UTF-8 bytes of
 the canonical string.
 
 Because P dereferences, component names, hoisting depth, the order of entries and of `required`,
-and schema documentation do not affect either hash: two ports describing the same wire shapes produce
-the same two values.
+and schema documentation do not affect either hash: two ports deriving the same wire shapes per §4.2
+produce the same two values.
 
 ### 6.3 Why JCS
 
@@ -314,8 +322,8 @@ comparing two different projections detects nothing.
 ## 7. The `benzene:spec` topic
 
 The reserved `benzene:spec` topic (wire-contracts §7) answers `ok` with this document. Its optional
-request is `{ "type"?: string, "format"?: string }`: an absent body, an empty body, `null` and `{}`
-all mean `type: "benzene"`, `format: "json"` — this document as JSON. Values are lowercase ASCII,
+request is `{ "type"?: string, "format"?: string }`: an absent body, an empty body, a `null` body
+and `{}` all mean `type: "benzene"`, `format: "json"` — this document as JSON. Values are lowercase ASCII,
 compared case-insensitively. A `type` or `format` the service does not support is answered
 `not-implemented`, never with a different document; other types (`openapi`, `asyncapi`, …) are port
 extensions and are not pinned. Over HTTP, `GET /benzene/spec` copies its `type` and `format` query
@@ -327,9 +335,10 @@ that serves `GET /benzene/spec` some other way MUST route it through the pipelin
 ## 8. Conformance
 
 - **A contract-document producer** — any port whose services claim the Cloud Service Profile, whose
-  R5 requires the document — passes `conformance/contract-document-cases.json`'s `derivationCases`, `namingCases` and
-  `specTopicCases`.
-- **A client generator** additionally passes its `parseCases`, `topicScopeCases` and
-  `schemaClosureCases`, and `conformance/contract-hash-cases.json`'s exact hashes.
+  R5 requires the document — passes `conformance/contract-document-cases.json`'s `derivationCases`,
+  `namingCases` and `specTopicCases`, its `specHttpCases` if the port has an HTTP binding, and
+  `conformance/contract-hash-cases.json`'s cases without a projection.
+- **A client generator** passes `contract-document-cases.json`'s `parseCases`, `topicScopeCases` and
+  `schemaClosureCases`, and every case in `contract-hash-cases.json`.
 
 See [conformance/README.md](conformance/README.md) for the case formats and the canonical types.

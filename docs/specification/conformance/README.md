@@ -47,7 +47,7 @@ writes the new tag into `SPEC_VERSION`, and lands all three in one change.
 | `mesh-service-version-cases.json` | Service-version identity: the catalog keyed by `(service, serviceVersion)`, so two releases side by side are two entries (service-versions.md §1, mesh §4) — required only for collectors claiming service-version identity |
 | `mesh-version-order-cases.json` | Service-version **order**: the declared comparison schemes, the not-orderable outcome, and parse rejection (service-versions.md §2) — required only for ports that order service versions |
 | `contract-document-cases.json` | The contract document: derivation from the canonical registrations with exact hashes, the naming rules, the `benzene:spec` request (producer groups); parse, topic scope and schema closure (client-generator groups) (contract-document.md) |
-| `contract-hash-cases.json` | Exact `contractHash` and `registrationHash` values for the projection, canonicalization and hash pipeline (contract-document.md §6) — required for a port that ships a client generator |
+| `contract-hash-cases.json` | Exact `contractHash` and `registrationHash` values for the projection, canonicalization and hash pipeline (contract-document.md §6) — the cases without a projection are required of every contract-document producer; the projection cases, of a client generator |
 
 Which fixtures a given conformance claim requires. A claim is made per level — **Core**, **per
 binding**, the **Profile**, and **per module** — and a port claims only what it implements.
@@ -61,8 +61,8 @@ binding**, the **Profile**, and **per module** — and a port claims only what i
 | Per module | Mesh collector | `mesh-collector-cases.json` (not part of the profile) |
 | Per module | Mesh issue feed | `mesh-issue-cases.json` (optional feed, mesh §4.1; a collector without it stays collector-conformant) |
 | Per module | Service versions — *Provisional* | `mesh-service-version-cases.json` (identity) and `mesh-version-order-cases.json` (order), [service-versions.md](../service-versions.md); a collector without the module stays collector-conformant, because a descriptor that omits `serviceVersion` keys exactly as it always did |
-| Profile | Contract-document producer (R5) | `contract-document-cases.json`'s `derivationCases`, `namingCases`, `specTopicCases`, and `specHttpCases` for a port with an HTTP binding |
-| Per module | Client generator | `contract-document-cases.json`'s `parseCases`, `topicScopeCases` and `schemaClosureCases`, and `contract-hash-cases.json` |
+| Profile | Contract-document producer (R5) | `contract-document-cases.json`'s `derivationCases`, `namingCases`, `specTopicCases`, and `specHttpCases` for a port with an HTTP binding; `contract-hash-cases.json`'s cases without a `projection` |
+| Per module | Client generator | `contract-document-cases.json`'s `parseCases`, `topicScopeCases` and `schemaClosureCases`, and every case in `contract-hash-cases.json` |
 
 MCP and claim check (both *Provisional*) have no fixtures yet. At Core level the mesh fixtures apply
 only to ports that implement the optional mesh module; a port without mesh skips them and remains
@@ -105,7 +105,11 @@ document instead (contract-document.md §3): the **event** `conformance:greeted`
 The contract-document cases use payload types with fixed names, so that the canonical document's
 component keys match across ports. A runner declares its types with exactly these names (by its
 port's declared-name mechanism, contract-document.md §4.1 rule 5, where its default name would
-differ). Every property is a string the marshaler always emits, unless stated.
+differ). Every property is a string, and **every property is always emitted** — a nullable one as
+`null` when unset — so every property is `required` (contract-document.md §4.2). A runner configures
+its types and marshaler so: in TypeScript a nullable property is `T | null`, not optional; in .NET
+nulls are written; in Python the field has no default and `None` is dumped; in Go the field has no
+`omitempty`.
 
 | Type | Shape | Used by |
 |---|---|---|
@@ -115,8 +119,9 @@ differ). Every property is a string the marshaler always emits, unless stated.
 | `LogEntry` | `{ message }` | send `conformance:log` (one-way) |
 | `LookupRequest` | `{ key }` | send `conformance:lookup` |
 | `LookupResponse` | `{ value }` | send `conformance:lookup` reply |
-| `ShapesRequest` | `{ count: integer, ratio: number, active: boolean, tags: string[], labels: map of string, note: nullable string, child: ShapesChild }` | `conformance:shapes`, a handler with no response payload |
+| `ShapesRequest` | `{ count: integer, ratio: number, active: boolean, tags: string[], labels: map of string, note: nullable string, child: ShapesChild, nullableChild: nullable ShapesChild }` | `conformance:shapes`, a handler with no response payload |
 | `ShapesChild` | `{ name }` | nested in `ShapesRequest` |
+| `TreeNode` | `{ name, parent: nullable TreeNode, children: TreeNode[] }` | `conformance:tree`, a handler with no response payload |
 
 ## Status mapping case format
 
@@ -322,25 +327,29 @@ component lists in expectations compare as **sets**.
 
 - **`derivationCases`** — each lists `registrations` (handlers in `requests`, event declarations in
   `events`, send declarations in `sends`, each naming a canonical payload type) and an `expected`
-  document. The runner registers exactly those, derives its document, and compares each entry —
-  matched by topic and version — after applying contract-document.md §6.2 steps 3–4 to its own
-  schemas (dereferenced, annotations removed, `required` sorted), so hoisting and naming differences
-  do not fail it. A `response` absent from an expected entry MUST be absent from the derived one.
+  document. The runner registers exactly those, with no HTTP mappings, derives its document, and
+  compares each entry — matched by topic and version — exactly on `topic`, `version`, `request`,
+  `response` and `message`, after applying contract-document.md §6.2 steps 3–4 to its own schemas
+  (dereferenced, annotations removed, `required` sorted), so hoisting and naming differences do not
+  fail it; other members (`example`) are not compared. A `response` absent from an expected entry
+  MUST be absent from the derived one.
   It also asserts that every component key is valid (§4.1 rule 3) and every `$ref` resolves, and
   that the document's `contractHash` and `registrationHash` equal the expected values exactly.
 - **`namingCases`** — each gives `types` (two distinct types, keyed by a qualified name, with their
   shapes), optional `declaredNames`, and `registrations`. `expected.error: "component-name-collision"`
   means derivation fails before any message is handled and the failure names `expected.name`;
-  `expected.componentNames` means derivation succeeds and the components include those keys.
+  `expected.componentNames` means derivation succeeds and the components include those keys. These
+  cases presuppose that the port hoists registered payload types (§4.1 rule 1); a port that inlines
+  them has no names to collide, and records the group as a gap in its capability matrix.
 - **`specTopicCases`** — each sends `request` as the body of a `benzene:spec` envelope (`null`
-  means no body). `expected.statusCode` is compared exactly; `expected.document` is subset-matched
+  means an absent body). `expected.statusCode` is compared exactly; `expected.document` is subset-matched
   against the response body. **`specHttpCases`** (ports with an HTTP binding) send `GET` to `path`
   and assert `expected.httpStatus` and, where given, `expected.document`.
 
 **Client-generator groups:**
 
 - **`parseCases`** — each gives a `documentRef` (and, for the fail-loud case, `options`) and either
-  an `expected` (subset-matched; per-entry rows keyed by `topic` assert `versionPresent`/`version`
+  an `expected` (subset-matched; per-entry rows keyed by `topic` and `version` assert `versionPresent`/`version`
   and `responsePresent`, where "present: false" means the member is genuinely **absent**) or an
   `expectedError` (`kind`: `unknown-schema-dialect`, or `unknown-topics` with the `unknownTopics`
   and `validTopics` sets, contract-document.md §5.2). A `benzene:` entry is ignored, not listed.
@@ -352,7 +361,10 @@ component lists in expectations compare as **sets**.
   `allOf`/`oneOf` reach case.
 
 `contract-hash-cases.json` lists `cases`, each a `document` and the exact `expectedContractHash` and
-`expectedRegistrationHash` (contract-document.md §6.2). Several cases are deliberately decorated,
+`expectedRegistrationHash` (contract-document.md §6.2). A case with a `projection` first projects the
+document — `{"kind":"topic","topic":…}` is §5.3's topic-scoped projection, `{"kind":"include-list",
+"topics":[…]}` §5.2's include-list projection — and expects the hashes of that projection; only a
+client generator runs those. Several cases are deliberately decorated,
 reordered, renamed, hoisted or annotated, and expect the same values as a plain case — proving an
 implementation performs every normalization step rather than hashing its input verbatim.
 

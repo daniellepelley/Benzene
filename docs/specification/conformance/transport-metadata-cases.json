@@ -119,7 +119,7 @@
           "benzene-topic": "conformance:greet"
         }
       },
-      "note": "Only the configured key routes. 'benzene-topic' was the default before 2026-07-27 (work/benzene-naming-principle.md §3c); a port still reading it, or reading both, would route messages a conformant peer does not, which is how two ports drift apart unnoticed."
+      "note": "Only the configured key routes. 'benzene-topic' was the default before 2026-07-27 (work/archive/benzene-naming-principle.md §3c); a port still reading it, or reading both, would route messages a conformant peer does not, which is how two ports drift apart unnoticed."
     },
     {
       "name": "absent-topic-key-leaves-the-topic-unresolved",

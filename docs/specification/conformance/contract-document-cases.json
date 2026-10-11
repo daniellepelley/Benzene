@@ -1,5 +1,5 @@
 {
-  "description": "Contract Document cases (contract-document.md). 'documents' holds shared documents referenced by id. Producer groups (required of every contract-document producer, R5): derivationCases - register the canonical types and compare the derived document's entries after section 6.2 steps 3-4 (dereferenced, annotations stripped, required sorted), plus the exact hashes; namingCases - the section 4.1 naming rules; specTopicCases and specHttpCases - the benzene:spec request (section 7). Client-generator groups: parseCases, topicScopeCases, schemaClosureCases. See README.md for formats.",
+  "description": "Contract Document cases (contract-document.md). 'documents' holds shared documents referenced by id. Producer groups (required of every contract-document producer, R5): derivationCases - register the canonical types (no HTTP mappings) and compare each derived entry's topic, version, request, response and message exactly after section 6.2 steps 3-4 (dereferenced, annotations removed, required sorted), plus the exact hashes; contract-hash-cases.json's cases without a projection; namingCases - the section 4.1 naming rules; specTopicCases and specHttpCases - the benzene:spec request (section 7). Client-generator groups: parseCases, topicScopeCases, schemaClosureCases. See README.md for formats.",
   "documents": {
     "canonical": {
       "schemaDialect": "openapi-3.0",
@@ -586,7 +586,7 @@
     },
     {
       "name": "derivation-shapes",
-      "description": "The canonical ShapesRequest type exercising the derivation table (contract-document §4.2): integer, number, boolean, array, string-keyed map, nullable string and a nested object; registered on a handler that returns no payload, so response is absent.",
+      "description": "The canonical ShapesRequest type exercising the derivation table (contract-document §4.2): integer, number, boolean, array, string-keyed map, nullable string, a nested object and a nullable nested object (the wrapper of §4.2); registered on a handler that returns no payload, so response is absent.",
       "registrations": {
         "requests": [
           {
@@ -639,6 +639,23 @@
                   "required": [
                     "name"
                   ]
+                },
+                "nullableChild": {
+                  "type": "object",
+                  "nullable": true,
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name"
+                      ]
+                    }
+                  ]
                 }
               },
               "required": [
@@ -647,6 +664,7 @@
                 "count",
                 "labels",
                 "note",
+                "nullableChild",
                 "ratio",
                 "tags"
               ]
@@ -655,8 +673,51 @@
         ],
         "events": [],
         "sends": [],
-        "contractHash": "sha256:2a90252fb9a5b627add68cda8e9ae380bdaa857def445f5b7196b13978fe2125",
-        "registrationHash": "sha256:709e2c84b35ddc8438a90dd66c706f23d8ec12a6d0c90a52013941b605921fd9"
+        "contractHash": "sha256:58378e44e4e8fbefaed695a0855df6db3e3e0ba559ffdeb1566f1edf980b84eb",
+        "registrationHash": "sha256:8a7b2a3d6a790363ca443b17909f67a4820947d087367dc776863213dc5f1859"
+      }
+    },
+    {
+      "name": "derivation-recursion",
+      "description": "The canonical recursive TreeNode type: a nullable reference to itself and an array of itself (contract-document §4.1 rule 7, §4.2); the comparison form cuts each cycle with {} (§6.2 step 3). No response.",
+      "registrations": {
+        "requests": [
+          {
+            "topic": "conformance:tree",
+            "request": "TreeNode"
+          }
+        ],
+        "events": [],
+        "sends": []
+      },
+      "expected": {
+        "requests": [
+          {
+            "topic": "conformance:tree",
+            "request": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "parent": {},
+                "children": {
+                  "type": "array",
+                  "items": {}
+                }
+              },
+              "required": [
+                "children",
+                "name",
+                "parent"
+              ]
+            }
+          }
+        ],
+        "events": [],
+        "sends": [],
+        "contractHash": "sha256:3e5e8e7924ee8ef068cd456fe0ff5502fd43242b02be3e56d48dba1feaba930a",
+        "registrationHash": "sha256:b2646522a466581c5b96e8f88c01e02fb83549cb5edb9385b21aa62da72aa30e"
       }
     }
   ],
@@ -758,7 +819,7 @@
   ],
   "specTopicCases": [
     {
-      "name": "no-body-is-the-contract-document",
+      "name": "absent-body-is-the-contract-document",
       "request": null,
       "expected": {
         "statusCode": "ok",
@@ -880,7 +941,8 @@
           {
             "topic": "payments:capture",
             "versionPresent": true,
-            "version": "v1"
+            "version": "v1",
+            "responsePresent": true
           },
           {
             "topic": "payments:capture",
