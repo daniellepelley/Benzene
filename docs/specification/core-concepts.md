@@ -249,7 +249,7 @@ A service sends messages as well as receiving them.
   where a reply is expected, its response type) — the split is by who owns the contract
   ([contract-document.md](contract-document.md) §3). Declarations are what let a service describe
   what it produces without anyone reading its code; the mesh module requires them for a service
-  that wants its outbound in the graph ([mesh.md](mesh.md) §2.3).
+  that wants its outbound in the graph ([mesh.md](mesh.md) §2).
 - **Error fidelity.** A client that receives a problem document — the body of a failure envelope,
   or an `application/problem+json` response — MUST rebuild the result's `errors` from it with
   `field` and `code` intact (wire-contracts §1.3). It MAY also attach the received document

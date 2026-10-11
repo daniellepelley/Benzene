@@ -81,7 +81,7 @@ Because handlers are optional, every capability must be honest about whether it 
 | Capability | Why | Degradation when declined |
 |---|---|---|
 | Derived spec (topics + payload schemas) | Derivation reads the registry of `(topic, TRequest, TResponse)` registrations; middleware declares none of that | No spec output; the service is documented by hand or not at all |
-| Mesh descriptor (`benzene:mesh` reserved topic, schemas, `descriptorHash`) | Same registry dependency ([mesh.md](../specification/mesh.md) §2) | Service appears in the mesh via traces/heartbeats with `missingFeeds: ["descriptor"]` — reduced, never rejected ([mesh.md](../specification/mesh.md) §6) |
+| Mesh registration (the contract document as the register body, `registrationHash`) | Same registry dependency ([mesh.md](../specification/mesh.md) §2) | Service appears in the mesh via traces/heartbeats with `missingFeeds: ["descriptor"]` — reduced, never rejected ([mesh.md](../specification/mesh.md) §6) |
 | HTTP endpoint attributes / route sugar | Sugar over handler registration | Routes are declared explicitly instead |
 | Codegen clients | Generated from the derived spec | Clients are written by hand |
 

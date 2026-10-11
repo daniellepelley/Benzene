@@ -3,8 +3,8 @@
 Code generation in Benzene is not a feature of any one language. A conforming service already
 describes itself at runtime — the topics it handles, the request and response payload shapes for
 each, the events it emits, its validation rules — through the **Cloud Service Profile**
-([cloud-service-profile.md](../specification/cloud-service-profile.md)) and the **mesh descriptor**
-([mesh.md](../specification/mesh.md) §2). Anything you can generate from that self-description, you
+([cloud-service-profile.md](../specification/cloud-service-profile.md)) and its **contract document**
+([contract-document.md](../specification/contract-document.md)). Anything you can generate from that self-description, you
 can generate from *any* Benzene service, whatever language it's written in.
 
 This guide describes the concept and the artifacts. **How to invoke a generator** — the package
@@ -14,11 +14,12 @@ name, the command, the API — is language-specific and lives in each port's own
 
 A Benzene service exposes its own contract in a language-neutral form:
 
-- the **derived spec** (the reserved `spec` operation) — the service's topics, payloads, and events;
-- the **mesh descriptor** (the reserved `mesh` topic) — the same contract plus a stable
-  `descriptorHash` that changes only when the observable contract changes.
+- the **contract document** (the reserved `benzene:spec` topic) — the service's topics, the events
+  it publishes, the messages it sends, their payloads, and a `contractHash` and `registrationHash`
+  that change only when the observable contract changes. It is also what the service registers
+  with a mesh collector.
 
-Both are wire artifacts defined by the specification, so a generator consumes them the same way
+It is a wire artifact defined by the specification, so a generator consumes it the same way
 whether the service is written in .NET, Go, TypeScript, or Python. The generated output tracks what the
 service *actually* exposes, so it can never drift from the implementation the way a hand-maintained
 schema or diagram does.
@@ -39,7 +40,7 @@ same shape regardless of the port; only the deployment package it points at diff
 
 ## Why this is language-neutral
 
-- The **inputs** are spec-defined wire artifacts (the derived spec, the mesh descriptor), not
+- The **inputs** are spec-defined wire artifacts (the contract document), not
   language types.
 - The **outputs** are ecosystem-standard formats (OpenAPI, AsyncAPI) or infrastructure formats
   (Terraform, and others), none of which are tied to a runtime language.
@@ -63,6 +64,6 @@ is language-neutral, and generation is the act of turning it into an artifact.
 
 - [Cloud Service Profile](../specification/cloud-service-profile.md) — the self-description a
   generator consumes (the derived spec, R5)
-- [Mesh Contracts](../specification/mesh.md) — the service descriptor and its contract hash
+- [Mesh Contracts](../specification/mesh.md) — registering the contract document with a collector
 - [Wire Contracts](../specification/wire-contracts.md) — the envelope and status vocabulary the
   generated clients speak

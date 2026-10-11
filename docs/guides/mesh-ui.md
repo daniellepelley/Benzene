@@ -81,9 +81,10 @@ port's aggregator output should look like (the optional `asyncapi.json` export a
 
 ### 2.1 Relationship to the wire contracts
 
-These artifacts are **read models**, not wire shapes. A service self-describes on the wire with a
-[ServiceDescriptor](../specification/mesh.md#2-servicedescriptor) (`service`, `topics[].id`,
-`requestSchema`, `descriptorHash`, …) and reports over the collector topics; the aggregator/
+These artifacts are **read models**, not wire shapes. A service self-describes on the wire with its
+[contract document](../specification/contract-document.md) (`service`, `requests`, `events`,
+`sends`, `registrationHash`, …), registers it with a collector ([mesh.md](../specification/mesh.md#2-registration)),
+and reports over the collector topics; the aggregator/
 collector projects those wire feeds (plus optional pull sources and a metrics feed) into the
 artifacts above; how a collector does that is its own business ([mesh.md](../specification/mesh.md) §4).
 The UI consumes the read models so that it is decoupled from how any port collects them — which is

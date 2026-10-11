@@ -1,5 +1,5 @@
 {
-  "description": "Service-version identity (service-versions.md section 1): the catalog is keyed by (service, serviceVersion), so two releases of one service deployed side by side are two entries rather than one overwriting the other. Required only for collectors claiming service-version identity — a collector without it stays collector-conformant, because a descriptor omitting serviceVersion keys exactly as it always did (service-versions.md section 1, 'Backward compatibility'), which is why these cases live in their own fixture rather than mutating mesh-collector-cases.json. Same runner and assertion rules as mesh-collector-cases.json: each case runs its steps in order against one fresh collector; every step is a wire envelope in and out; statusCode exact, body parsed-JSON subset, arrays by exact length and per-element subset. benzene:mesh:query:* shapes follow the reference collector and are asserted only as the observable surface for the keying rule, not as promoted contracts. The fleet query answers one row per service (graph membership is by service, mesh.md section 4); which version a row headlines is not pinned. The per-version breakdown is asserted on the service query, whose versions array lists the service's live versions; it is compared as a set keyed by serviceVersion, not by position (README.md).",
+  "description": "Service-version identity (service-versions.md section 1): the catalog is keyed by (service, serviceVersion), so two releases of one service deployed side by side are two entries rather than one overwriting the other. Required only for collectors claiming service-version identity — a collector without it stays collector-conformant, because a registration omitting serviceVersion keys exactly as it always did (service-versions.md section 1, 'Backward compatibility'), which is why these cases live in their own fixture rather than mutating mesh-collector-cases.json. Same runner and assertion rules as mesh-collector-cases.json: each case runs its steps in order against one fresh collector; every step is a wire envelope in and out; statusCode exact, body parsed-JSON subset, arrays by exact length and per-element subset. benzene:mesh:query:* shapes follow the reference collector and are asserted only as the observable surface for the keying rule, not as promoted contracts. The fleet query answers one row per service (graph membership is by service, mesh.md section 4); which version a row headlines is not pinned. The per-version breakdown is asserted on the service query, whose versions array lists the service's live versions; it is compared as a set keyed by serviceVersion, not by position (README.md).",
   "cases": [
     {
       "name": "two-declared-versions-are-two-entries-not-one-overwriting-the-other",
@@ -8,7 +8,7 @@
           "request": {
             "topic": "benzene:mesh:register",
             "headers": {},
-            "body": "{\"service\":\"payments\",\"serviceVersion\":\"1\",\"topics\":[{\"id\":\"payment:take\"}]}"
+            "body": "{\"service\":\"payments\",\"serviceVersion\":\"1\",\"requests\":[{\"topic\":\"payment:take\",\"request\":{}}]}"
           },
           "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
         },
@@ -16,7 +16,7 @@
           "request": {
             "topic": "benzene:mesh:register",
             "headers": {},
-            "body": "{\"service\":\"payments\",\"serviceVersion\":\"2\",\"topics\":[{\"id\":\"payment:take\"},{\"id\":\"payment:refund\"}]}"
+            "body": "{\"service\":\"payments\",\"serviceVersion\":\"2\",\"requests\":[{\"topic\":\"payment:take\",\"request\":{}},{\"topic\":\"payment:refund\",\"request\":{}}]}"
           },
           "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
         },
@@ -53,7 +53,7 @@
           "request": {
             "topic": "benzene:mesh:register",
             "headers": {},
-            "body": "{\"service\":\"payments\",\"serviceVersion\":\"1\",\"topics\":[{\"id\":\"payment:take\"}]}"
+            "body": "{\"service\":\"payments\",\"serviceVersion\":\"1\",\"requests\":[{\"topic\":\"payment:take\",\"request\":{}}]}"
           },
           "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
         },
@@ -61,7 +61,7 @@
           "request": {
             "topic": "benzene:mesh:register",
             "headers": {},
-            "body": "{\"service\":\"payments\",\"serviceVersion\":\"2\",\"topics\":[{\"id\":\"payment:take\"}]}"
+            "body": "{\"service\":\"payments\",\"serviceVersion\":\"2\",\"requests\":[{\"topic\":\"payment:take\",\"request\":{}}]}"
           },
           "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
         },
@@ -98,7 +98,7 @@
           "request": {
             "topic": "benzene:mesh:register",
             "headers": {},
-            "body": "{\"service\":\"payments\",\"serviceVersion\":\"1\",\"topics\":[{\"id\":\"payment:take\"}]}"
+            "body": "{\"service\":\"payments\",\"serviceVersion\":\"1\",\"requests\":[{\"topic\":\"payment:take\",\"request\":{}}]}"
           },
           "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
         },
@@ -106,7 +106,7 @@
           "request": {
             "topic": "benzene:mesh:register",
             "headers": {},
-            "body": "{\"service\":\"payments\",\"serviceVersion\":\"2\",\"topics\":[{\"id\":\"payment:take\"}]}"
+            "body": "{\"service\":\"payments\",\"serviceVersion\":\"2\",\"requests\":[{\"topic\":\"payment:take\",\"request\":{}}]}"
           },
           "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
         },
@@ -114,7 +114,7 @@
           "request": {
             "topic": "benzene:mesh:register",
             "headers": {},
-            "body": "{\"service\":\"payments\",\"serviceVersion\":\"2\",\"topics\":[{\"id\":\"payment:settle\"}]}"
+            "body": "{\"service\":\"payments\",\"serviceVersion\":\"2\",\"requests\":[{\"topic\":\"payment:settle\",\"request\":{}}]}"
           },
           "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
         },
@@ -141,7 +141,7 @@
           "request": {
             "topic": "benzene:mesh:register",
             "headers": {},
-            "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:create\"}]}"
+            "body": "{\"service\":\"orders\",\"requests\":[{\"topic\":\"order:create\",\"request\":{}}]}"
           },
           "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
         },
@@ -149,7 +149,7 @@
           "request": {
             "topic": "benzene:mesh:register",
             "headers": {},
-            "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:cancel\"}]}"
+            "body": "{\"service\":\"orders\",\"requests\":[{\"topic\":\"order:cancel\",\"request\":{}}]}"
           },
           "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
         },
@@ -159,6 +159,74 @@
             "statusCode": "ok",
             "body": {
               "services": [{ "service": "orders", "topics": 1 }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "a-heartbeat-hash-is-compared-within-its-own-service-version",
+      "steps": [
+        {
+          "request": {
+            "topic": "benzene:mesh:register",
+            "headers": {},
+            "body": "{\"service\":\"payments\",\"serviceVersion\":\"1\",\"registrationHash\":\"sha256:aaaa\",\"requests\":[{\"topic\":\"payment:take\",\"request\":{}}]}"
+          },
+          "expected": {
+            "statusCode": "ok"
+          }
+        },
+        {
+          "request": {
+            "topic": "benzene:mesh:register",
+            "headers": {},
+            "body": "{\"service\":\"payments\",\"serviceVersion\":\"2\",\"registrationHash\":\"sha256:bbbb\",\"requests\":[{\"topic\":\"payment:take\",\"request\":{}},{\"topic\":\"payment:refund\",\"request\":{}}]}"
+          },
+          "expected": {
+            "statusCode": "ok"
+          }
+        },
+        {
+          "request": {
+            "topic": "benzene:mesh:heartbeat",
+            "headers": {},
+            "body": "{\"service\":\"payments\",\"serviceVersion\":\"1\",\"instanceId\":\"payments-1\",\"registrationHash\":\"sha256:aaaa\",\"sentAt\":\"2026-07-16T09:00:00Z\",\"health\":{\"isHealthy\":true,\"healthChecks\":{}}}"
+          },
+          "expected": {
+            "statusCode": "ok"
+          }
+        },
+        {
+          "request": {
+            "topic": "benzene:mesh:heartbeat",
+            "headers": {},
+            "body": "{\"service\":\"payments\",\"serviceVersion\":\"1\",\"instanceId\":\"payments-2\",\"registrationHash\":\"sha256:bbbb\",\"sentAt\":\"2026-07-16T09:00:05Z\",\"health\":{\"isHealthy\":true,\"healthChecks\":{}}}"
+          },
+          "expected": {
+            "statusCode": "ok"
+          }
+        },
+        {
+          "request": {
+            "topic": "benzene:mesh:query:service",
+            "headers": {},
+            "body": "{\"service\":\"payments\"}"
+          },
+          "expected": {
+            "statusCode": "ok",
+            "body": {
+              "service": "payments",
+              "instances": [
+                {
+                  "instanceId": "payments-1",
+                  "hashMatches": true
+                },
+                {
+                  "instanceId": "payments-2",
+                  "hashMatches": false
+                }
+              ]
             }
           }
         }

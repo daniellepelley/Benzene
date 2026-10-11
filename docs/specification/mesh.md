@@ -4,193 +4,44 @@
 [Cloud Service Profile](cloud-service-profile.md) (R6).
 
 Benzene Mesh is the *application-level* mesh: every service **declares its full contract** — the
-topics it consumes (§2, derived from its handler registry) and the topics it produces (§2,
-derived from its outbound registration) — so the fleet graph (catalog, who-calls-whom) is knowable
-statically, from descriptors alone, before a single instance is deployed or a single message has
-flowed. Running code supplies a second, independent signal — health (§5) and, from the trace feed
-(§3), which declared edges are actually being exercised (§4.2) — but running code is never the
-*source* of the graph, only a witness to it. This document specifies everything that crosses a
-process boundary to make that work identically across language ports.
+topics it serves, the events it publishes and the messages it sends to topics others define — so
+the fleet graph (catalog, who-calls-whom) is knowable statically, from registrations alone, before
+a single instance is deployed or a single message has flowed. Running code supplies a second,
+independent signal — health (§5) and, from the trace feed (§3), which declared edges are actually
+being exercised (§4.2) — but running code is never the *source* of the graph, only a witness to it.
+This document specifies everything that crosses a process boundary to make that work identically
+across language ports.
 
 At Core level, mesh is optional, and so is each of its feeds; the normative degradation rule of
 §6 applies to every section here. A service claiming the
 [Cloud Service Profile](cloud-service-profile.md) MUST provision the service-side feeds (its
 R6) — for such a service, §6 governs runtime degradation, not whether the feeds exist.
 
-## 1. The reserved `benzene:mesh` topic
+## 1. Self-description
 
-A mesh-enabled service MUST intercept the reserved topic id `benzene:mesh` (plus any app-chosen
-aliases) under the interception rule of the reserved topics (wire-contracts.md §7). The response is
-status `ok` with the ServiceDescriptor (§2) as payload.
+A service describes itself once: the [Contract Document](contract-document.md), derived from its
+registrations — `requests` from its handlers, `events` and `sends` from its event and send
+declarations (contract-document §3.3) — and served at the reserved `benzene:spec` topic
+(contract-document §7). The mesh has no self-description of its own.
 
-Provisioning this endpoint is a deployment decision: a service that must not expose it (e.g.
-pending a security review) simply does not install the interception, and every other mesh feed
-keeps working (§6).
+## 2. Registration
 
-## 2. ServiceDescriptor
+The body of a `benzene:mesh:register` message (§4) is the service's Contract Document — the
+document `benzene:spec` serves, with the deployment-side fields (`runtime`, `placement`,
+`profile`, `degraded`, contract-document §1) the service knows. It carries `registrationHash`,
+which a collector trusts and MAY recompute (contract-document §6).
 
-The service's self-description, derived at startup from its handler registry (what it **consumes**)
-and its outbound registration (§2.3, what it **produces**) — never hand-maintained. Also the body of
-a `benzene:mesh:register` message (§4).
-
-*(Forward note.)* The [contract document](contract-document.md) is becoming the one
-self-description: it already carries the same registrations, split into `requests`, `events` and
-`sends`, with hashes that compare across ports. In the next release it replaces the
-ServiceDescriptor as the register body, and this section reduces to that statement.
-
-```json
-{
-  "service": "orders",
-  "serviceVersion": "1.4.2",
-  "instanceId": "orders-7f9c",
-  "runtime": "go",
-  "binding": "http",
-  "placement": { "cloud": "aws", "region": "eu-west-1" },
-  "topics": [
-    {
-      "id": "order:create",
-      "version": "v2",
-      "requestSchema":  { "type": "object", "properties": { "name": { "type": "string" } }, "required": ["name"] },
-      "responseSchema": { "type": "object", "properties": { "id":   { "type": "string" } }, "required": ["id"] }
-    }
-  ],
-  "produces": [
-    {
-      "id": "payments:capture",
-      "version": "v1",
-      "requestSchema":  { "type": "object", "properties": { "orderId": { "type": "string" } }, "required": ["orderId"] },
-      "responseSchema": {}
-    }
-  ],
-  "descriptorHash": "sha256:…",
-  "degraded": ["registry"],
-  "profile": { "name": "cloud-service", "missing": ["R6"] }
-}
-```
-
-- `service` — REQUIRED: the logical service name. Every other field is optional; a port MUST emit
-  what it knows and omit (not null) what it doesn't.
-- `serviceVersion` — which immutable **release** of that service this is (§2.4). Together with
-  `service` it forms the catalog key, so two releases deployed side by side are two entries rather
-  than one overwriting the other. Omitted means the service has exactly one release — the
-  single-deployment case, and the behavior every service had before this field carried meaning.
-- `runtime` — the implementing port identifier (`"go"`, `"dotnet"`, …).
-- `binding` — the transport binding in use, when the service knows it.
-- `placement.cloud` — detected from the platform's documented environment or configured
-  explicitly: `"aws"`, `"azure"`, `"gcp"`, `"self-hosted"`, or any explicit override.
-  `placement.region` MUST be emitted only when the platform documents a way to know it — a port
-  MUST NOT guess.
-- `topics` — every registered topic, sorted by id then version: what this service **consumes**.
-  Explicit registration (core-concepts.md §9) is what makes the registry the complete truth of what
-  the service serves; this field is its projection.
-- `produces` — every registered outbound topic, sorted by id then version: what this service
-  **produces** (§2.3). Same shape as a `topics` entry (`TopicDescriptor`), same schema-derivation
-  rules (§2.1) applied to the sender's declared request/response types; `responseSchema` is `{}`
-  (unconstrained) when the sender doesn't declare an expected response type. This is the field §4
-  reads to build producer edges — a topic absent here is not produced by this service, regardless of
-  what traffic has or hasn't flowed.
-- `degraded` — names the feeds that were unavailable when the descriptor was built (`"registry"` for
-  `topics`, `"outbound-registry"` for `produces`), so a reduced descriptor is distinguishable from a
-  service that consumes/produces nothing. A port that has not yet implemented outbound registration
-  (§2.3) MUST mark `produces` degraded rather than emit an empty array — an empty array asserts "this
-  service calls nothing," which a port that cannot yet know that has no right to assert.
-- `profile` — OPTIONAL: a named conformance-profile self-assessment, when the service claims one
-  (e.g. the [Cloud Service Profile](cloud-service-profile.md)'s `"cloud-service"`).
-  `profile.name` identifies the profile; `profile.missing` lists the requirement ids the service's
-  own wiring knows it does not satisfy, omitted (not empty) when fully conformant. Like
-  `degraded`, this is self-description rather than contract — it MUST NOT participate in the
-  `descriptorHash` (§2.2) — and it reflects provisioning at wire-up, not runtime health: a
-  service's `profile` claim does not change because of runtime degradation (§6).
-
-### 2.1 Schema derivation
-
-`requestSchema`/`responseSchema` describe the **marshaled JSON form** of the registered
-request/response types, expressed in a subset of the JSON Schema 2020-12 vocabulary. A port
-derives them once at startup, from whatever type information its registration API captures.
-The mapping (left column names the language-neutral construct; each port applies it to its own
-type system):
-
-| Construct | Schema |
-|---|---|
-| string | `{"type":"string"}` |
-| boolean | `{"type":"boolean"}` |
-| integer kinds | `{"type":"integer"}` |
-| floating kinds | `{"type":"number"}` |
-| timestamp type (marshals RFC 3339) | `{"type":"string","format":"date-time"}` |
-| byte array (marshals base64) | `{"type":"string"}` |
-| text-marshaling custom type | `{"type":"string"}` |
-| raw/unknown JSON, dynamic values, custom serializers | `{}` (unconstrained) |
-| nullable/optional of T | T's schema with `"null"` added to its `type` |
-| list/array of T | `{"type":"array","items":<T>}` |
-| string-keyed map of T | `{"type":"object","additionalProperties":<T>}` |
-| object/record | `{"type":"object","properties":{…},"required":[…]}` |
-
-Object rules:
-
-- Serialization attributes/tags control property names and omission exactly as the port's JSON
-  marshaler does.
-- Properties the marshaler always emits are listed in `required`, in declaration order
-  (determinism feeds the hash, §2.2); properties the marshaler may omit (optional/omit-empty)
-  are not.
-- Embedded/inherited members are flattened the way the port's marshaler flattens them.
-- Recursive types MUST be cut at the cycle with `{}` — schemas stay self-contained; no `$ref`.
-- Constructs the marshaler cannot serialize map to `{}`.
-
-Two ports registering equivalent canonical types MUST produce identical `topics`/`produces`
-entries — this is pinned by `conformance/mesh-descriptor-cases.json`.
-
-### 2.2 descriptorHash
-
-`"sha256:" + lowercase-hex(sha256(canonicalJSON(descriptor)))`, where the hashed descriptor has
-`instanceId`, `degraded`, `profile`, and `descriptorHash` itself blanked. The hash covers the *contract*
-(identity, placement, topics, produces, schemas):
-
-- Two instances of the same build MUST hash identically (`instanceId` excluded).
-- The hash MUST change when the contract changes (topics, produces, schemas, `serviceVersion`,
-  placement) — adding, removing, or re-typing a produced topic is a contract change exactly as
-  adding, removing, or re-typing a consumed one is.
-
-Canonical JSON: object members in a fixed documented order — declaration order for the fixed
-descriptor shape, lexicographic for schema maps — with no insignificant whitespace. Because
-`runtime` participates, the hash is per-port by design: it detects *this service's* redeploys,
-and is never compared across ports.
-
-### 2.3 Outbound registration
-
-The **concept**, mirroring core-concepts.md §9's inbound handler discovery exactly: an application
-hands the framework a list of (topic, version, request type, response type) records it *may send* —
-no handler, since nothing here receives. This is what makes `produces` (§2) a *hard-coded contract*
-rather than an inference: the list is exactly as reliable as the registry that already makes
-`topics` reliable, and for the identical reason — a port MUST NOT attempt to infer it by scanning
-call sites, string literals, or any other form of static analysis over handler bodies, because that
-degrades silently and unpredictably per language, and defeats the "identical across ports" promise
-(§8) this whole document exists for.
-
-- Explicit registration is a first-class path a port MUST support (core-concepts.md §9's same
-  requirement, applied to outbound). Attribute/annotation sugar over it is an idiom, same as inbound.
-- A registered outbound record needs no destination address, queue name, or topic ARN — those are
-  transport/deployment configuration (transport-bindings.md), orthogonal to the *contract* this
-  registers. A service can declare it produces `payments:capture` while its actual SQS queue URL is
-  injected at deploy time; the descriptor doesn't change between environments, only the wiring does.
-- A send through an outbound client (`MessageSender`, core-concepts.md) to a topic **not** present in
-  `produces` is not a spec violation — Core does not require pre-declaration to send — but it MUST
-  surface as `contract-drift` the first time a collector observes it (§4.2): the declared contract
-  and the running system have diverged, and that divergence is exactly the signal this feed exists
-  to raise, not to silently tolerate.
-- A port that has not yet implemented outbound registration omits `produces` and marks
-  `degraded: ["outbound-registry"]` (§2) — this is a real, visible gap in that port's conformance,
-  not a silent zero.
-
-### 2.4 Service version
-
-`serviceVersion` names which immutable **release** of the service this is. Its identity rules,
-and its order when a `versionScheme` is declared, are the
-[Service Versions](service-versions.md) module (Provisional); a descriptor that omits it is one
-service version, so an estate whose services never declare one is unaffected.
-
-### 2.5 Service version order
-
-Defined in [Service Versions](service-versions.md) §2.
+- **Identity.** `service` and, where declared, `serviceVersion` with its `versionScheme` are the
+  catalog key (§4). Which immutable release a `serviceVersion` names, and its order, are the
+  [Service Versions](service-versions.md) module (Provisional); a document that omits
+  `serviceVersion` is one service version, so an estate whose services never declare one is
+  unaffected.
+- **Declared, never inferred.** `events` and `sends` come only from explicit declarations
+  (contract-document §3.3). That is what makes the producer side of the graph as reliable as the
+  handler registry makes the consumer side.
+- **A reduced registration.** A producer that cannot determine a member names it in `degraded`
+  rather than asserting an empty list (contract-document §1). A collector MUST accept a body that
+  carries only `service` (§6), treating every absent member as unknown.
 
 ## 3. TraceEvent
 
@@ -224,7 +75,7 @@ transport-shaped.
   `traceparent: 00-<traceId>-<spanId>-01` built from the calling invocation's span — required of a
   profiled service by the [Cloud Service Profile](cloud-service-profile.md)'s R8. This is what lets a
   collector correlate an *observed* call with the declared edge it exercises (§4.2) — propagation
-  feeds observation, not the graph itself (§4), which comes from `produces` (§2) regardless of
+  feeds observation, not the graph itself (§4), which comes from the registration (§2) regardless of
   whether any call has ever propagated a trace at all.
 - `status` is the Benzene status verbatim (wire-contracts.md §3); empty only when no downstream
   middleware produced a result (a wiring gap, reported as-is).
@@ -247,7 +98,7 @@ transport (transport-bindings.md):
 
 | Topic | Body | Success payload |
 |---|---|---|
-| `benzene:mesh:register` | ServiceDescriptor (§2) | `{"accepted":1}` |
+| `benzene:mesh:register` | Contract Document (§2) | `{"accepted":1}` |
 | `benzene:mesh:heartbeat` | Heartbeat (§5) | `{"accepted":1}` |
 | `benzene:mesh:traces` | `{"events":[TraceEvent…]}` | `{"accepted":<count>}` |
 | `benzene:mesh:issues` | IssueBatch (§4.1) | `{"accepted":<count>}` |
@@ -256,20 +107,22 @@ transport (transport-bindings.md):
   `benzene:mesh:traces` or `benzene:mesh:issues` batch of any size, including empty, MUST be accepted.
 - **The catalog key.** A collector keys its catalog by `service`; one that implements the
   [Service Versions](service-versions.md) module keys it by `(service, serviceVersion)` instead. A
-  descriptor that omits `serviceVersion` has one service version, so for an estate whose services
+  registration that omits `serviceVersion` has one service version, so for an estate whose services
   never declare one the two keys agree.
 - Re-registration replaces the previous registration for **that key** wholesale, including the claim
-  to consume *and* the claim to produce each topic — a redeploy that drops a topic from `topics`
-  drops the consumer edge with it, and a redeploy that drops a topic from `produces` drops the
-  provider edge with it, the same rule applied symmetrically to both declared lists (§2). In a
+  to consume *and* the claim to produce each topic — a redeploy that drops a topic from `requests`
+  drops the consumer edge with it, and a redeploy that drops a topic from `events` or `sends` drops
+  the provider edge with it, the same rule applied symmetrically to every declared list (§2). In a
   collector implementing Service Versions it MUST NOT disturb a *different* service version of the
   same service: two releases deployed side by side are two entries, and registering one never
   deletes the other.
-- **The producer/consumer graph MUST be built from the latest registered `ServiceDescriptor` alone**
-  — `produces` for providers, `topics` for consumers (§2, §2.3). A collector MUST report this graph
+- **The producer/consumer graph MUST be built from the latest registration alone** — `events` and
+  `sends` for providers, `requests` for consumers (§2). A service that publishes an event is that
+  topic's provider exactly as a service that sends to a topic is; `benzene:` entries are ignored
+  (contract-document §1). A collector MUST report this graph
   in full for a service that has registered but never sent or received a single message: the graph
   is the declared contract, not a summary of traffic. Trace parentage (§3) MUST NOT be used to admit
-  an edge into this graph, add a consumer/provider the descriptor didn't declare, or remove one it
+  an edge into this graph, add a consumer/provider the registration didn't declare, or remove one it
   did — its role is §4.2, entirely separate from graph membership.
 - **Graph membership is by `service`, not by `(service, serviceVersion)`.** A topic's providers and
   consumers name services; two live versions of one service both declaring a topic contribute one
@@ -355,8 +208,9 @@ uniquely holds the wire status and the thrown exception at the moment of failure
   5. `unexpected-error` → **exception**;
   6. any other failing status → **unclassified** (an honest fallback beats a lying class).
   `contract-drift` is never produced by this table — it is reserved for catalog/heartbeat-derived
-  issues (descriptor-hash mismatch, schema divergence) and the undeclared-edge case §4.2 defines
-  (a trace names a topic absent from the caller's `produces` or the handler's `topics`), filed in
+  issues (registration-hash mismatch, schema divergence) and the undeclared-edge case §4.2 defines
+  (a trace names a topic absent from the caller's `events` and `sends` or the handler's
+  `requests`), filed in
   this same shape by a collector or reader, so emitter implementers should not hunt for its trigger.
 - `exceptionType` is the language-native type name only — never a message, stack trace, payload,
   or header. `resolutionHint` is an optional key into a remediation catalog, never prose;
@@ -376,18 +230,18 @@ feed (see `conformance/README.md`).
 The graph (§4) is declared and does not need traffic to exist. Traces still matter — they are the
 *only* way to know whether a declared edge is actually being exercised, and the only way to notice
 an edge nobody declared. Both are collector-derived read models over the same two inputs
-(`ServiceDescriptor.produces` and `TraceEvent` parentage), never a change to either input:
+(the registration's declared lists and `TraceEvent` parentage), never a change to either input:
 
-- **Unobserved** — a declared edge (in `topics` or `produces`) with no corresponding trace parentage
+- **Unobserved** — a declared edge (in `requests`, `events` or `sends`) with no corresponding trace parentage
   within the collector's retention window. This is a **decommission candidate**, not a fact: trace
   export is lossy by design (§4), so absence of evidence is not evidence of absence, only a prompt
   to go check. A collector MUST report *last observed at* (or its absence) per edge rather than
   collapsing it to a boolean, so a reader can judge staleness for itself.
 - **Undeclared** — trace parentage between two services on a topic that is not present in the
-  caller's registered `produces` (or, symmetrically, a trace naming a topic absent from the
-  handler's registered `topics`). This is **`contract-drift`** (§4.1's classification vocabulary,
+  caller's registered `events` or `sends` (or, symmetrically, a trace naming a topic absent from
+  the handler's registered `requests`). This is **`contract-drift`** (§4.1's classification vocabulary,
   which already reserves this class for exactly this collector-derived case): the declared contract
-  and the running system disagree, and a reader needs to know which one is stale — the descriptor
+  and the running system disagree, and a reader needs to know which one is stale — the registration
   the last deploy forgot to update, or a caller that shouldn't be doing what it's doing.
 
 Neither signal is itself a topology edge. A view MAY render "declared, unobserved" and "observed,
@@ -402,45 +256,49 @@ identity:
 ```json
 {
   "service": "orders",
+  "serviceVersion": "1.4.2",
   "instanceId": "orders-7f9c",
-  "descriptorHash": "sha256:…",
+  "registrationHash": "sha256:…",
   "sentAt": "2026-07-16T09:14:03Z",
   "health": { "isHealthy": true, "healthChecks": { "db": { "status": "ok", "type": "postgres" } } }
 }
 ```
 
-A heartbeat whose `descriptorHash` differs from the registered descriptor's hash means the
-instance runs a contract the collector hasn't learned. The collector MUST surface the mismatch
+`serviceVersion` is the instance's release, omitted when it declares none. A heartbeat whose
+`registrationHash` differs from the registered document's means the instance runs a contract the
+collector hasn't learned. The collector MUST surface the mismatch
 (the Go collector reports per-instance `hashMatches`) rather than silently keeping stale topics.
 
 In a collector implementing [Service Versions](service-versions.md), this comparison is scoped to
 **one service version**: the heartbeat's hash is compared against
-the descriptor registered for the *same* `(service, serviceVersion)` key, never against a different
+the document registered for the *same* `(service, serviceVersion)` key, never against a different
 release of the same service. Two releases deployed side by side legitimately report different hashes,
 and a collector that compared across them would report drift for every side-by-side deployment — the
-opposite of what this rule is for. A heartbeat carrying a `serviceVersion` no descriptor has
-registered is an unregistered instance, not a hash mismatch.
+opposite of what this rule is for. A heartbeat carrying a `serviceVersion` no document has
+registered is an unregistered instance, not a hash mismatch. A collector without the module
+compares against the service's one registration.
 
 ## 6. Degradation (normative)
 
-Every mesh feed — the descriptor endpoint, registration, heartbeats, traces — is independent and
+Every mesh feed — registration, heartbeats, traces, issues — is independent and
 optional, on both sides:
 
-- **Service side**: an unprovisioned descriptor endpoint, an unreachable collector, a failing or
-  absent exporter, or an absent registry each reduce the mesh and MUST NOT affect the service's
+- **Service side**: an unreachable collector, a failing or absent exporter, or an absent registry
+  each reduce the mesh and MUST NOT affect the service's
   own traffic in any way.
 - **Collector side**: partial fleets MUST be accepted and rendered as reduced. Traces from a
-  service that never registered present it as known-but-reduced (missing descriptor feed); a
+  service that never registered present it as known-but-reduced (missing registration, which the
+  collector read models call the `descriptor` feed); a
   registered service with no traffic is a catalog entry with no stats; no heartbeats means
   unknown health. A missing feed MUST NOT fail ingestion or queries.
 
 ## 7. Conformance
 
-Four fixture files in [conformance/](conformance/README.md) pin this document; their formats
-and the canonical mesh handlers are documented there. A port that implements mesh MUST pass
-`mesh-descriptor-cases.json` (including the `produces`/outbound-registration cases, §2.3) and
-`mesh-trace-cases.json`; a port that additionally implements a collector MUST pass
-`mesh-collector-cases.json` (including the graph-from-descriptor cases — a registered service with
+Fixture files in [conformance/](conformance/README.md) pin this document; their formats and the
+canonical mesh handlers are documented there. A port that implements mesh MUST pass
+`mesh-trace-cases.json`, and the contract-document producer groups (contract-document §8), whose
+document is its register body; a port that additionally implements a collector MUST pass
+`mesh-collector-cases.json` (including the graph-from-registration cases — a registered service with
 zero traffic reporting its full provider/consumer graph — and the declared-vs-observed cases of
 §4.2), and a collector that additionally claims the §4.1 issue feed MUST pass
 `mesh-issue-cases.json` (optional — a collector without it stays collector-conformant, and picking
@@ -448,12 +306,12 @@ up the undeclared-edge trigger of §4.2 is bundled with it, not a separate oblig
 implements neither is unaffected at Core level — mesh is an optional module there, and the Core
 spec creates no obligation to implement it, only the obligation to implement it *compatibly*.
 Supporting the [Cloud Service Profile](cloud-service-profile.md), however, requires the
-service-side feeds, so a port that wants its services to claim the profile implements §§1–3 and §5
-and passes the two service-side fixture files.
+service-side feeds, so a port that wants its services to claim the profile implements §§2–3 and §5
+and passes the service-side fixtures above.
 
 ## 8. Conformance language note
 
 Per the repository's one design rule, everything in §§1–6 is a Benzene *concept* — wire shapes
-and cross-process behavior. How a port derives its descriptor (attribute scanning vs explicit
+and cross-process behavior. How a port derives its document (attribute scanning vs explicit
 registration), how a collector stores state, and what a view renders are *idioms* and stay out
 of this document.

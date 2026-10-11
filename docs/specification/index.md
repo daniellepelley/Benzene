@@ -11,7 +11,7 @@ stability labels.
   - [Transport Bindings](transport-bindings.md) — the binding contract, settlement, the envelope endpoint and default paths, with worked examples
   - [Versioning](versioning.md) — the version header, absence, dispatch and payload casting
 - **Modules**
-  - [Mesh](mesh.md) — Stable: service self-description, trace events, collector topics and degradation
+  - [Mesh](mesh.md) — Stable: registration, trace events, collector topics and degradation
   - [Contract Document](contract-document.md) — Stable: the self-description at `benzene:spec`, its derivation, naming and hashes, and client generation
   - [Service Versions](service-versions.md) — Provisional (.NET): service-version identity and order
   - [MCP](mcp.md) — Provisional (.NET): a service's handlers as tools for AI clients

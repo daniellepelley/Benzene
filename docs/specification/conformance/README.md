@@ -40,7 +40,6 @@ writes the new tag into `SPEC_VERSION`, and lands all three in one change.
 | `envelope-cases.json` | End-to-end message envelope handling: request in, pipeline + canonical handler, response envelope out, including version selection (wire-contracts §1, core-concepts §2, §4–6) |
 | `problem-details-cases.json` | The problem-type registry, the canonical `conformance:problem` and `conformance:validate` handlers' envelope behavior, and the HTTP-binding-only rules: failure signalling, the envelope endpoint and the health routes (wire-contracts §1.3, §3.1, §4.1, §5; transport-bindings §1) |
 | `transport-metadata-cases.json` | Topic resolution and header mapping on transports carrying Benzene metadata natively — the reserved metadata key names (wire-contracts §2, transport-bindings §1) — required for ports binding any such transport; plus each one-way binding's settlement shape and allowed defaults (transport-bindings §1, obligation 8) |
-| `mesh-descriptor-cases.json` | ServiceDescriptor derivation from the canonical handlers and the canonical outbound registration, including payload schemas, `produces`, and descriptorHash properties (mesh §2) — required for ports that implement mesh |
 | `mesh-trace-cases.json` | TraceEvent behavior: traceparent join/reject rules and the invocation→semantic-status mapping (mesh §3) — required for ports that implement mesh |
 | `mesh-collector-cases.json` | Collector ingest, validation, derivation, and degradation behavior (mesh §4–6) — required for ports that implement a collector |
 | `mesh-issue-cases.json` | Issue-feed collector behavior: `benzene:mesh:issues` ingest, fingerprint delta-merge, liveness/feed-absence derivation (mesh §4.1) — required only for collectors claiming the issue feed |
@@ -57,10 +56,10 @@ binding**, the **Profile**, and **per module** — and a port claims only what i
 | Core | Benzene Core | `status-vocabulary.json`, the mapping tables for each protocol the port binds, `envelope-cases.json`, and `problem-details-cases.json`'s `registry` and `envelopeCases` groups |
 | Per binding | each metadata-carrying binding (queues, topics, streams) | `transport-metadata-cases.json` for that binding, and its row in `settlementDefaults` (every one-way binding the port ships) |
 | Per binding | each HTTP binding | `problem-details-cases.json`'s `httpRules` group. Within it, `envelopeEndpoint` applies to a port that serves the envelope over HTTP, and `healthEndpoint` to a port that also ships health checks |
-| Profile | Cloud Service Profile support | Core, plus `mesh-descriptor-cases.json` and `mesh-trace-cases.json` |
+| Profile | Cloud Service Profile support | Core, the contract-document producer claim below (its document is the register body), and `mesh-trace-cases.json` |
 | Per module | Mesh collector | `mesh-collector-cases.json` (not part of the profile) |
 | Per module | Mesh issue feed | `mesh-issue-cases.json` (optional feed, mesh §4.1; a collector without it stays collector-conformant) |
-| Per module | Service versions — *Provisional* | `mesh-service-version-cases.json` (identity) and `mesh-version-order-cases.json` (order), [service-versions.md](../service-versions.md); a collector without the module stays collector-conformant, because a descriptor that omits `serviceVersion` keys exactly as it always did |
+| Per module | Service versions — *Provisional* | `mesh-service-version-cases.json` (identity) and `mesh-version-order-cases.json` (order), [service-versions.md](../service-versions.md); a collector without the module stays collector-conformant, because a registration that omits `serviceVersion` keys exactly as it always did |
 | Profile | Contract-document producer (R5) | `contract-document-cases.json`'s `derivationCases`, `namingCases`, `specTopicCases`, and `specHttpCases` for a port with an HTTP binding; `contract-hash-cases.json`'s cases without a `projection` |
 | Per module | Client generator | `contract-document-cases.json`'s `parseCases`, `topicScopeCases` and `schemaClosureCases`, and every case in `contract-hash-cases.json` |
 
@@ -90,15 +89,9 @@ reports — in place of any the runner would otherwise register.
 
 ## Canonical outbound declarations
 
-`mesh-descriptor-cases.json` registers one **outbound** record (mesh.md §2.3), with no handler:
-
-| Topic | Request body | Response |
-|---|---|---|
-| `conformance:log` | `{ "message": string }` | none declared |
-
-`contract-document-cases.json`'s `derivationCases` declare the canonical outbound of the contract
-document instead (contract-document.md §3): the **event** `conformance:greeted`, the one-way **send**
-`conformance:log`, and the **send** `conformance:lookup`, which expects a reply. None is ever sent.
+`contract-document-cases.json`'s `derivationCases` declare the canonical outbound (contract-document.md
+§3): the **event** `conformance:greeted`, the one-way **send** `conformance:log`, and the **send**
+`conformance:lookup`, which expects a reply. None is ever sent.
 
 ## Canonical payload types
 
@@ -277,14 +270,6 @@ Subset matching is as for envelope cases, with one addition needed by these fixt
 array (`[]`) matches an actual array that is empty *or absent* (writers may omit empty
 collections).
 
-- `mesh-descriptor-cases.json` — the runner registers two canonical envelope handlers,
-  `conformance:greet` and `conformance:status` (and no others), and the
-  one canonical outbound registration (both above) natively, builds the service descriptor with
-  the fixture's `serviceInfo`, and subset-compares `expectedDescriptor` (`topics` from the
-  handlers, `produces` from the outbound registration). `runtime` and the hash value are per-port
-  and not pinned; instead `hash` asserts the hash's *properties*: its `sha256:` + 64-hex format,
-  invariance to `instanceId`, and sensitivity to `serviceVersion`, to the topic set, and to the
-  produced-topic set.
 - `mesh-trace-cases.json` — `traceparent` rows assert the join/reject rules of mesh §3
   observationally (a valid header's ids are adopted; an invalid one yields a fresh 32-hex
   trace id and no parent). `invocations` rows run one envelope each through a pipeline with
@@ -297,18 +282,22 @@ collections).
 
   `expectedEvent` is subset-matched against the single TraceEvent exported for that
   invocation. (`conformance:panic` is registered only for these trace cases, not for
-  descriptor or envelope cases.)
+  envelope or contract-document cases.)
 - `mesh-collector-cases.json` — each case's `steps` run in order against one fresh collector;
   each step is an envelope request/expected pair asserted like an envelope case. The
   `benzene:mesh:query:*` responses are asserted as the observable surface for the ingest/derivation
-  rules of mesh §4–6; those query shapes are not themselves promoted contracts.
+  rules of mesh §4–6; those query shapes are not themselves promoted contracts. A
+  `benzene:mesh:register` body is a contract document carrying only the members the case needs,
+  with `{}` schemas (mesh §2 makes a collector accept such a body); the read models' `topics`
+  count is the registration's `requests`, and their `descriptor` feed is its registration.
 - `mesh-service-version-cases.json` — same runner and assertion rules as
   `mesh-collector-cases.json`, applied to the keying rule alone. The cases pin that two declared
   versions of one service are two catalog entries rather than one overwriting the other, that this
   still holds when the two versions carry **identical** contracts (a version is an entity, not a
-  shape — service-versions.md §1, so a collector keying on `descriptorHash` instead of on `serviceVersion`
-  fails here), that re-registering one version leaves the other's topics intact, and that a
-  descriptor omitting `serviceVersion` keys exactly as it did before the rule existed. That last
+  shape — service-versions.md §1, so a collector keying on `registrationHash` instead of on `serviceVersion`
+  fails here), that re-registering one version leaves the other's topics intact, that a
+  heartbeat's `registrationHash` is compared with its own version's registration (mesh §5), and
+  that a registration omitting `serviceVersion` keys exactly as it did before the rule existed. That last
   case is why this fixture is separate: it is the compatibility guarantee that lets an existing
   collector keep passing `mesh-collector-cases.json` untouched. The entries are observed through
   the **service** query, whose `versions` array lists the live versions; in this fixture it is
@@ -326,8 +315,10 @@ component lists in expectations compare as **sets**.
 **Producer groups** — every contract-document producer:
 
 - **`derivationCases`** — each lists `registrations` (handlers in `requests`, event declarations in
-  `events`, send declarations in `sends`, each naming a canonical payload type) and an `expected`
-  document. The runner registers exactly those, with no HTTP mappings, derives its document, and
+  `events`, send declarations in `sends`, each naming a canonical payload type), an optional
+  `serviceInfo` (identity and placement), and an `expected` document. The runner registers exactly
+  those, with no HTTP mappings and with that identity, derives its document, subset-matches
+  `expected`'s identity fields against it, and
   compares each entry — matched by topic and version — exactly on `topic`, `version`, `request`,
   `response` and `message`, after applying contract-document.md §6.2 steps 3–4 to its own schemas
   (dereferenced, annotations removed, `required` sorted), so hoisting and naming differences do not

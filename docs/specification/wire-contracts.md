@@ -341,7 +341,6 @@ reserved topic is optional unless a profile requires it (the
 | `benzene:readiness` | none | `ok`, the health response, from the checks that decide whether this instance should receive traffic |
 | `benzene:spec` | optional `{ "type"?: string, "format"?: string }` | `ok`, the contract document ([contract-document.md](contract-document.md) §7), or the format its request names |
 | `benzene:ping` | none | `ok`, no payload — its body is unspecified, and a caller reads only the status |
-| `benzene:mesh` | none | `ok`, the ServiceDescriptor ([mesh.md](mesh.md) §1–§2) |
 | `benzene:mesh:register`, `benzene:mesh:heartbeat`, `benzene:mesh:traces`, `benzene:mesh:issues` | per [mesh.md](mesh.md) §4 | per [mesh.md](mesh.md) §4 — served by a collector, not by every service |
 | `benzene:mesh:query:fleet`, `benzene:mesh:query:service`, `benzene:mesh:query:topic` *(Provisional)* | per collector | the collector's read models ([mesh.md](mesh.md) §4) — served by a collector; the shapes are not pinned |
 | `benzene:mesh:dispatch` *(Provisional)* | informative: `{ "service": string, "topic": string, "headers"?: object, "body"?: string }` | the target service's result for that envelope — served by a collector that offers live dispatch; neither shape is pinned while the topic is Provisional |

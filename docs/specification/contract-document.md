@@ -7,8 +7,9 @@ generator.
 The Contract Document — conventionally emitted as `{service}.spec.json` — is what a service derives
 from its registrations to describe itself: the topics it serves, the events it publishes, the
 messages it sends to others, the payload schemas of all three, and (optionally) how its topics are
-reachable over HTTP. It is the one input every language's client generator reads, and the document
-the reserved `benzene:spec` topic answers with (§7).
+reachable over HTTP. It is the one input every language's client generator reads, the document
+the reserved `benzene:spec` topic answers with (§7), and the body a mesh-enabled service registers
+with a collector ([mesh.md](mesh.md) §2).
 
 ## 1. Top-level shape
 
@@ -19,6 +20,10 @@ the reserved `benzene:spec` topic answers with (§7).
   "serviceVersion": "1.4.2",
   "versionScheme": "semver",
   "description": "Order intake",
+  "runtime": "go",
+  "placement": { "cloud": "aws", "region": "eu-west-1" },
+  "profile": { "name": "cloud-service", "missing": ["R6"] },
+  "degraded": ["sends"],
   "messageEndpoint": "/benzene/invoke",
   "transports": ["http", "sqs"],
   "contractHash": "sha256:…",
@@ -37,6 +42,10 @@ the reserved `benzene:spec` topic answers with (§7).
 | `serviceVersion` | OPTIONAL | Which release this is ([service-versions.md](service-versions.md)). |
 | `versionScheme` | OPTIONAL; REQUIRED for an orderable `serviceVersion` | The comparison scheme of `serviceVersion` ([service-versions.md](service-versions.md) §2). |
 | `description` | OPTIONAL | Free text. |
+| `runtime` | OPTIONAL | The implementing port (`"go"`, `"dotnet"`, `"typescript"`, `"python"`, …). |
+| `placement` | OPTIONAL | Where this service runs. `cloud` is detected from the platform's documented environment or configured: `"aws"`, `"azure"`, `"gcp"`, `"self-hosted"`, or an explicit override. `region` is emitted only where the platform documents a way to know it; a producer MUST NOT guess. |
+| `profile` | OPTIONAL | A conformance-profile self-assessment: `name` (`"cloud-service"` for the [Cloud Service Profile](cloud-service-profile.md)) and `missing`, the requirement ids the service's own wiring knows it does not meet, omitted when none. It reflects wiring, not runtime health. |
+| `degraded` | OPTIONAL, omitted when empty | The members — `"requests"`, `"events"`, `"sends"` — the producer could not determine. Such a member is still present, and empty: an empty list then asserts nothing, where without `degraded` it asserts "none". |
 | `messageEndpoint` | OPTIONAL | The path of the service's envelope endpoint over HTTP (transport-bindings §1). Absent when there is none: a consumer feature-detects send capability on its presence and never assumes a default. |
 | `transports` | OPTIONAL, omitted when empty | The transports this service receives messages over (`"http"`, `"sqs"`, `"kafka"`, …). Document-level: any wired non-HTTP transport reaches any registered topic. HTTP reachability is per topic, its `httpMappings` (§2). |
 | `contractHash`, `registrationHash` | REQUIRED | The two hashes of §6, computed over this document. |
@@ -45,8 +54,8 @@ the reserved `benzene:spec` topic answers with (§7).
 | `sends[]` | REQUIRED (possibly empty) | The messages this service sends to topics others define. §3.2. |
 | `components` | REQUIRED | `{ "schemas": { <name>: <Schema Object> } }`. Every `$ref` anywhere in the document points into `#/components/schemas/<name>`; there are no external or relative refs. §4. |
 
-A consumer MUST ignore a top-level field it does not recognize. The register body that a service
-sends to a mesh collector carries further, deployment-side fields ([mesh.md](mesh.md) §2).
+A consumer MUST ignore a top-level field it does not recognize. Every field but `requests`,
+`events` and `sends` is outside both hashes (§6.2), so identity and placement never change them.
 
 **No reserved topics.** A producer MUST NOT list a `benzene:`-prefixed topic in `requests`, `events`
 or `sends`; the reserved topics' shapes are defined once, in wire-contracts §7. A consumer MUST

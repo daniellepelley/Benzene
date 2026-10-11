@@ -1,11 +1,11 @@
 {
-  "description": "Collector behavior (mesh.md sections 4-6). Each case runs its steps in order against one fresh collector; every step is a wire envelope in and out, asserted like envelope-cases (statusCode exact; body parsed-JSON subset; arrays by exact length and per-element subset). benzene:mesh:query:* shapes here follow the reference collector and are asserted only as the observable surface for ingest/derivation rules, not as promoted contracts. Per the 2026-08 revision: the producer/consumer graph (providers/consumers on query:topic) comes from the latest registered ServiceDescriptor's topics/produces alone -- topics for consumers, produces for providers; traces feed invocation stats and liveness, never graph membership (mesh.md section 4.2).",
+  "description": "Collector behavior (mesh.md sections 4-6). Each case runs its steps in order against one fresh collector; every step is a wire envelope in and out, asserted like envelope-cases (statusCode exact; body parsed-JSON subset; arrays by exact length and per-element subset). benzene:mesh:query:* shapes here follow the reference collector and are asserted only as the observable surface for ingest/derivation rules, not as promoted contracts. A register body is a contract document (mesh.md section 2); the bodies here carry only the members each case needs, with {} schemas, which a collector accepts (section 6). The producer/consumer graph (providers/consumers on query:topic) comes from the latest registration alone -- requests for consumers, events and sends for providers; traces feed invocation stats and liveness, never graph membership (mesh.md section 4.2).",
   "cases": [
     {
       "name": "register-then-fleet-shows-a-reduced-catalog-entry",
       "steps": [
         {
-          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:create\"}]}" },
+          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"requests\":[{\"topic\":\"order:create\",\"request\":{}}]}" },
           "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
         },
         {
@@ -28,7 +28,7 @@
       "name": "ingest-validation",
       "steps": [
         {
-          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"topics\":[]}" },
+          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"requests\":[]}" },
           "expected": { "statusCode": "bad-request" }
         },
         {
@@ -74,11 +74,11 @@
       "name": "heartbeats-drive-health-and-hash-mismatch-is-surfaced",
       "steps": [
         {
-          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"descriptorHash\":\"sha256:aaaa\",\"topics\":[{\"id\":\"order:create\"}]}" },
+          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"registrationHash\":\"sha256:aaaa\",\"requests\":[{\"topic\":\"order:create\",\"request\":{}}]}" },
           "expected": { "statusCode": "ok" }
         },
         {
-          "request": { "topic": "benzene:mesh:heartbeat", "headers": {}, "body": "{\"service\":\"orders\",\"instanceId\":\"orders-1\",\"descriptorHash\":\"sha256:aaaa\",\"sentAt\":\"2026-07-16T09:00:00Z\",\"health\":{\"isHealthy\":true,\"healthChecks\":{}}}" },
+          "request": { "topic": "benzene:mesh:heartbeat", "headers": {}, "body": "{\"service\":\"orders\",\"instanceId\":\"orders-1\",\"registrationHash\":\"sha256:aaaa\",\"sentAt\":\"2026-07-16T09:00:00Z\",\"health\":{\"isHealthy\":true,\"healthChecks\":{}}}" },
           "expected": { "statusCode": "ok" }
         },
         {
@@ -86,7 +86,7 @@
           "expected": { "statusCode": "ok", "body": { "services": [ { "service": "orders", "health": "healthy", "instances": 1 } ] } }
         },
         {
-          "request": { "topic": "benzene:mesh:heartbeat", "headers": {}, "body": "{\"service\":\"orders\",\"instanceId\":\"orders-2\",\"descriptorHash\":\"sha256:bbbb\",\"sentAt\":\"2026-07-16T09:00:05Z\",\"health\":{\"isHealthy\":false,\"healthChecks\":{}}}" },
+          "request": { "topic": "benzene:mesh:heartbeat", "headers": {}, "body": "{\"service\":\"orders\",\"instanceId\":\"orders-2\",\"registrationHash\":\"sha256:bbbb\",\"sentAt\":\"2026-07-16T09:00:05Z\",\"health\":{\"isHealthy\":false,\"healthChecks\":{}}}" },
           "expected": { "statusCode": "ok" }
         },
         {
@@ -109,11 +109,11 @@
       "name": "provider-consumer-graph-is-declared-not-trace-derived",
       "steps": [
         {
-          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"payments\",\"topics\":[{\"id\":\"payments:capture\"}]}" },
+          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"payments\",\"requests\":[{\"topic\":\"payments:capture\",\"request\":{}}]}" },
           "expected": { "statusCode": "ok" }
         },
         {
-          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:create\"}],\"produces\":[{\"id\":\"payments:capture\"}]}" },
+          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"requests\":[{\"topic\":\"order:create\",\"request\":{}}],\"sends\":[{\"topic\":\"payments:capture\",\"request\":{}}]}" },
           "expected": { "statusCode": "ok" }
         },
         {
@@ -134,7 +134,7 @@
       "name": "trace-parentage-feeds-stats-and-liveness-not-graph-membership",
       "steps": [
         {
-          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"greeter\",\"topics\":[{\"id\":\"greet\"}]}" },
+          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"greeter\",\"requests\":[{\"topic\":\"greet\",\"request\":{}}]}" },
           "expected": { "statusCode": "ok" }
         },
         {
@@ -181,15 +181,15 @@
       "name": "reregistration-replaces-provider-and-consumer-edges",
       "steps": [
         {
-          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"payments\",\"topics\":[{\"id\":\"payments:capture\"}]}" },
+          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"payments\",\"requests\":[{\"topic\":\"payments:capture\",\"request\":{}}]}" },
           "expected": { "statusCode": "ok" }
         },
         {
-          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:create\"}],\"produces\":[{\"id\":\"payments:capture\"}]}" },
+          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"requests\":[{\"topic\":\"order:create\",\"request\":{}}],\"sends\":[{\"topic\":\"payments:capture\",\"request\":{}}]}" },
           "expected": { "statusCode": "ok" }
         },
         {
-          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"topics\":[{\"id\":\"order:cancel\"}]}" },
+          "request": { "topic": "benzene:mesh:register", "headers": {}, "body": "{\"service\":\"orders\",\"requests\":[{\"topic\":\"order:cancel\",\"request\":{}}]}" },
           "expected": { "statusCode": "ok" }
         },
         {
@@ -199,6 +199,137 @@
         {
           "request": { "topic": "benzene:mesh:query:topic", "headers": {}, "body": "{\"topic\":\"payments:capture\"}" },
           "expected": { "statusCode": "ok", "body": { "topic": "payments:capture", "providers": [], "consumers": ["payments"] } }
+        }
+      ]
+    },
+    {
+      "name": "a-published-event-makes-its-publisher-a-provider",
+      "steps": [
+        {
+          "request": {
+            "topic": "benzene:mesh:register",
+            "headers": {},
+            "body": "{\"service\":\"orders\",\"requests\":[{\"topic\":\"order:create\",\"request\":{}}],\"events\":[{\"topic\":\"order:placed\",\"message\":{}}]}"
+          },
+          "expected": {
+            "statusCode": "ok"
+          }
+        },
+        {
+          "request": {
+            "topic": "benzene:mesh:register",
+            "headers": {},
+            "body": "{\"service\":\"shipping\",\"requests\":[{\"topic\":\"order:placed\",\"request\":{}}]}"
+          },
+          "expected": {
+            "statusCode": "ok"
+          }
+        },
+        {
+          "request": {
+            "topic": "benzene:mesh:query:topic",
+            "headers": {},
+            "body": "{\"topic\":\"order:placed\"}"
+          },
+          "expected": {
+            "statusCode": "ok",
+            "body": {
+              "topic": "order:placed",
+              "providers": [
+                "orders"
+              ],
+              "consumers": [
+                "shipping"
+              ],
+              "invocations": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "benzene-entries-in-a-registration-are-ignored",
+      "steps": [
+        {
+          "request": {
+            "topic": "benzene:mesh:register",
+            "headers": {},
+            "body": "{\"service\":\"orders\",\"requests\":[{\"topic\":\"order:create\",\"request\":{}},{\"topic\":\"benzene:spec\",\"request\":{}}],\"sends\":[{\"topic\":\"benzene:mesh:traces\",\"request\":{}}]}"
+          },
+          "expected": {
+            "statusCode": "ok"
+          }
+        },
+        {
+          "request": {
+            "topic": "benzene:mesh:query:fleet",
+            "headers": {},
+            "body": "{}"
+          },
+          "expected": {
+            "statusCode": "ok",
+            "body": {
+              "services": [
+                {
+                  "service": "orders",
+                  "topics": 1
+                }
+              ],
+              "topics": [
+                {
+                  "topic": "order:create",
+                  "consumers": [
+                    "orders"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "request": {
+            "topic": "benzene:mesh:query:topic",
+            "headers": {},
+            "body": "{\"topic\":\"benzene:spec\"}"
+          },
+          "expected": {
+            "statusCode": "not-found"
+          }
+        }
+      ]
+    },
+    {
+      "name": "a-registration-carrying-only-service-is-accepted",
+      "steps": [
+        {
+          "request": {
+            "topic": "benzene:mesh:register",
+            "headers": {},
+            "body": "{\"service\":\"orders\"}"
+          },
+          "expected": {
+            "statusCode": "ok",
+            "body": {
+              "accepted": 1
+            }
+          }
+        },
+        {
+          "request": {
+            "topic": "benzene:mesh:query:fleet",
+            "headers": {},
+            "body": "{}"
+          },
+          "expected": {
+            "statusCode": "ok",
+            "body": {
+              "services": [
+                {
+                  "service": "orders"
+                }
+              ]
+            }
+          }
         }
       ]
     }

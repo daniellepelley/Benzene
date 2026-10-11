@@ -32,7 +32,7 @@ The profile is opt-in in both directions, and each side of the bargain is uncond
 - **Skip it, lose only dashboard.** A service that doesn't claim the profile still runs, still
   interoperates over the wire contracts, and still shows up in the mesh to whatever extent its
   feeds allow ([mesh.md](mesh.md) §6) — it just has missing bits of dashboard: no schemas
-  without a descriptor, unknown health without heartbeats, no edges without traces. Nothing
+  without a registration, unknown health without heartbeats, no edges without traces. Nothing
   breaks; the picture is simply reduced.
 
 This makes the profile the recommended shape for **domain services running in a cloud** — the
@@ -69,8 +69,8 @@ rung 1) cannot claim the profile — there is nothing for fleet tooling to reach
 
 The service's topics MUST be served by message handlers registered through the handler registry
 ([core-concepts.md](core-concepts.md) §3, §9), so that the registry is the complete truth of
-what the service serves. This is the load-bearing steer: R5 (derived spec) and R6 (descriptor)
-are projections of the registry and cannot exist without it.
+what the service serves. This is the load-bearing steer: R5 (derived spec) and R6 (its
+registration) are projections of the registry and cannot exist without it.
 
 Middleware may still do anything middleware can do — interception, cross-cutting behavior,
 short-circuiting — but *routable application topics* MUST go through handlers.
@@ -101,10 +101,9 @@ generators parse.
 
 ### R6 — Mesh service-side feeds
 
-The service MUST provision the four service-side mesh feeds of [mesh.md](mesh.md):
+The service MUST provision the three service-side mesh feeds of [mesh.md](mesh.md):
 
-- the reserved `benzene:mesh` topic serving the ServiceDescriptor (mesh §1–§2),
-- registration (`benzene:mesh:register`) on startup (mesh §4),
+- registration (`benzene:mesh:register`) on startup, its body the R5 contract document (mesh §2, §4),
 - heartbeats (`benzene:mesh:heartbeat`) (mesh §5),
 - the trace feed (`benzene:mesh:traces`) with one TraceEvent per routed invocation (mesh §3–§4).
 
@@ -157,7 +156,7 @@ questions, and both stay in force:
   as mesh §6 specifies and keeps its claim. The profile requires the capabilities to be
   *provisioned*, not that the network never fails.
 - **Deliberate omission is what the profile rules out.** A service that never installs health
-  checks, never derives a descriptor, or serves topics outside the registry is a perfectly good
+  checks, never derives its contract document, or serves topics outside the registry is a perfectly good
   **Benzene Core** service — it just isn't a **Benzene Cloud Service**, and fleet tooling makes
   no promises about it beyond the reduced rendering of mesh §6.
 - **Deployment-time exposure control sits in between.** Blocking `/benzene/spec*` at a gateway
@@ -171,12 +170,12 @@ questions, and both stay in force:
 - **Benzene Core** (implementation-level): pass the Core fixtures listed in
   [conformance/README.md](conformance/README.md) ("Which fixtures a given conformance claim
   requires").
-- **Benzene Cloud Service** (profile support): additionally pass `mesh-descriptor-cases.json`
-  and `mesh-trace-cases.json`. (`mesh-collector-cases.json` remains collector-only and is not
+- **Benzene Cloud Service** (profile support): additionally pass the contract-document producer
+  groups ([contract-document.md](contract-document.md) §8) and `mesh-trace-cases.json`. (`mesh-collector-cases.json` remains collector-only and is not
   part of the profile.)
 - *(Informative.)* A port MAY offer a wiring-time **self-check** that evaluates a service's setup
-  against R1–R8 and carries the result on the descriptor's optional `profile` field
-  ([mesh.md](mesh.md) §2), and an external **probe** that audits any service over HTTP. Neither is
+  against R1–R8 and carries the result on the contract document's optional `profile` field
+  ([contract-document.md](contract-document.md) §1), and an external **probe** that audits any service over HTTP. Neither is
   required by the wire contract; .NET ships both (`Benzene.CloudService` and
   `Benzene.CloudService.Probe` — see the
   [benzene-dotnet docs](https://github.com/daniellepelley/benzene-dotnet/tree/main/docs)).

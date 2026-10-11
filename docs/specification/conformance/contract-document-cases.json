@@ -1,5 +1,5 @@
 {
-  "description": "Contract Document cases (contract-document.md). 'documents' holds shared documents referenced by id. Producer groups (required of every contract-document producer, R5): derivationCases - register the canonical types (no HTTP mappings) and compare each derived entry's topic, version, request, response and message exactly after section 6.2 steps 3-4 (dereferenced, annotations removed, required sorted), plus the exact hashes; contract-hash-cases.json's cases without a projection; namingCases - the section 4.1 naming rules; specTopicCases and specHttpCases - the benzene:spec request (section 7). Client-generator groups: parseCases, topicScopeCases, schemaClosureCases. See README.md for formats.",
+  "description": "Contract Document cases (contract-document.md). 'documents' holds shared documents referenced by id. Producer groups (required of every contract-document producer, R5): derivationCases - register the canonical types (no HTTP mappings) with the case's serviceInfo, subset-compare the identity fields, and compare each derived entry's topic, version, request, response and message exactly after section 6.2 steps 3-4 (dereferenced, annotations removed, required sorted), plus the exact hashes; contract-hash-cases.json's cases without a projection; namingCases - the section 4.1 naming rules; specTopicCases and specHttpCases - the benzene:spec request (section 7). Client-generator groups: parseCases, topicScopeCases, schemaClosureCases. See README.md for formats.",
   "documents": {
     "canonical": {
       "schemaDialect": "openapi-3.0",
@@ -468,7 +468,15 @@
   "derivationCases": [
     {
       "name": "canonical-service",
-      "description": "The canonical registrations (conformance/README.md): handler conformance:greet, event conformance:greeted, one-way send conformance:log, send conformance:lookup with a reply.",
+      "description": "The canonical registrations (conformance/README.md): handler conformance:greet, event conformance:greeted, one-way send conformance:log, send conformance:lookup with a reply; and the serviceInfo identity and placement, which the document carries and neither hash covers.",
+      "serviceInfo": {
+        "service": "conformance",
+        "serviceVersion": "1.0.0",
+        "versionScheme": "semver",
+        "placement": {
+          "cloud": "self-hosted"
+        }
+      },
       "registrations": {
         "requests": [
           {
@@ -496,6 +504,12 @@
         ]
       },
       "expected": {
+        "service": "conformance",
+        "serviceVersion": "1.0.0",
+        "versionScheme": "semver",
+        "placement": {
+          "cloud": "self-hosted"
+        },
         "requests": [
           {
             "topic": "conformance:greet",

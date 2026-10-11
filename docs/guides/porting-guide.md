@@ -74,8 +74,8 @@ A language-neutral test suite that every implementation runs:
 
 Conformance comes in two levels ([cloud-service-profile.md](../specification/cloud-service-profile.md)): the
 fixtures above establish **Benzene Core**. A port that also wants its services to claim the
-**Cloud Service Profile** additionally implements the service-side mesh feeds and passes
-`mesh-descriptor-cases.json` and `mesh-trace-cases.json`. Plan for the profile from the start
+**Cloud Service Profile** additionally implements the service-side mesh feeds and passes the
+contract-document producer groups and `mesh-trace-cases.json`. Plan for the profile from the start
 if the port's services should appear in a mesh — it is the difference between "interoperates"
 and "fully tool-operable".
 

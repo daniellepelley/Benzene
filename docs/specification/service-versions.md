@@ -1,7 +1,7 @@
 # Service Versions
 
 **Module — Provisional: .NET.** Optional; a collector without it stays collector-conformant
-(mesh.md §4), because a descriptor that omits `serviceVersion` keys exactly as it always has.
+(mesh.md §4), because a registration that omits `serviceVersion` keys exactly as it always has.
 
 A service's identity in the mesh is its **name**, which says *which* service but not *which release
 of it is running*. When two releases are deliberately deployed side by side — a rewrite, a risky
@@ -33,13 +33,13 @@ case this layer exists to distinguish.
 
 | | Source | Status |
 |---|---|---|
-| 1 | A non-empty `serviceVersion` on the descriptor | The identity. Operators SHOULD declare one per release; it is the only source that is both stable and human-meaningful. |
+| 1 | A non-empty `serviceVersion` on the registration | The identity. Operators SHOULD declare one per release; it is the only source that is both stable and human-meaningful. |
 | 2 | An immutable per-release identifier the substrate assigns — a published AWS Lambda version, a Kubernetes ReplicaSet, a Cloud Run revision, an Azure deployment slot | A port MAY read one as a fallback. Which (if any) exists is per-platform, so this is **informative**, read the same way `placement` is. |
 | 3 | Neither | The service has **exactly one** service version. This is not an error and MUST NOT be reported as one. |
 
 A port MUST NOT synthesize the identity from a value that varies independently of releases — a
 process start time, a per-boot random id, an `instanceId`. Those mint a fresh version per replica or
-per restart, shattering one release into phantom siblings. `descriptorHash` ([mesh.md](mesh.md) §2.2) is likewise not an
+per restart, shattering one release into phantom siblings. `registrationHash` ([contract-document.md](contract-document.md) §6) is likewise not an
 identity: it fingerprints the contract, which is precisely what case 2 exists because the contract
 cannot supply.
 
@@ -49,13 +49,13 @@ name and one contract. Without an extrinsic identifier there is nothing to tell 
 collector that claimed otherwise would be inventing a distinction the data does not contain.
 
 **Immutability.** Once `(service, serviceVersion)` has registered a contract, that pair's contract
-does not change. A re-registration of the same pair with a different `descriptorHash` is contract
+does not change. A re-registration of the same pair with a different `registrationHash` is contract
 drift ([mesh.md](mesh.md) §5) — the declared version is an assertion two builds disagree about. Two *different* versions
 reporting different hashes is **not** drift; it is the expected state of a side-by-side deployment.
 
-**Backward compatibility.** A descriptor that omits `serviceVersion` keys exactly as it always has:
+**Backward compatibility.** A registration that omits `serviceVersion` keys exactly as it always has:
 case 3 gives it one service version, so a collector implementing this section and one predating it
-agree on every single-deployment estate. Only a descriptor that declares a version exercises the new
+agree on every single-deployment estate. Only a registration that declares a version exercises the new
 behavior — which is why this section is additive rather than a breaking change to the existing
 keying of [mesh.md](mesh.md) §4.
 
@@ -81,7 +81,7 @@ this closed set:
 The scheme is **declared, never inferred from the value.** `"10"` and `"9"` order one way as integers
 and the opposite way as strings, so a port that guesses will disagree with a port that guesses
 differently — about which release is newer, in a tool used to decide deployments. There is no default:
-a descriptor declaring a `serviceVersion` without a `versionScheme` is declaring an identity, not an
+a registration declaring a `serviceVersion` without a `versionScheme` is declaring an identity, not an
 order: §1 case 1 still keys it, and it is simply not orderable.
 
 A `serviceVersion` that does not parse under its declared `versionScheme` is **invalid** and MUST be
@@ -119,7 +119,7 @@ versions. A port implementing §1 without §2 stays service-version conformant.
 
 ## 3. Degradation
 
-A descriptor with no `serviceVersion` and no substrate identifier is one service version (§1,
+A registration with no `serviceVersion` and no substrate identifier is one service version (§1,
 case 3): single-deployment estates behave exactly as they would without this module. A collector
 that does not implement it keys by `service` alone, so two side-by-side releases overwrite each
 other's registration in it — the reduced behaviour this module exists to remove, not an error.
