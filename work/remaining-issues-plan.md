@@ -116,6 +116,10 @@ an application-defined status in a received problem document's `benzeneStatus` i
 HTTP hop (TypeScript's Phase 5 report). Taking `benzeneStatus` when the failure body is a problem
 document would preserve it. Also over gRPC, a problem error's `code` has no slot in
 `BadRequest.FieldViolation` (wire-contracts §4.2; Go's Phase 5 report) — `reason` is a candidate.
+And no spec rule says what a client returns when the call itself fails (no connection, timeout
+before a reply): Python's `HttpMessageSender` and `GrpcMessageSender` raise, where every other
+sender in every port returns a `service-unavailable` result (Python's Phase 5 audit). Worth one
+sentence in transport-bindings' outbound-client rule, and a port fix.
 
 ---
 
