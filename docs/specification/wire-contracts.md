@@ -422,7 +422,7 @@ reserved topic is optional unless a profile requires it (the
 | `benzene:liveness` | none | `ok`, the health response, from checks that never depend on anything outside the process |
 | `benzene:readiness` | none | `ok`, the health response, from the checks that decide whether this instance should receive traffic |
 | `benzene:spec` | optional `{ "type"?: string, "format"?: string }` | `ok`, the contract document ([contract-document.md](contract-document.md)), or the format its request names |
-| `benzene:ping` | none | `ok`, no payload |
+| `benzene:ping` | none | `ok`, no payload — its body is unspecified, and a caller reads only the status |
 | `benzene:mesh` | none | `ok`, the ServiceDescriptor ([mesh.md](mesh.md) §1–§2) |
 | `benzene:mesh:register`, `benzene:mesh:heartbeat`, `benzene:mesh:traces`, `benzene:mesh:issues` | per [mesh.md](mesh.md) §4 | per [mesh.md](mesh.md) §4 — served by a collector, not by every service |
 | `benzene:mesh:query:*` *(Provisional)* | per collector | the collector's read models ([mesh.md](mesh.md) §4) — served by a collector; the shapes are not pinned |
