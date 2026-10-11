@@ -140,7 +140,7 @@ internal static class MarketingPages
         Sections:
         [
             new Section("Ports and adapters",
-                "The <a href=\"docs/specification/design-principles.html\">design principles</a> are explicit "
+                "The <a href=\"docs/guides/design-principles.html\">design principles</a> are explicit "
                 + "and the <a href=\"docs/specification/core-concepts.html\">core concepts</a> are small.",
             [
                 new Card("Handlers are the core",

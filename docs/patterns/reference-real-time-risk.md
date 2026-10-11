@@ -134,7 +134,7 @@ A team (or an agent) can stand this up incrementally — each step is independen
 4. **Risk Coordinator** — the end-of-day number ([map-reduce](map-reduce.md)).
 5. **Pricing Service** — low-latency internal feed (gRPC) once neighbours need it.
 
-Each rung is a shippable system on its own — the [adoption ladder](../specification/design-principles.md#2-the-adoption-ladder)
+Each rung is a shippable system on its own — the [adoption ladder](../guides/design-principles.md#2-the-adoption-ladder)
 applied to a whole platform, not just one service.
 
 ---

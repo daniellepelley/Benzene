@@ -7,7 +7,7 @@ settled; requirement ids (R1–R8) may still be reorganized while in draft.**
 
 The [Benzene Core Specification](README.md) is deliberately open: middleware-only services,
 in-process pipelines, and services with no health checks or spec endpoint are all first-class,
-conforming ways to use Benzene ([design-principles.md](design-principles.md) §2). That openness
+conforming ways to use Benzene ([the adoption ladder](../guides/design-principles.md#2-the-adoption-ladder)). That openness
 is an asset for adoption — and a problem for fleet tooling. The mesh, the Spec UI, codegen
 clients, and cross-service operability all depend on surfaces that a Core-level service is free
 not to have.
@@ -46,7 +46,7 @@ deployment.
 
 | Level | Claim | What it means |
 |---|---|---|
-| **Benzene Core** | "This is a Benzene implementation/service" | Conforms to the core documents as applicable to what it uses. Every capability is optional; the adoption ladder ([design-principles.md](design-principles.md) §2) applies in full. |
+| **Benzene Core** | "This is a Benzene implementation/service" | Conforms to the core documents as applicable to what it uses. Every capability is optional; the [adoption ladder](../guides/design-principles.md#2-the-adoption-ladder) applies in full. |
 | **Benzene Cloud Service** | "Fleet tooling can rely on this service" | Benzene Core, plus every requirement in §2 of this document. Corresponds to rungs 2–5 of the adoption ladder. |
 
 Core-level conformance is a property of an *implementation* (a language port) or a *service*;
@@ -81,22 +81,22 @@ short-circuiting — but *routable application topics* MUST go through handlers.
 The service MUST intercept the reserved `benzene:healthcheck` topic and respond with the health check
 response format ([wire-contracts.md](wire-contracts.md) §5, [core-concepts.md](core-concepts.md)
 §10). Where the service has an HTTP surface, the aggregate MUST also be exposed at its
-`/benzene/health` default ([design-principles.md](design-principles.md) §5.2).
+`/benzene/health` default ([transport-bindings.md](transport-bindings.md) §1, "Default HTTP paths").
 
 ### R4 — Wire-envelope invocability
 
 The service MUST be invokable via the Benzene message envelope
 ([wire-contracts.md](wire-contracts.md) §1) on at least one of its transports. Where the service
 has an HTTP surface, the envelope endpoint MUST default to `/benzene/invoke`
-([design-principles.md](design-principles.md) §5.2). This is the surface collectors and generic
+([transport-bindings.md](transport-bindings.md) §1, "Default HTTP paths"). This is the surface collectors and generic
 tooling use to reach any service without knowing its native transport shapes.
 
 ### R5 — Derived spec
 
 The service MUST derive its spec document from the handler registry and expose it — over HTTP at
-the `/benzene/spec` default ([design-principles.md](design-principles.md) §5.2). Hand-maintained
+the `/benzene/spec` default ([transport-bindings.md](transport-bindings.md) §1, "Default HTTP paths"). Hand-maintained
 spec documents do not satisfy this requirement: the point of the profile is that the spec is
-true because it is derived ([design-principles.md](design-principles.md) §3). The served document's
+true because it is derived ([core-concepts.md](core-concepts.md) §11). The served document's
 shape is [contract-document.md](contract-document.md) — the same format language-neutral client
 generators parse.
 
@@ -119,10 +119,10 @@ claim.
 ### R7 — Default service standard paths
 
 The well-known HTTP surfaces the service exposes MUST default to their
-[design-principles.md](design-principles.md) §5.2 paths under the `/benzene/` prefix. For a
+[transport-bindings.md](transport-bindings.md) §1 default paths under the `/benzene/` prefix. For a
 Core-level service §5 is a SHOULD; under this profile it is a MUST-by-default. Every path
 remains configurable per deployment (the extension-point rule of
-[design-principles.md](design-principles.md) §4 is not suspended by this profile), but a
+[wire-contracts.md](wire-contracts.md) §2 and [core-concepts.md](core-concepts.md) §11 are not suspended by this profile), but a
 deployment that relocates or blocks a surface accepts the documented degradation for that
 surface (§4 below) — fleet tooling is entitled to assume the defaults.
 
@@ -145,7 +145,7 @@ profiled service:
 | Implementing a mesh collector | R6 is service-side only; collectors are separate services |
 | Any specific transport binding | R1/R4 require *at least one* binding; which ones is the service's business |
 | Handler discovery idiom | Attribute scanning vs explicit calls is an idiom ([core-concepts.md](core-concepts.md) §9); R2 requires the registry, not a discovery style |
-| Convention overrides | Every §4 extension point of [design-principles.md](design-principles.md) stays replaceable; the profile constrains defaults and presence, not customizability |
+| Convention overrides | Every configurable name and replaceable default ([wire-contracts.md](wire-contracts.md) §2, [core-concepts.md](core-concepts.md) §8) stays replaceable; the profile constrains defaults and presence, not customizability |
 | Custom statuses, extra topics, application middleware | The profile is a floor, not a ceiling |
 
 ## 4. Degradation vs. non-conformance
@@ -162,7 +162,7 @@ questions, and both stay in force:
   **Benzene Core** service — it just isn't a **Benzene Cloud Service**, and fleet tooling makes
   no promises about it beyond the reduced rendering of mesh §6.
 - **Deployment-time exposure control sits in between.** Blocking `/benzene/spec*` at a gateway
-  pending a security review ([design-principles.md](design-principles.md) §5.1) is an operations
+  pending a security review ([transport-bindings.md](transport-bindings.md) §1) is an operations
   decision about a *deployment*, not a gap in the *service*. The service remains
   profile-conformant; that deployment presents to fleet tooling as reduced, per mesh §6, for
   exactly the blocked surfaces.
@@ -214,7 +214,7 @@ questions, and both stay in force:
 ## 6. Relationship to the adoption ladder *(informative)*
 
 The profile is not a new idea grafted onto Benzene — it is a **name for the top of the ladder**
-that [design-principles.md](design-principles.md) §2 already defines. The ladder describes the
+that [the adoption ladder](../guides/design-principles.md#2-the-adoption-ladder) already defines. The ladder describes the
 journey (each rung optional, stop anywhere); the profile marks the destination fleet tooling can
 rely on:
 

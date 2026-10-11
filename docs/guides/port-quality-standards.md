@@ -1,13 +1,13 @@
 # Port Quality Standards — Definition of Done for Language Ports
 
-**Status: DRAFT v0.1.** Cross-language. Applies to every Benzene language port — `benzene-python`,
+**Guidance (informative)** — a working standard for the ports, not part of the specification. Cross-language. Applies to every Benzene language port — `benzene-python`,
 `benzene-go`, `benzene-typescript`, and every future port — and to every unit of work within one.
 
 The key words MUST, SHOULD, and MAY are used per [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119).
 
 ## Purpose
 
-[porting-guide.md](porting-guide.md) says *what* to port and the [conformance fixtures](conformance/README.md)
+[porting-guide.md](porting-guide.md) says *what* to port and the [conformance fixtures](../specification/conformance/README.md)
 prove the *wire* is correct. This document defines the **quality bar and the process** around a port
 contribution: when a unit of port work is *done*, and the guard-rails that keep every port at a high,
 proven, easy-to-adopt standard.
@@ -48,7 +48,7 @@ A silent skip of either champion touch-point is a process failure, regardless of
 | Gate | Requirement |
 |---|---|
 | **G0 — Baseline** | Builds clean; the language's linter/type-checker passes (e.g. `mypy`/`pyright`, `tsc`, `go vet`); no skipped or disabled existing tests. |
-| **G1 — Spec conformance & interop** | Implements the relevant [spec](README.md) section idiomatically; passes the language-neutral [conformance fixtures](conformance/README.md); cross-language interop is verified for anything that crosses the wire (send/receive the envelope against another port). |
+| **G1 — Spec conformance & interop** | Implements the relevant [spec](README.md) section idiomatically; passes the language-neutral [conformance fixtures](../specification/conformance/README.md); cross-language interop is verified for anything that crosses the wire (send/receive the envelope against another port). |
 | **G2 — Idiomatic, layered packaging** | Follows the language's idioms; ships as layered, install-what-you-use packages named as close to the .NET layering as the language allows (see each port's package doc). A lower layer never imports a higher one. |
 | **G3 — A running multi-transport example per cloud provider** | For every cloud provider the port supports, a **fully-runnable** example lives in the port's `examples/` folder and exercises **multiple transports** (see the matrix in §3), including at least one **egress/outbound** path so ingress → handler → egress is demonstrated end to end. |
 | **G4 — Example tests that dogfood the port's own test helpers** | Each example ships its own tests, written against the **port's own test-helper packages** (§4) — not a bespoke harness. The example is simultaneously a demo *and* the proof that the test helpers work. |

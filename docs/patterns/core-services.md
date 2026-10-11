@@ -139,7 +139,7 @@ models serve, not a reason to break the directional rule.
 ## A core service is a Benzene Cloud Service
 
 Nothing about a core service is special Benzene — it is the ordinary, recommended shape at the top
-of the [adoption ladder](../specification/design-principles.md#2-the-adoption-ladder). Aim
+of the [adoption ladder](../guides/design-principles.md#2-the-adoption-ladder). Aim
 each core service at the [Cloud Service Profile](../specification/cloud-service-profile.md) so
 the fleet tooling works on it with no negotiation:
 

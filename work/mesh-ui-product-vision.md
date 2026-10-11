@@ -411,7 +411,7 @@ APPROVED (maintainer confirmed 2026-07-22), with the Removed-tier ruling below.*
 > 3. **Swagger framing:** (2a) deep-link to the service's own Spec UI (recommended, §10.7-clean,
 >    cheap) vs. (2b) centralized cross-origin Swagger (needs CORS + browser-carried auth). If (2a),
 >    do we make `UseSpecUi()` a recommended part of the service standard so the deep-link target
->    reliably exists? If (2b), that CORS/auth prerequisite needs writing into `design-principles.md`
+>    reliably exists? If (2b), that CORS/auth prerequisite needs writing into the spec (`transport-bindings.md` §1, default paths)
 >    §5 (as §10.5 already anticipated).
 > 4. **Scope of the first design cut:** HTTP-only via (2a) first (smallest, §10.7-clean, ships
 >    value immediately), with Lambda direct-invoke (case 1) as a follow-on once its §10.7 ruling

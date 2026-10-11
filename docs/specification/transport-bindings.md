@@ -1,6 +1,6 @@
 # Transport Bindings
 
-**Status: DRAFT v0.1**
+**Core**
 
 A **transport binding** (a port adapter) connects one native transport to the Benzene model. This
 document defines the contract every binding must satisfy, then catalogs the existing bindings as
@@ -89,13 +89,20 @@ registers, including topics with no HTTP route of their own, it MUST support res
 topics are reachable through it; a topic outside the restriction is answered `not-found`, exactly
 as if no handler matched.
 
-**HTTP default mappings for the reserved topics.** An HTTP binding maps the reserved topics
-(wire-contracts §7) to these routes by default, each configurable like any other route:
+**Default HTTP paths.** Every framework-provided HTTP surface SHOULD default to a path under
+**`/benzene/`**, so that a URL, a log line or a gateway rule shows at once that a path is framework
+infrastructure, and an operator can expose or protect all of them with one path rule. Every path is
+configurable per service. The Cloud Service Profile makes these defaults a MUST (its R7).
 
-| Route | Topic |
+| Path | Surface |
 |---|---|
-| `GET /benzene/health` | `benzene:healthcheck` |
-| `GET /benzene/spec` | `benzene:spec`; the `type` and `format` query parameters are its request |
+| `POST /benzene/invoke` | The envelope endpoint (above) |
+| `GET /benzene/spec` | The reserved `benzene:spec` topic (wire-contracts §7); the `type` and `format` query parameters are its request |
+| `GET /benzene/health` | The reserved `benzene:healthcheck` topic |
+| `/benzene/spec-ui` | Spec browser (optional UI); its default spec URL is `/benzene/spec?type=benzene` |
+| `/benzene/mesh-ui` | Mesh artifact viewer (optional UI) |
+| `/benzene/fleet-ui` | Live fleet view, served by a collector (optional UI) |
+| `/benzene/mcp` | The MCP endpoint (Provisional; [mcp.md](mcp.md)) |
 
 Routes for `benzene:liveness` and `benzene:readiness` are the port's choice. Any route mapped to a
 health topic answers **200** when the payload's `isHealthy` is true and **503** when it is false,
@@ -111,9 +118,8 @@ client reads the envelope from the response body whatever the HTTP status, and f
 reverse HTTP table only when the body is not an envelope.
 
 Bindings are **hosted** by a platform entry point (an ASP.NET Core server, a Lambda runtime, an
-Azure Functions worker, a background worker loop). Hosting is attached in the application's
-`configure` phase via a `use<Transport>(...)` extension that no-ops on other platforms
-(core-concepts §7).
+Azure Functions worker, a background worker loop). The application **mounts** a binding as part
+of its one definition, and a mount the current host cannot honour does nothing (core-concepts §7).
 
 ## 2. Existing bindings *(informative)*
 
@@ -248,8 +254,8 @@ over the same interface and therefore transport-agnostic.
 1. **The core never references a vendor.** Vendor SDK types appear only inside a binding package.
 2. **Vendor parity is defined by this spec, not by feature-matching another vendor's binding.**
    A binding is complete when it satisfies §1, not when it mirrors what the AWS binding does.
-3. **Application code moves between vendors by swapping the `use<Transport>` calls** in
-   `configure` (often just adding both — each no-ops where inapplicable). Handlers, middleware,
-   topics, and clients' call sites do not change.
+3. **Application code moves between vendors by swapping its mounts** (often just mounting both —
+   each does nothing where inapplicable). Handlers, middleware, topics, and clients' call sites do
+   not change.
 4. **Interop across vendors** rides on wire-contracts: a service on AWS and a service on Azure
    exchange the same envelope, headers, and status vocabulary.

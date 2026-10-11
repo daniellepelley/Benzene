@@ -15,7 +15,7 @@ something a team can follow or an agent can execute. Nothing here is normative; 
 of* the spec's vocabulary (topics, handlers, results, the mesh, the Cloud Service Profile) and
 links to it rather than restating it. Where it names a concrete API it is marked
 *(informative, .NET)* — the shape is language-neutral; the .NET names are illustrative, exactly as
-in [design-principles.md](../specification/design-principles.md).
+in [design-principles.md](../guides/design-principles.md).
 
 ![Two-tier architecture: an Orchestrators tier receives an API call or event and calls four core services — Tenant, User, Order, Billing — over the mesh, one call per aggregate operation per the routing table; each core service owns its own database, share-nothing.](diagrams/two-tier-architecture.svg)
 
@@ -67,7 +67,7 @@ writes that must be atomic).
 you fleet-scale separation of concerns at the cost of distributed-systems complexity (network
 calls, partial failure, sagas, a routing table). A small system does not need two tiers; start
 with one service and let it split when an aggregate boundary or a process boundary makes itself
-obvious. The [adoption ladder](../specification/design-principles.md#2-the-adoption-ladder)
+obvious. The [adoption ladder](../guides/design-principles.md#2-the-adoption-ladder)
 applies here too — climb it as the need appears, not before.
 
 ---

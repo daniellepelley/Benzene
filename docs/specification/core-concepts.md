@@ -1,6 +1,6 @@
 # Core Concepts
 
-**Status: DRAFT v0.1**
+**Core**
 
 This document defines Benzene's abstract model. Nothing here mentions a wire format (see
 [wire-contracts.md](wire-contracts.md)) or a specific transport (see
@@ -18,9 +18,9 @@ knows what the transport is.
 
 That paragraph describes the *steer*, not the minimum: message handlers are Benzene's
 recommended shape, but a pipeline with no handlers at all, or one invoked in process behind no
-transport, is still a conforming Benzene application. Which capabilities each part unlocks —
-and how the ones that need handlers degrade without them — is defined in
-[design-principles.md](design-principles.md).
+transport, is still a conforming Benzene application. A capability that depends on a steer
+degrades when the steer is declined (section 11); the adoption ladder that explains why is
+guidance, in [design-principles.md](../guides/design-principles.md).
 
 ## 2. Topic
 
@@ -83,6 +83,10 @@ handle : TRequest -> Result<TResponse>
 - Handlers declare their request/response types in whatever form is natural to the language;
   the framework is responsible for mapping the transport's native payload to `TRequest`
   (see section 6 and each transport binding's serialization rules).
+- The signature carries the request and nothing else. A handler that needs the message's
+  headers or an invocation fact (cancellation, deadline, the resolved topic) reaches them through
+  the invocation's scope — the context, or an accessor resolved from the scope — never through
+  extra parameters a transport would have to supply.
 
 ## 4. Middleware pipeline
 
@@ -151,37 +155,30 @@ Each transport defines a **context** type carrying, at minimum:
 The same rules apply in reverse for the response. This is what lets a handler choose, per side,
 between the transport's native type (zero-copy) and its own plain type (converted).
 
-## 7. Application lifecycle
+## 7. Application definition
 
-An application is defined once, platform-neutrally, in three phases run in order, exactly once,
-at startup:
+- **One definition, several transports.** An application is defined once, platform-neutrally, and
+  that one definition can mount several transports. A mount the current host cannot honour (an
+  AWS Lambda mount on an Azure host, a gRPC mount in a worker) does nothing; it MUST NOT fail.
+  This is what lets one definition move between vendors (transport-bindings §3).
+- **Registration completes before the first message.** Handlers, middleware and mounts are
+  registered, and the registration is validated, before the first invocation. A configuration
+  error — two handlers for one (topic, version), two declared defaults, a convention that resolves
+  nothing — fails start-up, never the first message.
+- **No binding is required.** A pipeline can be invoked in process, with no transport at all, and
+  is still a Benzene application.
 
-1. **`getConfiguration()`** — produce the configuration object. Runs before any registration; no
-   service resolution available.
-2. **`configureServices(container, configuration)`** — register handlers, middleware
-   dependencies, and adapters with the DI container (section 8).
-3. **`configure(appBuilder, configuration)`** — build the pipeline(s) against a
-   platform-neutral application builder. Transport-specific entry points are attached via
-   `use<Transport>(...)` extensions that **pattern-match the concrete platform and no-op
-   otherwise**, so one application definition can target several platforms and each deployment
-   activates only the entry points its host supports.
+## 8. Dependencies and scope
 
-The no-op rule is load-bearing for vendor neutrality: `useAwsLambda(...)` on an Azure host, or
-`useGrpc(...)` on a worker host, MUST silently do nothing rather than fail.
+- **A scope per invocation.** Each pipeline invocation runs in its own scope; scoped dependencies
+  live and die with it (section 4's batch rule makes that one scope per message).
+- **Defaults are replaceable.** The framework registers its defaults so that an application's own
+  registration wins over them.
+- **Construction by declaration.** Handlers and middleware are constructed with their declared
+  dependencies, per scope.
 
-## 8. Dependency registration and resolution
-
-Benzene defines a minimal container abstraction rather than mandating a DI framework:
-
-- **Registration**: `addSingleton` / `addScoped` / `addTransient`, by type, instance, or factory,
-  plus `tryAdd*` variants (register only if absent — this is how defaults are made overridable:
-  the framework `tryAdd`s its defaults, the application's own registration wins).
-- **Resolution**: a **scope** is created per pipeline invocation; scoped services live and die
-  with it. `getService` (required, throws if missing) and `tryGetService` (optional, returns
-  absent) are the only resolution operations.
-- Languages without a DI culture (Go, Rust) MAY implement this as an explicit registry/context
-  object; the *semantics* that must survive are: per-invocation scoping, overridable defaults,
-  and construction of handlers/middleware with their declared dependencies.
+How a language provides this — a DI container, an explicit registry object, closures — is the
+language's choice; the three properties above are what must survive.
 
 ## 9. Handler discovery
 
@@ -194,18 +191,62 @@ path; scanning is optional. Route-level attributes for specific transports (e.g.
 `[GrpcMethod("/pkg.Service/Method")]`) are likewise sugar over an explicit
 (route → topic) registration.
 
-## 10. Cross-cutting middleware guaranteed to be portable
+## 10. Optional capabilities
 
-These features are defined purely in terms of sections 2–8 and the header conventions in
-[wire-contracts.md §2](wire-contracts.md#2-header-conventions). Each is optional; an implementation
-that offers one offers it in exactly the shape below:
+Some capabilities are optional, and a port need not offer them. One that does offers it in exactly
+the shape the spec defines, on every transport and every vendor:
 
+- **Versioning** — versioned handlers and payload casting: selection per section 2, the header and
+  its absence per [versioning.md](versioning.md).
 - **W3C trace context** — continue a trace from inbound `traceparent`/`tracestate` headers and
   forward it on outbound calls. An implementation that propagates trace context MUST do so per the
-  W3C Trace Context specification (wire-contracts §2); whether a service must propagate it at all is the
-  [Cloud Service Profile](cloud-service-profile.md)'s R8, not a Core rule. (A per-invocation
+  W3C Trace Context specification (wire-contracts §2); whether a service must propagate it at all is
+  the [Cloud Service Profile](cloud-service-profile.md)'s R8, not a Core rule. (A per-invocation
   correlation value settable by application middleware and forwardable on outbound clients MAY
   additionally be offered, but inbound pickup of legacy correlation headers is not a framework
   contract.)
 - **Health checks** — intercept the reserved health topics (wire-contracts §7), run the registered
   checks, and respond with the health response (wire-contracts §5).
+
+## 11. Steers, shorthands and conventions
+
+Benzene recommends a default for most things — the *steer* — and lets an application decline it.
+Three rules make that safe:
+
+- **A capability that depends on a steer degrades, and says how.** A capability that depends on a
+  steer (message handlers, the default paths, a reserved topic) MUST state what it does when the
+  steer is declined, and that behaviour MUST reduce the capability, never break the service or the
+  tooling around it. The mesh's degradation rules ([mesh.md](mesh.md) §6) are the worked example;
+  a derived contract document is the common one — without message handlers there is nothing to
+  derive it from, so it is absent, not wrong.
+- **A shorthand is composed from the explicit form.** Every capability has an explicit form in
+  public API. A shorthand (a builder method, an attribute, scanning) MUST be built from that public
+  form, so that an application could have written it itself and can drop one level down from it.
+  Its documentation names the explicit form it composes.
+- **Inference is verified before the first message.** A convention that infers something —
+  scanning, discovery, convention over configuration — MUST be checked at start-up, and its failure
+  names what was looked for, where, and what to add. A convention that can first fail on the
+  message path is not permitted.
+
+Every name a convention puts on the wire is configurable in one place and applies in both
+directions (wire-contracts §2).
+
+## 12. Outbound
+
+A service sends messages as well as receiving them.
+
+- **The sender.** Every outbound client implements one operation —
+  `send(topic, headers, message) → result` — over its own pipeline, with the transport at the
+  bottom. Cross-cutting client behaviour (trace context, retry, correlation) is middleware on that
+  pipeline, so it is the same for every transport. What a client must do on the wire is
+  transport-bindings §1's rule for outbound clients.
+- **Routing.** Which sender carries a topic is the application's choice. A port MAY offer a
+  routing table from topic to sender, so that application code names only a topic and a message;
+  it is not required.
+- **Declared sends.** What a service sends is declared, as handlers are: each outbound topic with
+  its request type and, where a reply is expected, its response type. Declarations are what let a
+  service describe what it produces ([mesh.md](mesh.md) §2) without anyone reading its code.
+- **Error fidelity.** A client that receives a problem document — the body of a failure envelope,
+  or an `application/problem+json` response — MUST rebuild the result's `errors` from it with
+  `field` and `code` intact (wire-contracts §1.3). It MAY also attach the received document
+  verbatim, which preserves an application's own problem `type` across the hop.

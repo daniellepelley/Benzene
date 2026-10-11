@@ -21,7 +21,7 @@ has to become a message over a wire with failure semantics — new code, new sha
 
 This pattern is about building the monolith on Benzene so that **the boundary has teeth from day
 one, and extraction is a wiring change instead of a rewrite**. The mechanism is the
-[in-process pipeline](../specification/design-principles.md) — rung 1 of the adoption ladder — plus
+[in-process pipeline](../guides/design-principles.md) — rung 1 of the adoption ladder — plus
 the topic-addressed [routing table](service-communication.md#the-routing-table): module-to-module
 calls are Benzene messages from the first commit, and a message that crosses a process boundary
 looks exactly like one that doesn't.
@@ -213,7 +213,7 @@ module extracted this way shrinks the monolith; the monolith itself is just anot
 service in the growing fleet, not a legacy artifact.
 
 **4. Let the fleet tooling catch up with you.** The moment the extracted service is deployed it
-can climb the rest of the [adoption ladder](../specification/design-principles.md): health checks,
+can climb the rest of the [adoption ladder](../guides/design-principles.md): health checks,
 a derived [spec](../specification/wire-contracts.md), the [mesh](../specification/mesh.md). The
 service map that was implicit inside one process — who calls whom, over which topics — becomes the
 mesh's explicit, observed topology. You do not lose visibility by distributing; on a Benzene

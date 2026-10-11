@@ -1,10 +1,10 @@
 # Porting Guide
 
-**Status: DRAFT v0.1**
+**Guidance (informative).**
 
 Notes for implementing Benzene in another language. The strategy is **spec-first**: a port
-implements [core-concepts.md](core-concepts.md), [wire-contracts.md](wire-contracts.md), and
-[transport-bindings.md](transport-bindings.md) idiomatically — it does not translate the C# API.
+implements [core-concepts.md](../specification/core-concepts.md), [wire-contracts.md](../specification/wire-contracts.md), and
+[transport-bindings.md](../specification/transport-bindings.md) idiomatically — it does not translate the C# API.
 Interop with .NET Benzene services comes from the wire contracts, and is the first thing a port
 should prove, not the last.
 
@@ -25,14 +25,14 @@ docs). This guide is *how to translate*; that document is *when the translation 
 | `IAsyncEnumerable<T>` streaming handlers | Async stream of items, one pipeline run per call (core-concepts §3) | Channels (Go), async generators (TS/Python), `Stream` (Rust) |
 | `GrpcServerCallAccessor` scoped accessor | Invocation-scoped facts available to handler code without transport coupling | Context values (Go `context.Context`), ALS (Node), contextvars (Python) |
 | Reflection-cached protobuf `Descriptor`/`Parser` lookups | proto3-JSON bridging rule (wire-contracts §6) | Each language's protobuf library exposes the same JSON mapping natively |
-| `BenzeneStartUp` abstract class | The three-phase lifecycle + platform no-op rule (core-concepts §7) | A builder or plain functions; the *ordering and no-op semantics* are what must survive |
+| `BenzeneStartUp` abstract class | One definition, several transports, unhonourable mounts do nothing, registration validated before the first message (core-concepts §7) | A builder or plain functions; those three properties are what must survive |
 
 Rule of thumb: if removing a mechanism would change what's on the wire or what a handler observes,
 it's a concept and it's in the spec. Otherwise it's an idiom — do what's natural in the target
 language.
 
 Client generation (the `codegen` row above) has its own pinned contract: the `.spec.json` a
-service derives and serves ([contract-document.md](contract-document.md)), the topic-scoping and
+service derives and serves ([contract-document.md](../specification/contract-document.md)), the topic-scoping and
 schema-closure rules a generator must implement identically, and the language-neutral
 `contractHash` algorithm — all conformance-pinned by `contract-document-cases.json` and
 `contract-hash-cases.json`. A port that ships a client generator implements that document; method
@@ -51,10 +51,10 @@ naming and file layout stay idiom, same rule of thumb as above.
 6. Further bindings by demand — each is additive.
 
 **Problem details.** Implement the failure payload from
-[wire-contracts.md §1.3](wire-contracts.md#13-problem-details-payload) exactly as specified: the
+[wire-contracts.md §1.3](../specification/wire-contracts.md#13-problem-details-payload) exactly as specified: the
 member table, the replace-not-wrap rule, and the `problem-details-cases.json` /
-`envelope-cases.json` fixtures that pin it (see [conformance/](conformance/README.md)). The
-problem-type registry ([wire-contracts.md §3.1](wire-contracts.md#31-problem-type-registry)) is
+`envelope-cases.json` fixtures that pin it (see [conformance/](../specification/conformance/README.md)). The
+problem-type registry ([wire-contracts.md §3.1](../specification/wire-contracts.md#31-problem-type-registry)) is
 **data to copy**, not a taxonomy to invent — eleven rows keyed by the existing status vocabulary,
 nothing to design.
 
@@ -62,7 +62,7 @@ nothing to design.
 
 A language-neutral test suite that every implementation runs:
 
-- **Fixture form** (exists — see [conformance/](conformance/README.md), which lists the fixtures
+- **Fixture form** (exists — see [conformance/](../specification/conformance/README.md), which lists the fixtures
   each conformance claim requires): JSON fixtures for the status vocabulary, the HTTP/gRPC mapping
   tables in both directions, end-to-end envelope cases run against a canonical handler set, native
   metadata and settlement, problem details, and the mesh. The .NET reference runner is
@@ -72,7 +72,7 @@ A language-neutral test suite that every implementation runs:
   `benzene-status` trailer over real transports.
 - A port is "Benzene" when it passes both; API shape is explicitly not part of conformance.
 
-Conformance comes in two levels ([cloud-service-profile.md](cloud-service-profile.md)): the
+Conformance comes in two levels ([cloud-service-profile.md](../specification/cloud-service-profile.md)): the
 fixtures above establish **Benzene Core**. A port that also wants its services to claim the
 **Cloud Service Profile** additionally implements the service-side mesh feeds and passes
 `mesh-descriptor-cases.json` and `mesh-trace-cases.json`. Plan for the profile from the start
@@ -115,19 +115,3 @@ Match the target language's existing idiom for outbound clients (a constructed o
 directly, not a new routing concept invented for this one transport) rather than translating any
 one port's shape literally — see the .NET, Go, TypeScript, and Python implementations for four
 idiomatic answers to the same two questions above.
-
-## 5. Known .NET-isms that must NOT leak into the spec
-
-Recorded so they don't get accidentally specified:
-
-- `Void` as a class standing in for "no response" — a port should use its language's unit type.
-- Status **wire values** are a contract (keep) — they are the lowercase-kebab-case strings of
-  wire-contracts §3 (e.g. `not-found`), *not* the .NET enum's PascalCase member name, which is a
-  .NET-ism that must not leak. PascalCase keys inside health check `data` bags are incidental (each
-  check writes verbatim keys — specified as "verbatim", not as "PascalCase").
-- ~~The `message` vs `body` envelope field inconsistency~~ — resolved: both sides now use `body`
-  (wire-contracts §1.1); the client also tolerates numeric HTTP status codes on read for
-  compatibility with older services, which a fresh port need not replicate.
-- Attribute-based gRPC route declaration — the spec form is an explicit (route → topic) record.
-- The reopened-container / accessor-instance tricks in ASP.NET Core hosting — pure host plumbing;
-  no equivalent should be required of a port whose platform doesn't have the same DI split.
