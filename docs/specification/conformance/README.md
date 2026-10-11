@@ -230,7 +230,8 @@ case to its own native message before decoding it.
   so the version cases here run unconditionally.
 
 `defaultMetadataKeys` names the keys themselves, and `topicSources` records where each binding
-gets its topic. Both are directly assertable: a port can compare its own constant against
+gets its topic; a `fallback` names what a metadata binding routes on when the topic key is absent
+(RabbitMQ's routing key, Kafka's own topic) — the key, when present, always wins. Both are directly assertable: a port can compare its own constant against
 `defaultMetadataKeys.topic` without building a message at all, which is the cheapest possible
 check and the one that catches a rename.
 

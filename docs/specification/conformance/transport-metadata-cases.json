@@ -37,7 +37,8 @@
     {
       "binding": "kafka",
       "source": "metadata",
-      "nativeChannel": "headers"
+      "nativeChannel": "headers",
+      "fallback": "the Kafka topic the record was consumed from, so a producer that writes no topic header still routes"
     },
     {
       "binding": "rabbitmq",

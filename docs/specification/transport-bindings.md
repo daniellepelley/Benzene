@@ -186,7 +186,10 @@ HTTP, Event Hub, Service Bus, and Kafka triggers.
 
 ### Kafka (self-hosted consumer) — `Benzene.Kafka.Core`
 
-Topic from message metadata/envelope; headers from Kafka headers (UTF-8); no response channel —
+Topic: the record's `topic` header (matching the convention above), falling back to the Kafka topic
+the record was consumed from, so a producer that writes no header — a non-Benzene one, or one
+that names its Kafka topics after Benzene topics — still routes. Headers from Kafka headers
+(UTF-8); no response channel —
 result mapping is settlement (§1, obligation 8): a partition-ordered stream, so a failed message
 blocks the ones behind it.
 
