@@ -1,21 +1,16 @@
 {
-  "openapi": "3.0.1",
-  "info": {
-    "title": "Orders API",
-    "description": "Accepts and tracks customer orders through to fulfilment.",
-    "version": "2.4.0"
-  },
-  "tags": [
-    {
-      "name": "orders",
-      "description": "Order lifecycle"
-    }
-  ],
+  "schemaDialect": "openapi-3.0",
+  "service": "orders-api",
+  "serviceVersion": "2.4.0",
+  "versionScheme": "semver",
+  "description": "Accepts and tracks customer orders through to fulfilment.",
   "messageEndpoint": "/benzene/invoke",
   "transports": [
     "http",
     "sqs"
   ],
+  "contractHash": "sha256:770f508339e7cdec6edac0f7ab851936a6e31e2e82baa75bdc094e68ac7eeb34",
+  "registrationHash": "sha256:071bee40c16eddae22868c606e9f768d2b54a22961e6d1074e66ba198031e0bf",
   "requests": [
     {
       "topic": "orders:create",
@@ -27,50 +22,10 @@
         }
       ],
       "request": {
-        "type": "object",
-        "title": "CreateOrder",
-        "required": [
-          "customerId",
-          "lines"
-        ],
-        "properties": {
-          "customerId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "lines": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "sku": {
-                  "type": "string"
-                },
-                "quantity": {
-                  "type": "integer",
-                  "minimum": 1
-                }
-              }
-            }
-          }
-        }
+        "$ref": "#/components/schemas/CreateOrder"
       },
       "response": {
-        "type": "object",
-        "title": "OrderCreated",
-        "properties": {
-          "orderId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "accepted",
-              "rejected"
-            ]
-          }
-        }
+        "$ref": "#/components/schemas/OrderCreated"
       },
       "example": {
         "customerId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
@@ -91,87 +46,146 @@
         }
       ],
       "request": {
-        "type": "object",
-        "properties": {}
+        "type": "object"
       },
       "response": {
         "type": "array",
         "items": {
-          "type": "object",
-          "title": "OrderDto"
+          "$ref": "#/components/schemas/OrderDto"
         }
       }
     },
     {
-      "topic": "benzene:spec",
-      "reserved": true,
+      "topic": "orders:cancel",
       "request": {
-        "type": "object",
-        "properties": {}
-      },
-      "response": {
-        "type": "object",
-        "title": "ServiceSpec"
-      }
-    },
-    {
-      "topic": "benzene:health",
-      "reserved": true,
-      "request": {
-        "type": "object",
-        "properties": {}
-      },
-      "response": {
-        "type": "object",
-        "title": "HealthReport"
+        "$ref": "#/components/schemas/CancelOrder"
       }
     }
   ],
   "events": [
     {
-      "topic": "payment:capture",
-      "version": "v2",
+      "topic": "order:placed",
       "message": {
-        "type": "object",
-        "title": "PaymentCapture",
-        "required": [
-          "orderId",
-          "amount"
-        ],
-        "properties": {
-          "orderId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "amount": {
-            "type": "number"
-          },
-          "currency": {
-            "type": "string"
-          }
-        }
-      },
-      "example": {
-        "orderId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-        "amount": 42.5,
-        "currency": "GBP"
+        "$ref": "#/components/schemas/OrderPlaced"
       }
     },
     {
       "topic": "order:legacy-export",
       "message": {
-        "type": "object",
-        "title": "LegacyOrderExport",
-        "properties": {
-          "orderId": {
-            "type": "string"
-          }
-        }
+        "$ref": "#/components/schemas/LegacyOrderExport"
+      }
+    }
+  ],
+  "sends": [
+    {
+      "topic": "payment:capture",
+      "version": "v2",
+      "request": {
+        "$ref": "#/components/schemas/PaymentCapture"
+      }
+    },
+    {
+      "topic": "stock:reserve",
+      "request": {
+        "$ref": "#/components/schemas/ReserveStock"
+      },
+      "response": {
+        "$ref": "#/components/schemas/StockReservation"
       }
     }
   ],
   "components": {
     "schemas": {
+      "Address": {
+        "type": "object",
+        "properties": {
+          "line1": {
+            "type": "string"
+          },
+          "postcode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "line1",
+          "postcode"
+        ]
+      },
+      "CancelOrder": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "orderId"
+        ]
+      },
+      "CreateOrder": {
+        "type": "object",
+        "properties": {
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "lines": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderLine"
+            }
+          },
+          "shippingAddress": {
+            "type": "object",
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Address"
+              }
+            ]
+          }
+        },
+        "required": [
+          "customerId",
+          "lines"
+        ]
+      },
+      "LegacyOrderExport": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderId"
+        ]
+      },
+      "OrderCreated": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "rejected"
+            ]
+          }
+        },
+        "required": [
+          "orderId",
+          "status"
+        ]
+      },
       "OrderDto": {
         "type": "object",
         "properties": {
@@ -183,7 +197,92 @@
             "type": "string",
             "format": "date-time"
           }
-        }
+        },
+        "required": [
+          "orderId",
+          "placedAt"
+        ]
+      },
+      "OrderLine": {
+        "type": "object",
+        "properties": {
+          "sku": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "sku",
+          "quantity"
+        ]
+      },
+      "OrderPlaced": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "customerId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "orderId",
+          "customerId"
+        ]
+      },
+      "PaymentCapture": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amount": {
+            "type": "number",
+            "format": "double"
+          },
+          "currency": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "orderId",
+          "amount"
+        ]
+      },
+      "ReserveStock": {
+        "type": "object",
+        "properties": {
+          "sku": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "required": [
+          "sku",
+          "quantity"
+        ]
+      },
+      "StockReservation": {
+        "type": "object",
+        "properties": {
+          "reservationId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reservationId"
+        ]
       }
     }
   }
