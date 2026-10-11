@@ -179,8 +179,9 @@ language-neutral construct; each port applies it to its own type system):
 | raw or unknown JSON, dynamic values, custom serializers, anything the marshaler cannot serialize | `{}` |
 
 - Property names, and whether a property can be omitted, are exactly what the port's JSON marshaler
-  does. A property the marshaler always emits is `required`, even when its value may be `null`; one
-  it may omit is not.
+  does. A property the marshaler always emits is `required`, even when its value may be `null` or
+  the type declares a default for it; one it may omit is not. `required` describes the payload as
+  written, not what a sender may leave out.
 - Inherited or embedded members are flattened the way the marshaler flattens them.
 - A producer SHOULD emit a `format` it knows (`int64`, `double`, `uuid`) — generated clients need it
   to choose a type — and MAY omit it. `format` never reaches a hash (§6.2).
