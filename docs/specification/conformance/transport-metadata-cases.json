@@ -205,6 +205,7 @@
       { "binding": "eventbridge", "shape": "one-shot" },
       { "binding": "s3", "shape": "one-shot" },
       { "binding": "event-grid", "shape": "one-shot" },
+      { "binding": "blob-storage", "shape": "one-shot", "note": "an object-storage trigger delivering one blob event per invocation (e.g. the Azure Functions Blob trigger); a failure fails the invocation so the platform retries it" },
       { "binding": "timer", "shape": "one-shot", "note": "a scheduled tick (e.g. the Azure Functions Timer trigger): no message and no topic to match, so unmatchedTopic does not arise; a failure fails the invocation so the platform's retry policy applies" },
       { "binding": "envelope-async", "shape": "one-shot", "note": "the envelope delivered by an asynchronous function invocation (e.g. Lambda Event invocation): there is no caller to answer, so a failure must fail the invocation for the platform to retry it" },
       { "binding": "kafka", "shape": "stream" },

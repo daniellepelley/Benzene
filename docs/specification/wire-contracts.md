@@ -49,7 +49,7 @@ is normative.)*
 | Field | Type | Rules |
 |---|---|---|
 | `statusCode` | string | A status vocabulary value (§3) — the *Benzene* status, not an HTTP code. Clients MAY additionally tolerate numeric HTTP codes here for interop with older or HTTP-shaped services, but MUST NOT write them. |
-| `isSuccessful` | boolean | Required. **The** success/failure signal, set by whoever sets the status. For a status in §3's vocabulary it MUST equal that status's Success? column — there are no exceptions; a result that wants to carry a payload with a failure status is a failure. For an application-defined status it is the only signal there is. **A receiver MUST take this field as authoritative and MUST NOT reclassify from `statusCode` text**, which means nothing to a receiver for a status outside the shared vocabulary. |
+| `isSuccessful` | boolean | Required. **The** success/failure signal, set by whoever sets the status. For a status in §3's vocabulary it MUST equal that status's Success? column — there are no exceptions; a result that wants to carry a payload with a failure status is a failure. For an application-defined status it is the only signal there is. **A receiver MUST take this field as authoritative and MUST NOT reclassify from `statusCode` text**, which means nothing to a receiver for a status outside the shared vocabulary. An envelope without it is malformed, and a receiver treats it as unsuccessful. |
 | `headers` | object (string→string) | Response headers, including `content-type` when set. |
 | `body` | string | Pre-serialized response payload: on success, the handler's response payload; on failure, the error payload (§1.3). |
 
