@@ -213,6 +213,7 @@ only; decisions stay with the product owner.
 17. **Matrices behind their own code — closed the same day.** The .NET and TypeScript Conformance rows
     still named the `spec-0.1.0` pin, and Python's settlement footnote still called the Blob trigger
     unnamed by the fixture; all three were corrected in the ports (`6f68abbb`, `f88a346`, `3500f07`).
+
 ### Where the ports agree (worth recording)
 
 - **Database/state access**: all four state the identical deliberate no ("a database is not a
