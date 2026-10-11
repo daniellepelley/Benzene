@@ -239,6 +239,13 @@ served (Q6). The hash moves into each runtime package. Consumers: benzene-ui —
 both document shapes during the transition**, since it never reads a register body this is all of
 its Phase 3 work — and the Spec UI.
 
+**Open from 3a (rule before 3b):** what `required` means for a property that has a default. §4.2
+says "always emitted" (the output view); Python marks a defaulted field not required, and
+TypeScript derives Zod with `io: 'input'` — the input view, which is what a client of a request
+type wants (it may omit a defaulted field). No fixture is affected (no canonical type has a
+default), and drift checks hash the served document, so ports agree on every comparison that
+matters; but the rule should say which view applies to requests and which to responses.
+
 **3b — The register body (`spec-0.4.0`).** The contract document gains the identity fields and
 becomes the `benzene:mesh:register` body; `benzene:mesh` (mesh §1) and `descriptorHash` (§2.2) go;
 mesh §2 reduces to "the register body is the contract document"; §2.1's type mapping moves into
