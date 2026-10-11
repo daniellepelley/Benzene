@@ -1,6 +1,6 @@
 # One self-description — design spike
 
-**Status:** DESIGN — recommendations for ruling; Phase 0.2 of
+**Status:** DESIGN — **ruled 2026-10-11** (§10.5); Phase 0.2 of
 [`spec-simplification-plan.md`](spec-simplification-plan.md).
 **Written:** 2026-10-11. **Actions:** decision D18, and the review it comes from
 ([`spec-review-2026-10.md`](spec-review-2026-10.md) §2.1, §4.9, §8).
@@ -699,6 +699,10 @@ API to each port.
   `--include-reserved`; the poller reads `registrationHash`.
 
 ### 10.5 Rulings, restated after review
+
+**Ruled 2026-10-11 by the maintainer: every recommendation below is accepted** — Q1–Q7, Q9 and Q10
+as recommended, Q8's two dependency exceptions (Python's `rfc8785` in `benzene-core`; Go's
+hand-written, fuzz-checked `internal/jcs`), and Q11 deferred as a recorded Python gap.
 
 | # | Ruling | Recommendation now |
 |---|---|---|
