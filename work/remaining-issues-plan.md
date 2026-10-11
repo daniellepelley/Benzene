@@ -102,59 +102,14 @@ settles?
 
 ---
 
-## P1 — three cross-port design questions (recorded in `work/ceremony-parity-audit.md`)
+## P1 — the three cross-port design questions: decided 2026-10-11
 
-These are the ones I deliberately did not act on overnight. Each needs your call, not more code.
-
-### P1.1 — Should an HTTP client carry a peer's `errors`?
-
-**Decided 2026-10-11 (spec-simplification-plan D25, core-concepts §12):** yes. A client that receives a
-problem document — a failure envelope's body, or an `application/problem+json` response (which is how
-it knows) — MUST rebuild `errors` with `field` and `code` intact. Port work: .NET's
-`HttpStatusCode.Convert` and TypeScript's `HttpContextConverter`; it may follow 1.0. The text below
-is the question as it was asked.
-
-Go's `httpclient`/`awslambdaclient` now rebuild a failed `Result` from the peer's problem document
-with `field` and `code` intact. .NET's `HttpStatusCode.Convert` and TypeScript's
-`HttpContextConverter` map the status code and read nothing from the body, so a failure through them
-has an empty `errors`.
-
-They are not the same shape, which is why this is a question: Go's clients speak the wire
-**envelope**, so the body always *is* a problem document; .NET's and TypeScript's HTTP client calls
-an arbitrary verb+path endpoint whose body is whatever that endpoint returns. Reading `errors` there
-means guessing the peer speaks RFC 9457. No fixture requires it and the two ports agree with each
-other today.
-
-**The question:** should a failure from a *Benzene* peer over the HTTP client carry that peer's
-`errors` — and if so, how does the client know the peer is one? (A negotiated content type of
-`application/problem+json` is the obvious candidate; it is already emitted.)
-
-### P1.2 — Should Go and Python attach the *received* problem document?
-
-**Decided 2026-10-11 (D25):** attaching the received document verbatim is a MAY (core-concepts
-§12) — Go and Python may add it; nothing requires it. The text below is the question as it was asked.
-
-.NET's envelope client attaches the document it received, so `result.GetProblem()` returns exactly
-what the peer sent rather than one re-derived from the status. That is what preserves an
-application-owned `type` URI across a hop **inbound** — the mirror of what `ProblemResult` /
-`Result.problem` does outbound. Go and Python now carry the peer's `errors` but re-derive the rest,
-so an app-authored `type` still dies at the first hop inbound.
-
-Small and well-shaped, but it is new public API on two ports for something nobody has asked for.
-
-### P1.3 — `mesh-service-version-cases.json`: claim it or stop vendoring it
-
-**Decided 2026-10-11 (D26):** the fixture stays, conditional on the Service Versions module
-(now `docs/specification/service-versions.md`, Provisional: .NET); .NET claims it, the others skip it
-with a written reason.
-
-All four ports vendor this fixture. **None runs it.** It is legitimately conditional — required only
-of a collector claiming service-version identity — so not running it is conformant. But vendoring it
-in four places reads like intent. Either claim service-version identity and wire it up, or drop the
-file from the snapshots so the coverage matrix stops looking like an oversight.
-
-(The sibling `mesh-version-order-cases.json` is a cleaner case: only .NET implements §2.5 ordering at
-all, so the other three correctly skip it. Worth confirming that is intended and not just unbuilt.)
+All three were settled by `spec-simplification-plan.md` (D25, D26) and are in the spec: a client that
+receives a problem document MUST rebuild `errors` with `field` and `code` intact, and MAY attach the
+received document (core-concepts §12); `mesh-service-version-cases.json` is the Service Versions
+module's fixture (Provisional: .NET), which the other ports skip with a written reason. **Port work
+still open:** .NET's `HttpStatusCode.Convert` and TypeScript's `HttpContextConverter` read nothing from
+a problem body yet — the core-concepts §12 MUST, which may follow 1.0.
 
 ---
 
@@ -235,8 +190,7 @@ prose.
 2. **P0.3 step 2–3** (patterns cleanup) immediately follows the NuGet publish — already scoped, no
    decisions left.
 3. ~~**P2.1 and P2.2**~~ — both done, 2026-08-20. P2.3 (personas) remains.
-4. **P1.1–P1.3** whenever you want to settle them. Nothing is blocked on them; they are the
-   difference between "these ports agree by accident" and "these ports agree on purpose".
+4. ~~**P1.1–P1.3**~~ — decided 2026-10-11 (above); the .NET/TypeScript client port work remains.
 
 ---
 

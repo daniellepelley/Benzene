@@ -1,8 +1,6 @@
 # Benzene Specification
 
-The canonical, language-neutral definition of Benzene, which every language port implements. The
-version of the specification is in [`VERSION`](VERSION); each release is tagged `spec-x.y.z`, and a
-port's conformance fixtures pin the release they implement ([conformance](conformance/README.md)).
+The canonical, language-neutral definition of Benzene, which every language port implements.
 
 ## Tiers
 
@@ -54,8 +52,14 @@ and states which fixtures each claim — Core, per binding, the profile, per mod
 
 The key words MUST, MUST NOT, SHOULD, and MAY are used as described in
 [RFC 2119](https://www.rfc-editor.org/rfc/rfc2119). Sections marked *(informative)* illustrate and
-are not requirements. While the specification is 0.x, contracts may still change; from 1.0, a
-breaking change to Core or the profile is a major version.
+are not requirements.
+
+## Versioning
+
+- The version is in [`VERSION`](VERSION); each release is the tag `spec-x.y.z`, and a port's
+  fixtures pin the release they implement ([conformance](conformance/README.md)).
+- Semantic versioning from 1.0: a breaking change to Core or the profile is a major version.
+- Adding a requirement to the profile is a breaking change.
 
 ## The one design rule
 
