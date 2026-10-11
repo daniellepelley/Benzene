@@ -171,8 +171,10 @@ A service is a well-formed orchestrator when:
 - [ ] Compensations are **idempotent**; irreversible effects are staged last or moved out of the
       atomic process.
 - [ ] It **emits events** on success *and* failure.
-- [ ] It **propagates trace context** so the mesh derives its process edges.
-- [ ] It targets the **[Cloud Service Profile](../specification/cloud-service-profile.md)**.
+- [ ] It **declares its sends**, so the mesh draws its process edges, and **propagates trace
+      context**, so the mesh shows which are exercised.
+- [ ] It targets the **[Cloud Service Profile](../specification/cloud-service-profile.md)** and is
+      **meshed** ([mesh.md](../specification/mesh.md) §7.1).
 
 Next: how the calls between orchestrators and core services are addressed, routed, and realized on
 AWS — **[service communication](service-communication.md)**.

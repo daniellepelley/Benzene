@@ -30,13 +30,12 @@ The profile is opt-in in both directions, and each side of the bargain is uncond
 - **Meet all of it, get all of it.** A service that satisfies every requirement in §2 is fully
   tool-operable — its health, its derived contract document and schemas, and its envelope are
   where every tool expects them, with no per-service setup; a meshed service additionally
-  appears in the fleet view with live health and its topology edges. Within the profile, the requirements are MUSTs precisely so this promise never comes
-  with an asterisk.
-- **Skip it, lose only dashboard.** A service that doesn't claim the profile still runs, still
-  interoperates over the wire contracts, and still shows up in the mesh to whatever extent its
-  feeds allow ([mesh.md](mesh.md) §6) — it just has missing bits of dashboard: no schemas
-  without a registration, unknown health without heartbeats, no edges without traces. Nothing
-  breaks; the picture is simply reduced.
+  appears in the fleet view ([mesh.md](mesh.md) §7.1). Within the profile, the requirements are
+  MUSTs precisely so this promise never comes with an asterisk.
+- **Skip it, lose only tooling.** A service that doesn't claim the profile still runs and still
+  interoperates over the wire contracts — tools just find less: no derived document, so no
+  schemas or generated clients; no health topic, so unknown health; no envelope, so no generic
+  invocation. Nothing breaks; the picture is simply reduced.
 
 This makes the profile the recommended shape for **domain services running in a cloud** — the
 services a team operates as a fleet and wants full visibility over — while Benzene itself
@@ -95,10 +94,10 @@ tooling use to reach any service without knowing its native transport shapes.
 
 ### R5 — Derived spec
 
-The service MUST derive its spec document from the handler registry and expose it: by answering
-the reserved `benzene:spec` topic with it on every transport
-([contract-document.md](contract-document.md) §7), and, where the service has an HTTP surface,
-at the `/benzene/spec` default ([transport-bindings.md](transport-bindings.md) §1, "Default HTTP paths"). Hand-maintained
+The service MUST derive its spec document from the handler registry and expose it: by
+intercepting the reserved `benzene:spec` topic in its pipeline and answering it with that document
+wherever the transport carries a reply ([contract-document.md](contract-document.md) §7), and,
+where the service has an HTTP surface, at the `/benzene/spec` default ([transport-bindings.md](transport-bindings.md) §1, "Default HTTP paths"). Hand-maintained
 spec documents do not satisfy this requirement: the point of the profile is that the spec is
 true because it is derived ([core-concepts.md](core-concepts.md) §11). The served document's
 shape is [contract-document.md](contract-document.md) — the same format language-neutral client
@@ -160,12 +159,11 @@ questions, and both stay in force:
   requires").
 - **Benzene Cloud Service** (profile support): additionally pass the contract-document producer
   groups ([contract-document.md](contract-document.md) §8). The meshed-service claim's fixtures
-  are [mesh.md](mesh.md) §7's.
-- **The `profile` field.** A service MAY state its claim on its contract document
-  ([contract-document.md](contract-document.md) §1): `{"name": "cloud-service", "missing": [...]}`,
-  where `missing` lists the ids of §2 (`R1`–`R5`, `R7`) its own wiring knows it does not meet,
-  omitted when none. It is a self-assessment of wiring, not of runtime health (§4), and outside
-  both hashes.
+  are [mesh.md](mesh.md) §7.2's.
+- **Self-assessment.** A service MAY self-assess against this profile in its contract document's
+  `profile` field ([contract-document.md](contract-document.md) §1): `name` is `"cloud-service"`,
+  and `missing` lists the ids of §2 (`R1`–`R5`, `R7`) its own wiring knows it does not meet. A
+  consumer ignores an id it does not recognise.
 - *(Informative.)* A port MAY offer a wiring-time **self-check** that evaluates a service's setup
   against §2 and fills the `profile` field, and an external **probe** that audits any service
   over HTTP. Neither is

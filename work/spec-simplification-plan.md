@@ -275,7 +275,12 @@ on the new body (the live-interop form); the "Spec endpoint" and "Mesh — servi
 Decisions: D15, D3 (R8 moves). After Phase 3, because the claim's carrier is the self-description.
 Spec: `cloud-service-profile.md` is R1–R5 and R7; R6 and R8 move into `mesh.md` as the module's
 conformance claim; the `profile` field is documented on the contract document. Fixtures: none
-(`profile` is optional and unpinned). Ports: .NET `CloudServiceProfileReport` and
+(`profile` is optional and unpinned) — except one deliberate, hash-neutral touch: the identity
+hash case's decorative `profile.missing` moves from the retired `R6` to `R3`, released as
+`spec-0.5.0`. **As built:** the mesh claim is a *meshed service* (mesh §7.1) — a Cloud Service
+plus M1 (feeds) and M2 (propagation on every outbound message, events included); requiring the
+profile keeps exactly the old R1–R8 meaning, and the register body needs R2/R5 anyway. R6 and R8
+are retired, not reused; R5 absorbs "answer `benzene:spec`" wherever the transport carries a reply. Ports: .NET `CloudServiceProfileReport` and
 `Benzene.CloudService.Probe`; Go `cloudservice.New`; TypeScript and Python verify.
 
 ### Phase 5 — Close *(S)*

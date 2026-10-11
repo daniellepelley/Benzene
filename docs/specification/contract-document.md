@@ -1,14 +1,14 @@
 # Contract Document
 
 **Module — Stable** (self-description and client generation). Required by the Cloud Service
-Profile's R5 as the document served at `/benzene/spec`, and by any port that ships a client
-generator.
+Profile's R5 as the document served at the `benzene:spec` topic and `/benzene/spec`, and by any
+port that ships a client generator.
 
 The Contract Document — conventionally emitted as `{service}.spec.json` — is what a service derives
 from its registrations to describe itself: the topics it serves, the events it publishes, the
 messages it sends to others, the payload schemas of all three, and (optionally) how its topics are
 reachable over HTTP. It is the one input every language's client generator reads, the document
-the reserved `benzene:spec` topic answers with (§7), and the body a mesh-enabled service registers
+the reserved `benzene:spec` topic answers with (§7), and the body a meshed service registers
 with a collector ([mesh.md](mesh.md) §2).
 
 ## 1. Top-level shape
@@ -44,7 +44,7 @@ with a collector ([mesh.md](mesh.md) §2).
 | `description` | OPTIONAL | Free text. |
 | `runtime` | OPTIONAL | The implementing port (`"go"`, `"dotnet"`, `"typescript"`, `"python"`, …). |
 | `placement` | OPTIONAL | Where this service runs. `cloud` is detected from the platform's documented environment or configured: `"aws"`, `"azure"`, `"gcp"`, `"self-hosted"`, or an explicit override. `region` is emitted only where the platform documents a way to know it; a producer MUST NOT guess. |
-| `profile` | OPTIONAL | A conformance-profile self-assessment: `name` (`"cloud-service"` for the [Cloud Service Profile](cloud-service-profile.md)) and `missing`, the requirement ids the service's own wiring knows it does not meet, omitted when none. It reflects wiring, not runtime health. |
+| `profile` | OPTIONAL | A self-assessment against the [Cloud Service Profile](cloud-service-profile.md) (§5): `name` (`"cloud-service"`) and `missing`, the requirement ids the service's own wiring knows it does not meet, omitted when none. It reflects wiring, not runtime health. |
 | `degraded` | OPTIONAL, omitted when empty | The members — `"requests"`, `"events"`, `"sends"` — the producer could not determine. Such a member is still present, and empty: an empty list then asserts nothing, where without `degraded` it asserts "none". |
 | `messageEndpoint` | OPTIONAL | The path of the service's envelope endpoint over HTTP (transport-bindings §1). Absent when there is none: a consumer feature-detects send capability on its presence and never assumes a default. |
 | `transports` | OPTIONAL, omitted when empty | The transports this service receives messages over (`"http"`, `"sqs"`, `"kafka"`, …). Document-level: any wired non-HTTP transport reaches any registered topic. HTTP reachability is per topic, its `httpMappings` (§2). |

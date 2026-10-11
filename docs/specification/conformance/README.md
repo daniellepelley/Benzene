@@ -40,7 +40,7 @@ writes the new tag into `SPEC_VERSION`, and lands all three in one change.
 | `envelope-cases.json` | End-to-end message envelope handling: request in, pipeline + canonical handler, response envelope out, including version selection (wire-contracts §1, core-concepts §2, §4–6) |
 | `problem-details-cases.json` | The problem-type registry, the canonical `conformance:problem` and `conformance:validate` handlers' envelope behavior, and the HTTP-binding-only rules: failure signalling, the envelope endpoint and the health routes (wire-contracts §1.3, §3.1, §4.1, §5; transport-bindings §1) |
 | `transport-metadata-cases.json` | Topic resolution and header mapping on transports carrying Benzene metadata natively — the reserved metadata key names (wire-contracts §2, transport-bindings §1) — required for ports binding any such transport; plus each one-way binding's settlement shape and allowed defaults (transport-bindings §1, obligation 8) |
-| `mesh-trace-cases.json` | TraceEvent behavior: traceparent join/reject rules and the invocation→semantic-status mapping (mesh §3) — required for ports that implement mesh |
+| `mesh-trace-cases.json` | TraceEvent behavior: traceparent join/reject rules and the invocation→semantic-status mapping (mesh §3) — required of a meshed service's port (mesh §7.1) |
 | `mesh-collector-cases.json` | Collector ingest, validation, derivation, and degradation behavior (mesh §4–6) — required for ports that implement a collector |
 | `mesh-issue-cases.json` | Issue-feed collector behavior: `benzene:mesh:issues` ingest, fingerprint delta-merge, liveness/feed-absence derivation (mesh §4.1) — required only for collectors claiming the issue feed |
 | `mesh-service-version-cases.json` | Service-version identity: the catalog keyed by `(service, serviceVersion)`, so two releases side by side are two entries (service-versions.md §1, mesh §4) — required only for collectors claiming service-version identity |
@@ -58,7 +58,7 @@ binding**, the **Profile**, and **per module** — and a port claims only what i
 | Per binding | each HTTP binding | `problem-details-cases.json`'s `httpRules` group. Within it, `envelopeEndpoint` applies to a port that serves the envelope over HTTP, and `healthEndpoint` to a port that also ships health checks |
 | Profile | Cloud Service Profile support | Core, and the contract-document producer claim below |
 | Per module | Meshed service (mesh §7.1) | The profile, and `mesh-trace-cases.json` |
-| Per module | Mesh collector | `mesh-collector-cases.json` (not part of the profile) |
+| Per module | Mesh collector | `mesh-collector-cases.json` (not required of a meshed service, M1) |
 | Per module | Mesh issue feed | `mesh-issue-cases.json` (optional feed, mesh §4.1; a collector without it stays collector-conformant) |
 | Per module | Service versions — *Provisional* | `mesh-service-version-cases.json` (identity) and `mesh-version-order-cases.json` (order), [service-versions.md](../service-versions.md); a collector without the module stays collector-conformant, because a registration that omits `serviceVersion` keys exactly as it always did |
 | Profile | Contract-document producer (R5) | `contract-document-cases.json`'s `derivationCases`, `namingCases`, `specTopicCases`, and `specHttpCases` for a port with an HTTP binding; `contract-hash-cases.json`'s cases without a `projection` |

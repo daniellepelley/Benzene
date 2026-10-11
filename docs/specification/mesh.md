@@ -1,7 +1,7 @@
 # Mesh Contracts
 
-**Module — Stable.** Optional at Core level. A service that provides its service-side feeds and
-trace propagation can claim to be **meshed** (§7).
+**Module — Stable.** Optional at Core level. A Cloud Service that also provides the service-side
+feeds and trace propagation can claim to be **meshed** (§7.1).
 
 Benzene Mesh is the *application-level* mesh: every service **declares its full contract** — the
 topics it serves, the events it publishes and the messages it sends to topics others define — so
@@ -13,9 +13,8 @@ This document specifies everything that crosses a process boundary to make that 
 across language ports.
 
 At Core level, mesh is optional, and so is each of its feeds; the normative degradation rule of
-§6 applies to every section here. A service claiming to be meshed (§7) MUST provision the
-service-side feeds — for such a service, §6 governs runtime degradation, not whether the feeds
-exist.
+§6 applies to every section here. A meshed service satisfies §7.1 — for it, §6 governs runtime
+degradation, not whether the feeds exist.
 
 ## 1. Self-description
 
@@ -76,10 +75,10 @@ transport-shaped.
   segment count or length, non-hex, or the all-zero ids the W3C spec defines as invalid — MUST
   yield a fresh trace-id and no parent: a bad caller header degrades correlation, never the
   invocation. Pinned by the `traceparent` section of `conformance/mesh-trace-cases.json`.
-- Outbound propagation: a downstream Benzene call carries
-  `traceparent: 00-<traceId>-<spanId>-01` built from the calling invocation's span — required of a
-  meshed service (§7, M2). This is what lets a
-  collector correlate an *observed* call with the declared edge it exercises (§4.2) — propagation
+- Outbound propagation: a downstream Benzene message — a send, one-way or with a reply, or a
+  published event — carries `traceparent: 00-<traceId>-<spanId>-01` built from the calling
+  invocation's span — required of a meshed service (§7.1, M2). This is what lets a
+  collector correlate an *observed* message with the declared edge it exercises (§4.2) — propagation
   feeds observation, not the graph itself (§4), which comes from the registration (§2) regardless of
   whether any call has ever propagated a trace at all.
 - `status` is the Benzene status verbatim (wire-contracts.md §3); empty only when no downstream
@@ -149,7 +148,7 @@ serves are its own.
 ### 4.1 Issues (`benzene:mesh:issues`)
 
 Optional on both sides (§6 applies): a collector that does not implement it is unaffected, and a
-service that does not emit it is reduced. It adds no Cloud Service Profile requirement.
+service that does not emit it is reduced. It is not part of the meshed-service claim (§7.1, M1).
 
 The pipeline-native failure feed: where traces record *what happened*, an issue records *what is
 wrong* — a deduplicated, classified failure signature emitted by the pipeline itself, which
@@ -286,8 +285,9 @@ compares against the service's one registration.
 
 ## 6. Degradation (normative)
 
-Every mesh feed — registration, heartbeats, traces, issues — is independent and
-optional, on both sides:
+Every mesh feed — registration, heartbeats, traces, issues — is independent and, at Core level,
+optional, on both sides (a meshed service provisions M1's feeds, §7.1, and this section governs
+their runtime degradation):
 
 - **Service side**: an unreachable collector, a failing or absent exporter, or an absent registry
   each reduce the mesh and MUST NOT affect the service's
@@ -310,12 +310,12 @@ A service that claims to be **meshed** — a full participant in the fleet view 
   feed may ever fail, slow, or block the service's own traffic. Implementing a collector is not
   required.
 - **M2 — Trace context propagation.** Join inbound W3C trace context and forward `traceparent`
-  on every outbound Benzene call (§3). The graph does not come from traces (§4), but whether a
+  (and `tracestate`, wire-contracts §2) on every outbound Benzene message — sends, one-way or with
+  a reply, and published events (§3). The graph does not come from traces (§4), but whether a
   declared edge is exercised does (§4.2), and a fleet where propagation is optional has holes in
   that signal through no fault of the collector.
 
-M1 and M2 were the Cloud Service Profile's R6 and R8. Runtime degradation (§6) does not withdraw
-the claim; deliberately unprovisioned feeds do.
+Runtime degradation (§6) does not withdraw the claim; deliberately unprovisioned feeds do.
 
 ### 7.2 Fixtures
 

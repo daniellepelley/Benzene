@@ -111,9 +111,10 @@ a faster wire to its neighbours.
   event is lost; idempotent consumers make at-least-once safe; the saga (inside the coordinator and
   any atomic booking flow) keeps multi-service writes all-or-nothing. Nothing lost, nothing
   double-applied — the contract a trading platform lives or dies by.
-- **The whole estate is visible.** Every service targets the Cloud Service Profile, so the mesh gives
-  live topology, health, schemas, and — from trace parentage — the real event-flow graph across all
-  six services, derived from traffic rather than a diagram someone has to keep current.
+- **The whole estate is visible.** Every service targets the Cloud Service Profile and is meshed,
+  so the mesh gives the event-flow graph across all six services — declared in their contract
+  documents rather than a diagram someone has to keep current — with live health, schemas, and,
+  from trace parentage, which edges real traffic exercises.
 - **It degrades sensibly.** A slow read model lags but never blocks a trade; a failed risk shard is
   retried or flags reduced coverage; a dropped market-data batch resumes from its checkpoint. No
   single failure takes the platform down, because the couplings are events and bounded calls, not

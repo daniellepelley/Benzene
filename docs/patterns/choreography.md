@@ -121,13 +121,13 @@ Two clean options:
 ## Choreography is visible in the mesh — for free
 
 Choreography's classic drawback is that the flow lives nowhere: no orchestrator to read, so "what
-reacts to what" is folklore. On Benzene it is **not** folklore. A consumer stamps `traceparent` from
-the inbound event's span, and the [mesh](../specification/mesh.md) **derives consumer edges from
-that trace parentage** — an event whose parent span belongs to another service makes this service a
-consumer of that topic, never declared. Keep [trace-context propagation](../specification/cloud-service-profile.md)
-on (it is a Cloud Service Profile requirement) and the choreography graph draws itself in the fleet
-view: every emitter, every reaction, observed from real traffic. The thing that makes choreography
-hard to see everywhere else, Benzene gives you as a live diagram.
+reacts to what" is folklore. On Benzene it is **not** folklore. An emitter declares the events it
+publishes and a consumer serves them as handlers, so the [mesh](../specification/mesh.md) draws
+every emitter → reaction edge from their contract documents (§4), before a message has flowed. A
+consumer also stamps `traceparent` from the inbound event's span; keep that propagation on (a
+meshed service's M2, [mesh.md](../specification/mesh.md) §7.1) and the fleet view shows which of
+those edges real traffic exercises (§4.2). The thing that makes choreography hard to see
+everywhere else, Benzene gives you as a live diagram.
 
 ---
 
@@ -178,7 +178,8 @@ Choreography is well-formed when:
       at-least-once.
 - [ ] Cross-service **atomic** invariants stay in an [orchestrated saga](orchestrators.md), not in
       choreography.
-- [ ] Trace context is propagated, so the **mesh** shows the choreography graph.
+- [ ] Events are **declared**, so the **mesh** draws the choreography graph; trace context is
+      propagated, so it shows which edges are exercised.
 - [ ] Events are **versioned** as the contracts they are.
 
 See also: [transactional outbox](transactional-outbox.md) (so the events you choreograph on are

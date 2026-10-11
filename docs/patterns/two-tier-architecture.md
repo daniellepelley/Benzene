@@ -25,7 +25,8 @@ Two service types, one rule each:
   roots, owns its own database (share-nothing), validates its own objects, and holds almost no
   business process. They are the system's system-of-record. A core service is a textbook
   [Benzene Cloud Service](../specification/cloud-service-profile.md): CRUD topics served by
-  handlers, a derived spec, health checks, mesh feeds.
+  handlers, a derived spec, health checks — and, meshed ([mesh.md](../specification/mesh.md)
+  §7.1), the mesh feeds.
 
 - **[Orchestrators](orchestrators.md)** own **process**. They take a request (from an API) or an
   event, drive a business process across several core services, emit events on success or
@@ -92,8 +93,8 @@ one; this list is the checklist.
    hard-code a queue URL or a function name at a call site — see
    [service-communication.md](service-communication.md).
 6. **Every service is a good mesh citizen.** Core services and orchestrators alike aim for the
-   [Cloud Service Profile](../specification/cloud-service-profile.md) so the fleet is visible
-   and operable end to end.
+   [Cloud Service Profile](../specification/cloud-service-profile.md), and are meshed
+   ([mesh.md](../specification/mesh.md) §7.1), so the fleet is visible and operable end to end.
 
 ---
 
@@ -115,8 +116,8 @@ This pattern is a *consumer* of the spec, never a competitor to it:
 
 - A core service and an orchestrator are both just **Benzene services** — same pipeline, same
   handlers, same result model ([core-concepts.md](../specification/core-concepts.md)).
-- "A good fleet citizen" means the [Cloud Service Profile](../specification/cloud-service-profile.md);
-  the pattern adds *how to organize a fleet of profiled services*, not new requirements on any one
+- "A good fleet citizen" means the [Cloud Service Profile](../specification/cloud-service-profile.md)
+  and the meshed-service claim ([mesh.md](../specification/mesh.md) §7.1); the pattern adds *how to organize a fleet of profiled services*, not new requirements on any one
   of them.
 - Fleet visibility — which service consumes which topic, how often, over which transport — comes
   from the [mesh](../specification/mesh.md) for free; the pattern relies on it rather than
