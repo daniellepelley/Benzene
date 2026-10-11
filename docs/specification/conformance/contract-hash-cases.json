@@ -45,13 +45,27 @@
     },
     {
       "name": "identity-and-decoration-are-outside-the-hash",
-      "description": "minimal-document plus every field outside P (identity, endpoint, transports, an example, stale hash values): same two hashes as minimal-document.",
+      "description": "minimal-document plus every field outside P (identity, runtime, placement, profile, degraded, endpoint, transports, an example, stale hash values): same two hashes as minimal-document.",
       "document": {
         "schemaDialect": "openapi-3.0",
         "service": "conformance",
         "serviceVersion": "1.4.2",
         "versionScheme": "semver",
         "description": "Order intake",
+        "runtime": "python",
+        "placement": {
+          "cloud": "aws",
+          "region": "eu-west-1"
+        },
+        "profile": {
+          "name": "cloud-service",
+          "missing": [
+            "R6"
+          ]
+        },
+        "degraded": [
+          "sends"
+        ],
         "messageEndpoint": "/benzene/invoke",
         "transports": [
           "http",

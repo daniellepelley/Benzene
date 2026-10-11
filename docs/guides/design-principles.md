@@ -47,7 +47,7 @@ rung is mandatory, and a service can stop climbing at any rung and stay there in
 |---|---|---|
 | 1. In-process pipeline | The middleware pipeline invoked directly from your own code — no host, no transport | Composition, cross-cutting middleware, the result/status model |
 | 2. Hosted middleware-only | A transport adapter running a pipeline with no message handlers | Everything above, plus transport neutrality, health-check interception, mesh trace feed |
-| 3. Message handlers | `handle : TRequest -> Result<TResponse>` functions routed by topic | Everything above, plus topic routing, request mapping, **derived** spec/descriptor (topics + schemas), codegen clients |
+| 3. Message handlers | `handle : TRequest -> Result<TResponse>` functions routed by topic | Everything above, plus topic routing, request mapping, **derived** contract document (topics + schemas), codegen clients |
 | 4. Default service standard | The well-known surfaces of section 5 | Everything above, plus fleet-wide operability: any tool or teammate finds spec, health, and envelope endpoints in the same place on every service |
 | 5. Meshed | The mesh module ([mesh.md](../specification/mesh.md)) | Everything above, plus fleet visibility: live topology, health, schemas, and flows derived from what services actually do |
 
@@ -209,9 +209,9 @@ A Benzene service exposes a standard set of well-known HTTP surfaces under one `
 so that people and tools can walk up to any service in the fleet and find the same things in the
 same places. `/admin/` was considered and rejected: many domains have their own "admin" concept,
 and the collision is exactly the ambiguity the prefix exists to remove. The prefix also gives
-operators one knob — expose or protect every framework surface with a single path rule (the
-"descriptor endpoints not provisioned" scenario of [mesh.md](../specification/mesh.md) §6 becomes
-`deny /benzene/spec*` at the gateway).
+operators one knob — expose or protect every framework surface with a single path rule (keeping
+the self-description private, [cloud-service-profile.md](../specification/cloud-service-profile.md)
+§4, becomes `deny /benzene/spec*` at the gateway).
 
 The paths themselves are normative, in
 [transport-bindings](../specification/transport-bindings.md) §1 ("Default HTTP paths"); the

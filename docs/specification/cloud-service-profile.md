@@ -101,9 +101,11 @@ generators parse.
 
 ### R6 — Mesh service-side feeds
 
-The service MUST provision the three service-side mesh feeds of [mesh.md](mesh.md):
+The service MUST answer the reserved `benzene:spec` topic with its R5 contract document
+([contract-document.md](contract-document.md) §7) — its self-description on every transport — and
+provision the three service-side mesh feeds of [mesh.md](mesh.md):
 
-- registration (`benzene:mesh:register`) on startup, its body the R5 contract document (mesh §2, §4),
+- registration (`benzene:mesh:register`) on startup, its body that document (mesh §2, §4),
 - heartbeats (`benzene:mesh:heartbeat`) (mesh §5),
 - the trace feed (`benzene:mesh:traces`) with one TraceEvent per routed invocation (mesh §3–§4).
 

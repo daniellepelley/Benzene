@@ -22,7 +22,7 @@ Pinned by `conformance/mesh-service-version-cases.json` (identity) and
 running**. A collector's catalog key is the pair `(service, serviceVersion)`, so two releases
 deployed side by side are two catalog entries rather than one silently overwriting the other.
 
-A service version is an **entity, not a shape**. It *has* a contract — the `topics`, `produces` and
+A service version is an **entity, not a shape**. It *has* a contract — the `requests`, `events`, `sends` and
 schemas frozen for that release — but is not *defined by* one: two releases MAY declare
 byte-identical contracts and still be different versions, because a rewrite, a corrected calculation
 or a swapped downstream dependency changes what a service *does* without changing what it

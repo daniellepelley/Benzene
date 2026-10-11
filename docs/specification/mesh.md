@@ -27,21 +27,26 @@ declarations (contract-document §3.3) — and served at the reserved `benzene:s
 ## 2. Registration
 
 The body of a `benzene:mesh:register` message (§4) is the service's Contract Document — the
-document `benzene:spec` serves, with the deployment-side fields (`runtime`, `placement`,
-`profile`, `degraded`, contract-document §1) the service knows. It carries `registrationHash`,
-which a collector trusts and MAY recompute (contract-document §6).
+same document `benzene:spec` serves, including the deployment-side fields (`runtime`,
+`placement`, `profile`, `degraded`, contract-document §1) the service knows. It carries
+`registrationHash`, which a collector trusts: it MAY recompute it to report a mismatch, but never
+rejects a registration for one, and compares heartbeats with the carried value (§5).
 
-- **Identity.** `service` and, where declared, `serviceVersion` with its `versionScheme` are the
-  catalog key (§4). Which immutable release a `serviceVersion` names, and its order, are the
+- **Identity.** `service` and, where declared, `serviceVersion` are the catalog key (§4);
+  `versionScheme` says how to order versions. Which immutable release a `serviceVersion` names, and its order, are the
   [Service Versions](service-versions.md) module (Provisional); a document that omits
   `serviceVersion` is one service version, so an estate whose services never declare one is
   unaffected.
 - **Declared, never inferred.** `events` and `sends` come only from explicit declarations
   (contract-document §3.3). That is what makes the producer side of the graph as reliable as the
   handler registry makes the consumer side.
-- **A reduced registration.** A producer that cannot determine a member names it in `degraded`
-  rather than asserting an empty list (contract-document §1). A collector MUST accept a body that
-  carries only `service` (§6), treating every absent member as unknown.
+- **A reduced registration.** A producer that cannot determine a member names it in `degraded`,
+  so that its empty list does not assert "none" (contract-document §1).
+- **What a collector requires.** Only `service` (→ `bad-request` when missing). Every other member
+  may be absent; the REQUIRED fields of contract-document §1 bind producers, and its dialect rule
+  does not apply to a collector, which does not interpret schemas. A member that is absent, or
+  that `degraded` names, is **unknown**: it contributes no edges, and a trace on one of its topics
+  is not undeclared (§4.2).
 
 ## 3. TraceEvent
 

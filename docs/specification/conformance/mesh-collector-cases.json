@@ -1,5 +1,5 @@
 {
-  "description": "Collector behavior (mesh.md sections 4-6). Each case runs its steps in order against one fresh collector; every step is a wire envelope in and out, asserted like envelope-cases (statusCode exact; body parsed-JSON subset; arrays by exact length and per-element subset). benzene:mesh:query:* shapes here follow the reference collector and are asserted only as the observable surface for ingest/derivation rules, not as promoted contracts. A register body is a contract document (mesh.md section 2); the bodies here carry only the members each case needs, with {} schemas, which a collector accepts (section 6). The producer/consumer graph (providers/consumers on query:topic) comes from the latest registration alone -- requests for consumers, events and sends for providers; traces feed invocation stats and liveness, never graph membership (mesh.md section 4.2).",
+  "description": "Collector behavior (mesh.md sections 4-6). Each case runs its steps in order against one fresh collector; every step is a wire envelope in and out, asserted like envelope-cases (statusCode exact; body parsed-JSON subset; arrays by exact length and per-element subset). benzene:mesh:query:* shapes here follow the reference collector and are asserted only as the observable surface for ingest/derivation rules, not as promoted contracts. A register body is a contract document (mesh.md section 2); the bodies here carry only the members each case needs, with {} schemas, which a collector accepts (section 2). The producer/consumer graph (providers/consumers on query:topic) comes from the latest registration alone -- requests for consumers, events and sends for providers; traces feed invocation stats and liveness, never graph membership (mesh.md section 4.2).",
   "cases": [
     {
       "name": "register-then-fleet-shows-a-reduced-catalog-entry",
@@ -291,6 +291,16 @@
             "topic": "benzene:mesh:query:topic",
             "headers": {},
             "body": "{\"topic\":\"benzene:spec\"}"
+          },
+          "expected": {
+            "statusCode": "not-found"
+          }
+        },
+        {
+          "request": {
+            "topic": "benzene:mesh:query:topic",
+            "headers": {},
+            "body": "{\"topic\":\"benzene:mesh:traces\"}"
           },
           "expected": {
             "statusCode": "not-found"
