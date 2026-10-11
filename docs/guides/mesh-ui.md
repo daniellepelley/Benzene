@@ -85,7 +85,7 @@ These artifacts are **read models**, not wire shapes. A service self-describes o
 [ServiceDescriptor](../specification/mesh.md#2-servicedescriptor) (`service`, `topics[].id`,
 `requestSchema`, `descriptorHash`, …) and reports over the collector topics; the aggregator/
 collector projects those wire feeds (plus optional pull sources and a metrics feed) into the
-artifacts above. The mapping is [mesh.md §9](../specification/mesh.md#9-relationship-to-the-existing-net-mesh-packages-informative).
+artifacts above; how a collector does that is its own business ([mesh.md](../specification/mesh.md) §4).
 The UI consumes the read models so that it is decoupled from how any port collects them — which is
 exactly why one page serves every language.
 

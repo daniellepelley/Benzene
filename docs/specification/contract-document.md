@@ -1,11 +1,7 @@
 # Contract Document
 
-**Status: DRAFT v0.1 — promoted from the .NET-only `Benzene.Schema.OpenApi.EventService.EventServiceDocument`
-(`benzene-dotnet`). This document supersedes that artifact's `.NET-side, not promoted` status
-(`spec-mesh-tooling-implementation-plan.md` Amendment C, 2026-08-12): cross-language client
-generation needs one parseable format, so the format, its generation semantics, and its hash
-algorithm are now spec, pinned by `conformance/contract-document-cases.json` and
-`conformance/contract-hash-cases.json`. The .NET port is this document's reference implementation.**
+**Module — Stable** (client generation). Required by the Cloud Service Profile's R5 as the shape of
+`/benzene/spec`, and by any port that ships a client generator.
 
 The Contract Document — conventionally emitted as `{Service}.spec.json` — is what a service derives
 from its handler registry to describe every topic it serves: request/response shapes, payload
@@ -113,7 +109,7 @@ order).
 ## 5. Generation semantics
 
 This section defines what a conforming client generator does with a Contract Document — the rules
-four independent generators (today: .NET; planned: TypeScript, Python, Go) must implement
+independent generators in different languages must implement
 identically for "the same client" to mean the same thing in every language. Method naming and file
 layout are **not** part of this — see §5.5.
 
@@ -213,8 +209,8 @@ consumer's outbound route resolves to at runtime.
 this document or its fixtures — matching this repository's standing rule that API shape stays out
 of conformance (`conformance/README.md`). A topic's derived method/function name
 (`payments:capture` → `Capture`, `capturePayment`, or any other per-language casing/naming idiom),
-the generated file/module layout, and the registration/DI idiom (§ the parity checklist's row 9 in
-`cross-language-clients-plan.md`) are each language port's own design decision. What *is* pinned —
+the generated file/module layout, and the registration idiom are each language port's own design
+decision. What *is* pinned —
 the shape of what gets generated (service-level vs. topic-scoped, §5.3), the topic scoping rules
 (§5.1–§5.2), and the embedded contract hash (§6) — is pinned because those change what a consumer
 can observe or rely on; naming and layout do not.
@@ -223,19 +219,13 @@ can observe or rely on; naming and layout do not.
 
 Every generated client embeds a **contract hash**: a value that changes if and only if the
 contract it was generated from changes, so a consumer can detect drift between the client it holds
-and the service it's calling (the health-check/drift-check plane compares this value, when that
-feature is wired — see `cross-language-clients-plan.md`; the drift-check *feature* itself is out of
-this document's scope, only the hash *value* it consumes is specified here).
+and the service it's calling (a drift check compares this value, where one is wired; the drift check
+itself is out of this document's scope, only the hash *value* it consumes is specified here).
 
-### 6.1 Why a new algorithm
+### 6.1 Portability
 
-Today's .NET-only hash (`Benzene.CodeGen.Core.CodeGenHelpers.GenerateHash`) computes lowercase-hex
-HMAC-SHA256, with an empty key, over the **Microsoft.OpenApi library's own JSON serializer output**
-of a normalized document. That byte stream is a property of one specific .NET serializer — no other
-language can reproduce it without embedding a clone of that serializer's exact formatting decisions
-(property ordering, whitespace, escaping). It is not portable, and this document replaces it with
-one that is — every port, including .NET, adopts the algorithm below (`cross-language-clients-plan.md`
-Phase 2 migrates the .NET side; this document specifies the target algorithm only).
+The hash is computed over a canonical JSON form (§6.2), never over one library's serializer output,
+so that every language reproduces it byte for byte.
 
 ### 6.2 Algorithm
 

@@ -1,79 +1,60 @@
-# Benzene Specifications (Draft)
+# Benzene Specification
 
-**Status: DRAFT v0.1 — the canonical, language-neutral definition of Benzene, which every language
-port implements. First extracted from the .NET implementation (the reference implementation), and
-still maturing: while in draft, contracts may change — see [Versioning](#versioning).**
+The canonical, language-neutral definition of Benzene, which every language port implements. The
+version of the specification is in [`VERSION`](VERSION); each release is tagged `spec-x.y.z`, and a
+port's conformance fixtures pin the release they implement ([conformance](conformance/README.md)).
 
-## Two levels
+## Tiers
 
-The specification has two levels. Benzene itself is deliberately open — middleware, health
-checks, and the spec endpoint are all optional — but the fleet tooling built around it (mesh,
-Spec UI, codegen clients) needs services it can make assumptions about. So:
+| Tier | What it is | Stability |
+|---|---|---|
+| **Core** | What every implementation honours for the capabilities it uses | Frozen under semver from 1.0 |
+| **Modules** | Optional, self-contained additions; an implementation that offers one offers it in exactly this shape | **Stable**, or **Provisional** until a second port implements it (the label names the ports that do) |
+| **Profile** | The Cloud Service Profile: a named conformance target that raises chosen SHOULDs and MAYs to MUSTs for deployed services | Frozen under semver from 1.0, like Core |
+| **Guidance** | Informative: strategy, porting advice, quality standards | Unversioned; lives in [`docs/guides/`](../guides/index.md) |
 
-1. **The Benzene Core Specification** — everything in this directory except the profile: the
-   concepts, semantics, and wire contracts that any implementation of Benzene must honor *for
-   the capabilities it uses*. Every capability is individually optional; the adoption ladder
-   ([design-principles.md](design-principles.md) §2) applies in full.
-2. **The [Benzene Cloud Service Profile](cloud-service-profile.md)** — a named conformance
-   target layered on top of the core for deployed services. It promotes the operational steers
-   (hosted pipeline, handlers, health checks, spec endpoint, envelope endpoint, mesh feeds,
-   well-known paths) from SHOULD/MAY to MUST, so that mesh and every other cross-service tool
-   work on every profiled service with no per-service negotiation. It defines no new wire
-   contracts — only requirement levels.
+**Optional capabilities.** Core also names a few capabilities a port need not offer — versioning,
+W3C trace context, and health checks ([core-concepts.md](core-concepts.md) §10). One that does offers
+it in exactly the shape the spec defines.
 
 "Conforms to Benzene" means Core. "Is a Benzene Cloud Service" means Core plus the profile.
 
-## Purpose
-
-The **Core Specification** defines Benzene's portable core: the concepts, semantics, and wire
-contracts that any implementation of Benzene — in any language, on any cloud vendor — must
-honor. It exists so that:
-
-1. **Design decisions outlive their C# encoding.** The .NET implementation is full of C# idioms
-   (attributes, generics, MS DI, `IAsyncEnumerable`). This spec records what each feature *means*,
-   separately from how C# happens to express it.
-2. **A future port is a translation of a design, not a rewrite.** An implementation in another
-   language implements these documents, not the C# API shape.
-3. **Cross-language interop works from day one.** Two Benzene services in different languages
-   interoperate through the wire contracts in this spec (message envelope, headers, status
-   vocabulary, trailers) — that, not API similarity, is the point of a multi-language Benzene.
-
-## Documents
-
-The Core Specification:
+### Core
 
 | Document | Contents |
 |---|---|
-| [design-principles.md](design-principles.md) | The "opinionated but optional" strategy: the adoption ladder (middleware-only and in-process use are first-class), what each capability requires and how it degrades, the extension-point catalog (every convention overridable on both sides of the wire), and the default service standard (`/benzene/`-prefixed well-known surfaces) |
-| [core-concepts.md](core-concepts.md) | The abstract model: pipeline, context, message handler, topic, result, lifecycle, registration |
-| [wire-contracts.md](wire-contracts.md) | Everything that crosses a process boundary: the message envelope, header conventions, the status vocabulary and its per-protocol mappings, the health check response format |
-| [transport-bindings.md](transport-bindings.md) | What a transport adapter is and the contract every binding must satisfy, with the existing bindings as worked examples |
-| [mesh.md](mesh.md) | The mesh module's wire contracts (optional at Core level; service-side feeds required by the profile): service self-description (descriptor + derived payload schemas + contract hash), semantic trace events, collector topics, heartbeats, and the normative degradation rules. Reference implementation: the Go port's `benzene:mesh`/`meshd` packages |
-| [versioning.md](versioning.md) | **Implemented, plus one specified-but-unbuilt mechanism.** The three axes of version — handler, payload schema, and service — via the `benzene-version` header/route convention, handler-version dispatch vs. transparent payload casting (both shipped), and side-by-side service versions (§5: its identity layer is now in mesh.md §2.4, but no port implements it and version-aware routing is still open) |
-| [porting-guide.md](porting-guide.md) | Concept-vs-idiom mapping for implementers in other languages, and the conformance-testing approach |
-| [port-quality-standards.md](port-quality-standards.md) | The Definition of Done for a language port: the DX-champion-in-the-loop workflow and the quality gates (conformance, layered packaging, a runnable multi-transport example per cloud provider, example tests that dogfood the port's own test helpers, a CI gate, and website-ready docs) |
-| [conformance/](conformance/README.md) | Language-neutral test fixtures (status vocabulary, mapping tables, envelope cases) that every implementation runs; the .NET reference runner is `test/Benzene.Conformance.Test/` |
+| [core-concepts.md](core-concepts.md) | The abstract model: topic and version selection, handler, pipeline, result, context, application definition, scope, optional capabilities, steers, outbound |
+| [wire-contracts.md](wire-contracts.md) | Everything that crosses a process boundary: the envelope, problem details, headers, the status vocabulary and its HTTP/gRPC mappings, the health response, serialization, reserved topics |
+| [transport-bindings.md](transport-bindings.md) | The contract every binding satisfies — including settlement, the envelope endpoint and the default `/benzene/` paths — with the existing bindings as worked examples |
+| [versioning.md](versioning.md) | The version header, absence, dispatch and payload casting |
 
-The profile:
+### Modules
+
+| Document | Stability | Contents |
+|---|---|---|
+| [mesh.md](mesh.md) | Stable | Service self-description, trace events, collector topics, heartbeats and degradation |
+| [contract-document.md](contract-document.md) | Stable | The derived contract document served at `/benzene/spec`, the client-generation rules and the contract hash |
+| [service-versions.md](service-versions.md) | Provisional: .NET | Service-version identity and order, for releases deployed side by side |
+| [mcp.md](mcp.md) | Provisional: .NET | The MCP binding: a service's handlers as tools for AI clients |
+| [claim-check.md](claim-check.md) | Provisional: .NET | Large payloads passed by reference to an external store |
+
+### Profile
 
 | Document | Contents |
 |---|---|
-| [cloud-service-profile.md](cloud-service-profile.md) | The Benzene Cloud Service Profile: the two conformance levels, requirements R1–R8 (hosted pipeline, registry-served handlers, health checks, envelope invocability, derived spec, mesh feeds, default paths, trace propagation), what stays optional, and how runtime degradation differs from non-conformance |
+| [cloud-service-profile.md](cloud-service-profile.md) | Requirements R1–R8 — hosted pipeline, registry-served handlers, health checks, envelope invocability, derived spec, mesh feeds, default paths, trace propagation — what stays optional, and how runtime degradation differs from non-conformance |
+
+### Conformance
+
+[conformance/](conformance/README.md) holds the language-neutral fixtures every implementation runs,
+and states which fixtures each claim — Core, per binding, the profile, per module — requires.
 
 ## Conformance language
 
 The key words MUST, MUST NOT, SHOULD, and MAY are used as described in
-[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119). Sections marked *(informative)* describe the
-.NET implementation for illustration and are not requirements.
-
-## Versioning
-
-These specs are versioned independently of the .NET packages, as one unit (the profile does not
-version separately from the core — it has no contracts of its own to version). While in draft
-(0.x), wire contracts may still change; from 1.0, changes to anything in
-[wire-contracts.md](wire-contracts.md) follow semver — a breaking change to an on-the-wire
-format is a major version. Adding a requirement to the profile is likewise a major version for
-services (a previously-conforming service could cease to conform); relaxing one is minor.
+[RFC 2119](https://www.rfc-editor.org/rfc/rfc2119). Sections marked *(informative)* illustrate and
+are not requirements. While the specification is 0.x, contracts may still change; from 1.0, a
+breaking change to Core or the profile is a major version.
 
 ## The one design rule
 

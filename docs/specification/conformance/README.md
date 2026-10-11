@@ -1,11 +1,9 @@
 # Conformance Fixtures
 
-**Status: DRAFT v0.1**
-
 Language-neutral test fixtures for the contracts in [wire-contracts.md](../wire-contracts.md) and
 the behaviors in [core-concepts.md](../core-concepts.md). Every Benzene implementation runs the
 same fixtures through its own runner; an implementation that passes them (plus the live-interop
-tests described in [porting-guide.md §3](../porting-guide.md#3-conformance-testing)) is conformant.
+tests described in the [porting guide](../../guides/porting-guide.md#3-conformance-testing)) is conformant.
 API shape is explicitly not part of conformance.
 
 The .NET runner lives at `test/Benzene.Conformance.Test/` and is the reference for how a runner
@@ -46,27 +44,28 @@ writes the new tag into `SPEC_VERSION`, and lands all three in one change.
 | `mesh-trace-cases.json` | TraceEvent behavior: traceparent join/reject rules and the invocation→semantic-status mapping (mesh §3) — required for ports that implement mesh |
 | `mesh-collector-cases.json` | Collector ingest, validation, derivation, and degradation behavior (mesh §4–6) — required for ports that implement a collector |
 | `mesh-issue-cases.json` | Issue-feed collector behavior: `benzene:mesh:issues` ingest, fingerprint delta-merge, liveness/feed-absence derivation (mesh §4.1) — required only for collectors claiming the issue feed |
-| `mesh-service-version-cases.json` | Service-version identity: the catalog keyed by `(service, serviceVersion)`, so two releases side by side are two entries (mesh §2.4, §4) — required only for collectors claiming service-version identity |
-| `mesh-version-order-cases.json` | Service-version **order**: the declared comparison schemes, the not-orderable outcome, and parse rejection (mesh §2.5) — required only for ports that order service versions |
+| `mesh-service-version-cases.json` | Service-version identity: the catalog keyed by `(service, serviceVersion)`, so two releases side by side are two entries (service-versions.md §1, mesh §4) — required only for collectors claiming service-version identity |
+| `mesh-version-order-cases.json` | Service-version **order**: the declared comparison schemes, the not-orderable outcome, and parse rejection (service-versions.md §2) — required only for ports that order service versions |
 | `contract-document-cases.json` | Contract Document parse/validate, topic-scope projection, and schema-closure behavior (contract-document.md §§1-5) — required for ports that ship a client generator |
 | `contract-hash-cases.json` | Exact `contractHash` values for the normalization + canonicalization + hash pipeline (contract-document.md §6) — required for ports that ship a client generator |
 
-Which fixtures a given conformance claim requires
-([cloud-service-profile.md](../cloud-service-profile.md) §5):
+Which fixtures a given conformance claim requires. A claim is made per level — **Core**, **per
+binding**, the **Profile**, and **per module** — and a port claims only what it implements.
 
-| Claim | Required fixtures |
-|---|---|
-| Benzene Core | `status-vocabulary.json`, the mapping tables for each protocol the port binds, `envelope-cases.json`, `transport-metadata-cases.json` for each metadata-carrying transport the port binds and its `settlementDefaults` for every one-way binding the port ships, and `problem-details-cases.json`'s `registry` and `envelopeCases` groups |
-| HTTP binding conformance | additionally `problem-details-cases.json`'s `httpRules` group — required only for each HTTP binding a port ships (the same conditional shape as `transport-metadata-cases.json` above); a port with no HTTP binding is unaffected. Within it, `envelopeEndpoint` applies to a port that serves the envelope over HTTP, and `healthEndpoint` to a port that also ships health checks |
-| Cloud Service Profile support | Core, plus `mesh-descriptor-cases.json` and `mesh-trace-cases.json` |
-| Collector implementations | additionally `mesh-collector-cases.json` (collector-only; not part of the profile) |
-| Issue-feed collectors | additionally `mesh-issue-cases.json` (optional feed, mesh §4.1; a collector without it stays collector-conformant) |
-| Service-version-aware collectors | additionally `mesh-service-version-cases.json` (mesh §2.4; a collector without it stays collector-conformant, because a descriptor that omits `serviceVersion` keys exactly as it always did) |
-| Service-version **ordering** | additionally `mesh-version-order-cases.json` (mesh §2.5; a port implementing §2.4 identity without §2.5 ordering stays service-version conformant) |
-| Client-generation conformance | `contract-document-cases.json` and `contract-hash-cases.json` — required only for a port that ships a client generator (contract-document.md); a port that never generates clients from the Contract Document is unaffected by these two fixtures, the same conditional shape as the collector fixtures above |
+| Level | Claim | Required fixtures |
+|---|---|---|
+| Core | Benzene Core | `status-vocabulary.json`, the mapping tables for each protocol the port binds, `envelope-cases.json`, and `problem-details-cases.json`'s `registry` and `envelopeCases` groups |
+| Per binding | each metadata-carrying binding (queues, topics, streams) | `transport-metadata-cases.json` for that binding, and its row in `settlementDefaults` (every one-way binding the port ships) |
+| Per binding | each HTTP binding | `problem-details-cases.json`'s `httpRules` group. Within it, `envelopeEndpoint` applies to a port that serves the envelope over HTTP, and `healthEndpoint` to a port that also ships health checks |
+| Profile | Cloud Service Profile support | Core, plus `mesh-descriptor-cases.json` and `mesh-trace-cases.json` |
+| Per module | Mesh collector | `mesh-collector-cases.json` (not part of the profile) |
+| Per module | Mesh issue feed | `mesh-issue-cases.json` (optional feed, mesh §4.1; a collector without it stays collector-conformant) |
+| Per module | Service versions — *Provisional* | `mesh-service-version-cases.json` (identity) and `mesh-version-order-cases.json` (order), [service-versions.md](../service-versions.md); a collector without the module stays collector-conformant, because a descriptor that omits `serviceVersion` keys exactly as it always did |
+| Per module | Contract document / client generation | `contract-document-cases.json` and `contract-hash-cases.json` — required for a port that ships a client generator |
 
-At Core level the mesh fixtures apply only to ports that implement the optional mesh module
-(mesh.md §7); a port without mesh skips them and remains Core-conformant.
+MCP and claim check (both *Provisional*) have no fixtures yet. At Core level the mesh fixtures apply
+only to ports that implement the optional mesh module; a port without mesh skips them and remains
+Core-conformant.
 
 ## Canonical handlers
 
@@ -210,7 +209,7 @@ case to its own native message before decoding it.
 - `expected.headersExclude` lists keys that must **not** appear as headers — a metadata key the
   binding consumed as routing information must not also leak into the header dictionary.
 - `expected.version`, where present, is the resolved payload version.
-- `benzene-version` is the one version header (wire-contracts §2, tier A): every port resolves it,
+- `benzene-version` is the one version header (wire-contracts §2, Core): every port resolves it,
   so the version cases here run unconditionally.
 
 `defaultMetadataKeys` names the keys themselves, and `topicSources` records where each binding
@@ -229,7 +228,7 @@ Bindings whose `source` is not `metadata` are listed deliberately: EventBridge r
 require a `topic` attribute (transport-bindings §1), and the metadata cases do not apply to them.
 
 `defaultMetadataKeys.headers` is the EventBridge embedded-headers key, `benzene-headers`
-(wire-contracts §2, tier D); only a port with an EventBridge binding asserts it.
+(wire-contracts §2, Binding: EventBridge); only a port with an EventBridge binding asserts it.
 
 **Settlement defaults.** `settlementDefaults.bindings` records each one-way binding's **shape** —
 `queue`, `one-shot` (a single delivery with no per-message ack, such as an asynchronous function
@@ -284,7 +283,7 @@ collections).
   `mesh-collector-cases.json`, applied to the keying rule alone. The cases pin that two declared
   versions of one service are two catalog entries rather than one overwriting the other, that this
   still holds when the two versions carry **identical** contracts (a version is an entity, not a
-  shape — mesh §2.4, so a collector keying on `descriptorHash` instead of on `serviceVersion`
+  shape — service-versions.md §1, so a collector keying on `descriptorHash` instead of on `serviceVersion`
   fails here), that re-registering one version leaves the other's topics intact, and that a
   descriptor omitting `serviceVersion` keys exactly as it did before the rule existed. That last
   case is why this fixture is separate: it is the compatibility guarantee that lets an existing

@@ -1,16 +1,7 @@
 # Mesh Contracts
 
-**Status: DRAFT v0.1 — promoted from
-[benzene-go](https://github.com/daniellepelley/benzene-go)'s `docs/design/mesh.md`. The .NET
-implementation is the primary implementation of this document and covers the full contract:
-`Benzene.Mesh.Wire` (descriptor, reserved topic, trace feed) and `Benzene.Mesh.Collector` (the
-§4–§6 collector, including the §4.1 issue feed), together passing all four conformance fixture files via
-`test/Benzene.Conformance.Test`. The Go port (its `mesh`/`meshd` packages) is a fully conforming
-implementation — this contract was originally extracted from it — and the two have hosted each
-other's services in live cross-language fleets, in both directions. The pre-existing `Benzene.Mesh.*`
-visibility packages (aggregator/UI/Tempo, developed independently against the roadmap) are
-collector-side idiom this contract doesn't constrain; §9 maps them, and bridging the aggregator's
-artifact pipeline to `Benzene.Mesh.Collector` is the natural integration follow-up.**
+**Module — Stable.** Optional at Core level; its service-side feeds are required by the
+[Cloud Service Profile](cloud-service-profile.md) (R6).
 
 Benzene Mesh is the *application-level* mesh: every service **declares its full contract** — the
 topics it consumes (§2, derived from its handler registry) and the topics it produces (§2,
@@ -20,16 +11,6 @@ flowed. Running code supplies a second, independent signal — health (§5) and,
 (§3), which declared edges are actually being exercised (§4.2) — but running code is never the
 *source* of the graph, only a witness to it. This document specifies everything that crosses a
 process boundary to make that work identically across language ports.
-
-> **Revision note (2026-08).** Earlier drafts of this document derived consumer edges solely from
-> trace parentage ("never declared"). That inverted the mesh's own stated goal — a graph that is
-> *derived from running code* was read as *requiring running code*, which made the graph
-> unavailable exactly when it is most useful: before deployment, for contract testing, and for a
-> topic nothing has called yet but is nonetheless meant to be called. §2 and §4 below supersede
-> that rule: **declared** (`ServiceDescriptor`) is now the sole source of the producer/consumer
-> graph; **observed** (`TraceEvent` parentage) is a separate, additive signal for liveness and
-> drift, never for graph membership. A port conforming to the prior rule is not spec-conformant
-> under this revision and MUST add outbound registration (§2) to stay so.
 
 At Core level, mesh is optional, and so is each of its feeds; the normative degradation rule of
 §6 applies to every section here. A service claiming the
@@ -238,7 +219,7 @@ transport-shaped.
   whether any call has ever propagated a trace at all.
 - `status` is the Benzene status verbatim (wire-contracts.md §3); empty only when no downstream
   middleware produced a result (a wiring gap, reported as-is).
-- `exceptionType` *(optional, additive 2026-07-25)* — when the invocation's failure originated in a
+- `exceptionType` *(optional)* — when the invocation's failure originated in a
   thrown exception, the exception's language-native **type name** (e.g. a fully-qualified CLR or Java
   class name, a Go error type). Never the exception message, stack trace, or any payload-derived text —
   the type is a stable, non-sensitive discriminator (the same classification rule the health-check
@@ -290,17 +271,16 @@ Sender behavior (normative for ports): trace export MUST be asynchronous, non-bl
 lossy under backpressure — a full buffer drops events, a failed send drops the batch, and no
 mesh feed may ever fail, slow, or block the invocation it observed.
 
-Collector behavior is pinned by `conformance/mesh-collector-cases.json`. Query read models
-(`benzene:mesh:query:*`) as implemented by the Go collector are deliberately not part of this contract
-yet: they are one collector's read models, and join the spec if a second collector or
-third-party view needs them pinned. The collector fixtures exercise them only as the observable
-surface for asserting ingest/derivation behavior.
+Collector behavior is pinned by `conformance/mesh-collector-cases.json`. The collector fixtures
+observe it through three query read models — `benzene:mesh:query:fleet`, `benzene:mesh:query:service`
+and `benzene:mesh:query:topic` — which are **Provisional**: their shapes are asserted only as far as
+the fixtures need, and full pinning follows 1.0. Other `benzene:mesh:query:*` topics a collector
+serves are its own.
 
 ### 4.1 Issues (`benzene:mesh:issues`)
 
-*Additive 2026-07. Optional on both sides (§6 rules apply); Go reference parity pending. A
-collector that doesn't implement it is unaffected; a service that doesn't emit degrades to
-today. This feed adds **zero** Cloud Service Profile requirements.*
+Optional on both sides (§6 applies): a collector that does not implement it is unaffected, and a
+service that does not emit it is reduced. It adds no Cloud Service Profile requirement.
 
 The pipeline-native failure feed: where traces record *what happened*, an issue records *what is
 wrong* — a deduplicated, classified failure signature emitted by the pipeline itself, which
@@ -446,9 +426,9 @@ optional, on both sides:
 
 Four fixture files in [conformance/](conformance/README.md) pin this document; their formats
 and the canonical mesh handlers are documented there. A port that implements mesh MUST pass
-`mesh-descriptor-cases.json` (now including `produces`/outbound-registration cases, §2.3) and
+`mesh-descriptor-cases.json` (including the `produces`/outbound-registration cases, §2.3) and
 `mesh-trace-cases.json`; a port that additionally implements a collector MUST pass
-`mesh-collector-cases.json` (now including graph-from-descriptor cases — a registered service with
+`mesh-collector-cases.json` (including the graph-from-descriptor cases — a registered service with
 zero traffic reporting its full provider/consumer graph — and the declared-vs-observed cases of
 §4.2), and a collector that additionally claims the §4.1 issue feed MUST pass
 `mesh-issue-cases.json` (optional — a collector without it stays collector-conformant, and picking
@@ -459,41 +439,9 @@ Supporting the [Cloud Service Profile](cloud-service-profile.md), however, requi
 service-side feeds, so a port that wants its services to claim the profile implements §§1–3 and §5
 and passes the two service-side fixture files.
 
-A port already conformant under the pre-2026-08 revision (trace-derived consumer edges) is not
-conformant under this one until it adds outbound registration (§2.3) and re-points its collector's
-provider-edge derivation at `produces` (§4) — this is a breaking change to an existing MUST rule,
-not an additive one; see the revision note at the top of this document.
-
 ## 8. Conformance language note
 
 Per the repository's one design rule, everything in §§1–6 is a Benzene *concept* — wire shapes
 and cross-process behavior. How a port derives its descriptor (attribute scanning vs explicit
 registration), how a collector stores state, and what a view renders are *idioms* and stay out
 of this document.
-
-## 9. Relationship to the existing .NET mesh packages *(informative)*
-
-The `Benzene.Mesh.*` packages implement a mesh visibility pipeline that predates this contract:
-a human-maintained `mesh.json` registry, an aggregator that polls each service's OpenAPI `/spec`
-and `/health` endpoints (or receives opportunistic `MeshServiceReport` self-reports), raw-spec
-hashing for contract drift (`MeshHashing`, HMAC-SHA256), Tempo/Prometheus-derived
-`topology.json` edges, and a static Mesh UI. The two designs solve the same problem from
-opposite ends, and several of the .NET roadmap's own open gaps are exactly what this contract
-provides:
-
-| `Benzene.Mesh.*` today | This contract | Convergence |
-|---|---|---|
-| `mesh.json` registry, human-edited | catalog derived from `benzene:mesh:register` + heartbeats | registry remains a pull-mode bootstrap for unmeshed services; meshed services need no entry |
-| `MeshServiceReport` (name, reportedAt, opaque OpenAPI `SpecJson`, health, error) | ServiceDescriptor (§2, topics + derived schemas) + Heartbeat (§5) | the self-report is register+heartbeat in one; the descriptor replaces the opaque spec for wire purposes — the OpenAPI artifact can remain as an enrichment |
-| `MeshHashing` (HMAC-SHA256 of raw spec text) | `descriptorHash` (§2.2, SHA-256 of canonical descriptor JSON) | .NET adopts §2.2 on the wire; `MeshHashing` stays internal to its OpenAPI-artifact drift feature |
-| `TopologyEdge` from Tempo/Prometheus (client/server + rates/latencies) | consumer/producer graph declared via `ServiceDescriptor` (§2, §4); TraceEvent parentage (§3) feeds observed usage and drift (§4.2), not the graph | the native trace feed yields observation with no external tracing stack; Tempo remains an optional additional rate/latency source layered onto the declared edges, never a substitute for them |
-| `MeshSelfReportMiddleware` (opportunistic, throttled, never blocks) | trace middleware + heartbeat, same never-affect-the-service rule (§6) | the ethos is already shared; the shapes converge |
-| aggregator + `manifest.json`/`services/*.json` + Mesh UI | a collector (§4) with its own read models and view | the aggregator becomes a conformant collector by also accepting the three ingest topics alongside its pull sources |
-| known staleness gap (no `Stale` status) | heartbeats give last-seen; missing feeds are rendered as reduced (§6) | solved by adopting §5 |
-| health: `HealthCheckResponse` | the same wire-contracts §5 shape, reused verbatim | already shared — no change |
-
-Nothing in the existing packages needs to be discarded: pull-based aggregation, the OpenAPI
-artifacts, Tempo topology, and the UI are collector-side idioms this contract deliberately does
-not constrain. Conformance for the .NET port means adding the wire layer: descriptor derivation
-(§2) with the reserved topic (§1), the trace feed (§3), and — for the aggregator — the ingest
-topics (§4).

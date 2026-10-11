@@ -200,6 +200,13 @@ Decisions: D5, D6 (doc), D7, D9, D11, D19, D20 (labels), D22, D23, D24, D25.
 | `cloud-service-profile.md` | §5 → one paragraph: a port MAY offer a wiring-time self-check, carried on `profile`, and an external probe; link to the .NET docs. |
 | `conformance/README.md` | Claims re-cut to Core · per binding · Profile · per module (Provisional modules marked). |
 
+**Landed 2026-10-11** (`8e4be084`, `1f92d964`, and the trims commit), with the website building green
+from all four ports. Two departures from the table: design-principles §5.2's path table was
+normative (the profile's R7 cites it), so it moved into transport-bindings §1 rather than into
+guidance; and contract-document §6's numbering is kept (§6.1 became a two-line "Portability" note)
+because fixture descriptions cite §6.x and Phase 2 changes no fixture. The .NET material from
+versioning is `docs/cookbooks/versioning-internals.md` in benzene-dotnet.
+
 **Ports:** link fixes; .NET takes the versioning cookbook. **Exit:** the website builds green with all
 four ports; `remaining-issues-plan.md` P1.1 and P1.2 move to "decided" (D25), port work tracked
 there.
@@ -294,7 +301,7 @@ adapters, unconfirmed fixture runner), then Python (settlement unknown across ~1
 ```
 Phase 0  [x] 0.1 audit (Go, Py, TS)  [x] 0.2 spike + champion review, ruled  [x] 0.3 tags + pinned checks (4 ports + ui)  [x] 0.4 .NET fixture (bug fixed; D26 ruled, lands in Phase 1)  [x] 0.5 canary
 Phase 1  [x] 1a  [x] 1b  [x] 1c  [x] fixtures  [x] spec-0.2.0  [x] ui  [x] .NET  [x] Go  [x] TS  [x] Py  [ ] the-count  [x] capabilities.md
-Phase 2  [ ] spec PR  [ ] website green (4 ports)  [ ] .NET cookbook
+Phase 2  [x] spec PR  [x] website green (4 ports)  [x] .NET cookbook
 Phase 3  [ ] 3a spec-0.3.0  [ ] 3b spec-0.4.0  [ ] ui  [ ] .NET  [ ] Go  [ ] TS  [ ] Py  [ ] live interop both ways
 Phase 4  [ ] spec PR  [ ] .NET  [ ] Go  [ ] TS  [ ] Py
 Phase 5  [ ] VERSION/tag  [ ] capabilities.md full refresh  [ ] archives + README

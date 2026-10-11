@@ -108,6 +108,12 @@ These are the ones I deliberately did not act on overnight. Each needs your call
 
 ### P1.1 — Should an HTTP client carry a peer's `errors`?
 
+**Decided 2026-10-11 (spec-simplification-plan D25, core-concepts §12):** yes. A client that receives a
+problem document — a failure envelope's body, or an `application/problem+json` response (which is how
+it knows) — MUST rebuild `errors` with `field` and `code` intact. Port work: .NET's
+`HttpStatusCode.Convert` and TypeScript's `HttpContextConverter`; it may follow 1.0. The text below
+is the question as it was asked.
+
 Go's `httpclient`/`awslambdaclient` now rebuild a failed `Result` from the peer's problem document
 with `field` and `code` intact. .NET's `HttpStatusCode.Convert` and TypeScript's
 `HttpContextConverter` map the status code and read nothing from the body, so a failure through them
@@ -125,6 +131,9 @@ other today.
 
 ### P1.2 — Should Go and Python attach the *received* problem document?
 
+**Decided 2026-10-11 (D25):** attaching the received document verbatim is a MAY (core-concepts
+§12) — Go and Python may add it; nothing requires it. The text below is the question as it was asked.
+
 .NET's envelope client attaches the document it received, so `result.GetProblem()` returns exactly
 what the peer sent rather than one re-derived from the status. That is what preserves an
 application-owned `type` URI across a hop **inbound** — the mirror of what `ProblemResult` /
@@ -134,6 +143,10 @@ so an app-authored `type` still dies at the first hop inbound.
 Small and well-shaped, but it is new public API on two ports for something nobody has asked for.
 
 ### P1.3 — `mesh-service-version-cases.json`: claim it or stop vendoring it
+
+**Decided 2026-10-11 (D26):** the fixture stays, conditional on the Service Versions module
+(now `docs/specification/service-versions.md`, Provisional: .NET); .NET claims it, the others skip it
+with a written reason.
 
 All four ports vendor this fixture. **None runs it.** It is legitimately conditional — required only
 of a collector claiming service-version identity — so not running it is conformant. But vendoring it

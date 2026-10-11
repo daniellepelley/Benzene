@@ -66,7 +66,7 @@ result, and MUST NOT crash the adapter.
 
 ## Per-invocation scope for request-scoped state
 
-A fresh [DI scope](../specification/core-concepts.md#8-dependency-registration-and-resolution) is
+A fresh [DI scope](../specification/core-concepts.md#8-dependencies-and-scope) is
 created per pipeline invocation, and scoped services live and die with it. That gives you a clean
 home for anything that belongs to *one* message — a unit of work, a correlation value, an accumulator
 a middleware fills and the handler reads — without threading it through every call or reaching for a
@@ -87,7 +87,7 @@ Two conventions keep this honest:
 
 - Define the application **once** — configuration, service registration, pipeline — and attach
   transport entry points with `use<Transport>(...)` calls that
-  [no-op when they don't match the host](../specification/core-concepts.md#7-application-lifecycle).
+  [no-op when they don't match the host](../specification/core-concepts.md#7-application-definition).
   One definition can then target several platforms, and each deployment activates only the entry
   points its host supports.
 - Register the framework's defaults as *overridable* (`tryAdd`), so your own registration wins
