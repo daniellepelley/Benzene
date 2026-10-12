@@ -125,6 +125,12 @@ them (released as `spec-1.1.0`). **Port follow-ups the 1.1 work found:**
   nothing — the same documented limit .NET's per-route wiring has.
 - .NET's AwsMesh example forwards only the OpenTelemetry span, so it reports M2 missing:
   forwarding the mesh span there would split its X-Ray traces at the first hop.
+- ~~Go's one-way clients never returned `timeout`: every transport failure was
+  `service-unavailable`~~ — fixed (benzene-go `9a13703`): they classify through `client.CallFailure`.
+- Python writes a naive `datetime` with `isoformat()` and no offset (`benzene/core/mapping.py`,
+  stated as "RFC 3339 when aware"), while its derived schema says `format: date-time`, which
+  RFC 3339 gives an offset. The port must choose: assume UTC, or refuse a naive value. That is a
+  behaviour change for callers, so it is left to that port's owner.
 
 ---
 
