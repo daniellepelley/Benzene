@@ -117,7 +117,8 @@ the status from a received problem document's `benzeneStatus`; a send that fails
 them (released as `spec-1.1.0`). **Port follow-ups the 1.1 work found:**
 - ~~Python's marshaler could not write `UUID`, `date` or `Decimal`; `Literal` derived to `{}`~~ —
   fixed (benzene-python `356d447`, `8a0bedc`): standard JSON forms and matching §4.2 schemas.
-  Still open: `benzene-openapi`'s 3.1 generator ignores pydantic models.
+  ~~`benzene-openapi`'s 3.1 generator ignored pydantic models~~ — fixed (benzene-python `e74a6ac`):
+  `json_schema` reads a model as the marshaler writes it.
 - ~~TypeScript's batch clients threw when batch creation failed~~ — fixed (benzene-typescript
   `157ac27`): reported per entry.
 - TypeScript's mesh trace forwarding is opt-in per outbound route (`useMeshTraceContext`); the
