@@ -114,13 +114,12 @@ a problem body yet — the core-concepts §12 MUST (closed in Phase 5, before 1.
 **The 1.x items became spec 1.1 SHOULDs** (gRPC `code` in `FieldViolation.reason`; a client takes
 the status from a received problem document's `benzeneStatus`; a send that fails in transport is a
 `timeout`/`service-unavailable` result, one-way clients included) and all four ports implement
-them. **Port follow-ups the 1.1 work found** (none is a spec gap):
-- Python's marshaler cannot write `UUID`, `date` or `Decimal` (`model_dump` without `mode="json"`,
-  and `to_jsonable` does not handle them), so such a payload fails to serialize; its schemas are
-  `{}` to match. `Literal` fields also derive to `{}`, and `benzene-openapi`'s 3.1 generator ignores
-  pydantic models.
-- TypeScript's Service Bus and Event Hub batch clients call `createMessageBatch`/`createBatch`
-  outside their error handling, so a connection failure there still throws (.NET's now don't).
+them (released as `spec-1.1.0`). **Port follow-ups the 1.1 work found:**
+- ~~Python's marshaler could not write `UUID`, `date` or `Decimal`; `Literal` derived to `{}`~~ —
+  fixed (benzene-python `356d447`, `8a0bedc`): standard JSON forms and matching §4.2 schemas.
+  Still open: `benzene-openapi`'s 3.1 generator ignores pydantic models.
+- ~~TypeScript's batch clients threw when batch creation failed~~ — fixed (benzene-typescript
+  `157ac27`): reported per entry.
 - TypeScript's mesh trace forwarding is opt-in per outbound route (`useMeshTraceContext`); the
   cloud service builds no routes to attach it to, and a raw `IBenzeneMessageClient` call forwards
   nothing — the same documented limit .NET's per-route wiring has.
