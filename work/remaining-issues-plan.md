@@ -111,15 +111,21 @@ module's fixture (Provisional: .NET), which the other ports skip with a written 
 still open:** .NET's `HttpStatusCode.Convert` and TypeScript's `HttpContextConverter` read nothing from
 a problem body yet — the core-concepts §12 MUST (closed in Phase 5, before 1.0).
 
-**Open for 1.x (additive):** an HTTP client takes the result status from the §4.1 reverse table, so
-an application-defined status in a received problem document's `benzeneStatus` is lost across an
-HTTP hop (TypeScript's Phase 5 report). Taking `benzeneStatus` when the failure body is a problem
-document would preserve it. Also over gRPC, a problem error's `code` has no slot in
-`BadRequest.FieldViolation` (wire-contracts §4.2; Go's Phase 5 report) — `reason` is a candidate.
-And no spec rule says what a client returns when the call itself fails (no connection, timeout
-before a reply): Python's `HttpMessageSender` and `GrpcMessageSender` raise, where every other
-sender in every port returns a `service-unavailable` result (Python's Phase 5 audit). Worth one
-sentence in transport-bindings' outbound-client rule, and a port fix.
+**The 1.x items became spec 1.1 SHOULDs** (gRPC `code` in `FieldViolation.reason`; a client takes
+the status from a received problem document's `benzeneStatus`; a send that fails in transport is a
+`timeout`/`service-unavailable` result, one-way clients included) and all four ports implement
+them. **Port follow-ups the 1.1 work found** (none is a spec gap):
+- Python's marshaler cannot write `UUID`, `date` or `Decimal` (`model_dump` without `mode="json"`,
+  and `to_jsonable` does not handle them), so such a payload fails to serialize; its schemas are
+  `{}` to match. `Literal` fields also derive to `{}`, and `benzene-openapi`'s 3.1 generator ignores
+  pydantic models.
+- TypeScript's Service Bus and Event Hub batch clients call `createMessageBatch`/`createBatch`
+  outside their error handling, so a connection failure there still throws (.NET's now don't).
+- TypeScript's mesh trace forwarding is opt-in per outbound route (`useMeshTraceContext`); the
+  cloud service builds no routes to attach it to, and a raw `IBenzeneMessageClient` call forwards
+  nothing — the same documented limit .NET's per-route wiring has.
+- .NET's AwsMesh example forwards only the OpenTelemetry span, so it reports M2 missing:
+  forwarding the mesh span there would split its X-Ray traces at the first hop.
 
 ---
 
