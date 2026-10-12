@@ -463,6 +463,43 @@
       "components": {
         "schemas": {}
       }
+    },
+    "missingDialect": {
+      "service": "conformance",
+      "contractHash": "sha256:2b8906d276bb0e6f24ed6f77d919841812903e0affdf611daa4cac42716dddc7",
+      "registrationHash": "sha256:ad398055f066b2917d168d6c4ab9097b5691351e83484d3b9816376558946013",
+      "requests": [
+        {
+          "topic": "orders:create",
+          "request": {
+            "type": "object",
+            "properties": {
+              "orderId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "orderId"
+            ]
+          },
+          "response": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "status"
+            ]
+          }
+        }
+      ],
+      "events": [],
+      "sends": [],
+      "components": {
+        "schemas": {}
+      }
     }
   },
   "derivationCases": [
@@ -985,6 +1022,13 @@
     {
       "name": "unknown-schema-dialect-is-rejected",
       "documentRef": "unknownDialect",
+      "expectedError": {
+        "kind": "unknown-schema-dialect"
+      }
+    },
+    {
+      "name": "missing-schema-dialect-is-rejected",
+      "documentRef": "missingDialect",
       "expectedError": {
         "kind": "unknown-schema-dialect"
       }

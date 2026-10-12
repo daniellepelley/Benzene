@@ -240,7 +240,9 @@ their own content type — informative, not enumerated here). Clients MUST accep
 `application/json` and `application/problem+json` as failure-body content types — neither fails
 the call. A client rebuilds `errors` from an `application/problem+json` body (core-concepts §12),
 and MAY also read an `application/json` failure body as a problem document when it carries
-`benzeneStatus`.
+`benzeneStatus`. When it reads a problem document, the client SHOULD take the result's status from
+its `benzeneStatus` rather than from the reverse table above, so that an application-defined
+status survives the hop; the reverse table applies to every other failure.
 
 ### 4.2 gRPC
 
@@ -273,6 +275,8 @@ gRPC; the problem's information (§1.3) maps onto gRPC's own error model instead
 `FieldViolation.field` is a dotted path, so the binding converts the §1.3 pointer: its segments,
 unescaped per RFC 6901, joined with `.`, and a segment made only of decimal digits written `[n]`
 (`/items/0/sku` → `items[0].sku`). An error with no `field` has an empty `FieldViolation.field`.
+A server SHOULD write the error's `code` into `FieldViolation.reason`, and a client SHOULD read it
+back into `code`, so an error's `code` survives a gRPC hop as it does an HTTP one.
 
 Reverse (client): a `benzene-status` trailer, when present, wins verbatim. Otherwise: `OK`→`ok`,
 `InvalidArgument`→`bad-request`, `Unauthenticated`→`unauthorized`, `PermissionDenied`→`forbidden`,

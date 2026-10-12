@@ -37,7 +37,7 @@ with a collector ([mesh.md](mesh.md) §2).
 
 | Field | Presence | Meaning |
 |---|---|---|
-| `schemaDialect` | REQUIRED, `"openapi-3.0"` | The dialect of every schema in the document (OpenAPI 3.0 Schema Objects). A consumer MUST reject a document whose dialect it does not know. The document is not itself an OpenAPI document. |
+| `schemaDialect` | REQUIRED, `"openapi-3.0"` | The dialect of every schema in the document (OpenAPI 3.0 Schema Objects). A consumer MUST reject a document whose dialect it does not know; a document without `schemaDialect` has an unknown dialect. The document is not itself an OpenAPI document. |
 | `service` | REQUIRED | The service's name. |
 | `serviceVersion` | OPTIONAL | Which release this is ([service-versions.md](service-versions.md)). |
 | `versionScheme` | OPTIONAL; REQUIRED for an orderable `serviceVersion` | The comparison scheme of `serviceVersion` ([service-versions.md](service-versions.md) §2). |
