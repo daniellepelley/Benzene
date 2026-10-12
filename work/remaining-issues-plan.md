@@ -88,11 +88,16 @@ in any release, including that one and `aecd10a` (the `MeshAggregationPass` sing
    modular-monolith's in-process/HTTP equivalence, choreography's one-emit-three-reactions,
    cqrs' read-model join, streaming's resume-from-failure) rather than assuming the bump is inert.
 
-**Status (2026-10-12):** `0.0.3-alpha.4` was published 2026-09-29. The next publish is
-**`0.1.0-alpha.1`**, still a pre-release: `version.txt` moved to `0.1.0` (benzene-dotnet `e7af01d`)
-for the spec-1.x line and the breaking changes since alpha.4, and the changelog is cut for it. `main`
-is green (`785e4ea`). The maintainer publishes it with Deploy Benzene, channel `alpha`. Then steps
-2–3, against `0.1.0-alpha.1`, plus the Count canary bump.
+**Done (2026-10-12).** `0.1.0-alpha.1` is published, a pre-release on the `0.1.0` base
+(benzene-dotnet `e7af01d`, `main` green at `785e4ea`).
+- **The Count** runs on it (the-count `8e244ac`): no code change, every test green, deployed, and
+  answering through the connector.
+- **benzene-patterns** pins it (`7c98e86`). All 25 `GetConfiguration` overrides were deleted, not
+  20: the five in real-time-risk had the same default body. Two API changes reached the code:
+  `Benzene.Abstractions.Pipelines` replaced the misspelt id, and `FailedShards` now carries
+  `FailedShard<T>`. The bump also exposed four patterns still sending to `/benzene-message`;
+  they now send to `/benzene/invoke` (the spec-0.2.0 path). All eight smoke workflows, which
+  include the five end-to-end verifications, pass on that commit.
 
 ### P0.4 — Go: the module has never been tagged
 
