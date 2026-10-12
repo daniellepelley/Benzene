@@ -88,7 +88,11 @@ in any release, including that one and `aecd10a` (the `MeshAggregationPass` sing
    modular-monolith's in-process/HTTP equivalence, choreography's one-emit-three-reactions,
    cqrs' read-model join, streaming's resume-from-failure) rather than assuming the bump is inert.
 
-**Blocked on:** your go-ahead for the publish. Steps 2–3 need no further decisions.
+**Status (2026-10-12):** `0.0.3-alpha.4` was published 2026-09-29. The next publish is
+**`0.1.0-alpha.1`**, still a pre-release: `version.txt` moved to `0.1.0` (benzene-dotnet `e7af01d`)
+for the spec-1.x line and the breaking changes since alpha.4, and the changelog is cut for it. `main`
+is green (`785e4ea`). The maintainer publishes it with Deploy Benzene, channel `alpha`. Then steps
+2–3, against `0.1.0-alpha.1`, plus the Count canary bump.
 
 ### P0.4 — Go: the module has never been tagged
 
