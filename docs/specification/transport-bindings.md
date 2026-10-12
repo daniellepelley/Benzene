@@ -115,10 +115,11 @@ failed maps through wire-contracts §4.1 as usual.
 metadata channel (this is what makes trace propagation work end-to-end) and map the native outcome
 back to a result through the reverse status tables of wire-contracts §4. An envelope-over-HTTP
 client reads the envelope from the response body whatever the HTTP status, and falls back to the
-reverse HTTP table only when the body is not an envelope. A call that fails before any reply
-arrives — no connection, a refused or reset request, the client's own deadline — SHOULD yield a
-result rather than an exception: `timeout` when the deadline elapsed, otherwise
-`service-unavailable`, so a caller handles a dead peer as it handles every other failure.
+reverse HTTP table only when the body is not an envelope. A send that fails in transport —
+no connection, a refused or reset request, the client's own deadline, before any reply arrives (or,
+for a one-way client, before the broker accepts the message) — SHOULD yield a result rather than an
+exception: `timeout` when the deadline elapsed, otherwise `service-unavailable`, so a caller handles
+a dead peer as it handles every other failure.
 
 Bindings are **hosted** by a platform entry point (an ASP.NET Core server, a Lambda runtime, an
 Azure Functions worker, a background worker loop). The application **mounts** a binding as part
