@@ -23,6 +23,12 @@ not. Tonight's fixes reach nobody until a release happens.
 
 ### P0.1 — TypeScript: the port is not installable at all
 
+**Status (2026-10-13): ready to publish `0.1.0-beta.2`** (benzene-typescript `ba09831`, CI green).
+All 130 packages are bumped and the release workflow's verify job passes. A run from `main` on
+2026-10-13 (still at beta.1) stopped at the first new package on `EOTP`: the `NPM_TOKEN` secret
+still demands a one-time password. **Maintainer action:** replace it with a granular token that
+can publish without 2FA, then run Release. Detail in `benzene-typescript/work/npm-release-state.md`.
+
 **Verified live against the registry, this morning:**
 
 ```
@@ -54,6 +60,11 @@ Instead:
 **Blocked on:** your go-ahead. npm versions cannot be reused, so this is irreversible.
 
 ### P0.2 — Python: the published release ships the Core conformance defect
+
+**Status (2026-10-13): ready to publish `0.1.0b2`** (benzene-python `551f39a`, CI green). The
+inter-package floors are `>=0.1.0b2`, so no install can mix in the defective `0.1.0b1`; all 38
+artifacts pass `twine check`. **Maintainer actions:** register `benzene-codegen-client`'s pending
+trusted publisher on PyPI (new since b1, or the whole upload fails), then push tag `v0.1.0b2`.
 
 `benzene-core 0.1.0b1` (uploaded 14 August) is what `pip install` gives you today. I downloaded the
 wheel and checked: it contains **zero** occurrences of `isSuccessful`. So the published package is
@@ -100,6 +111,11 @@ in any release, including that one and `aecd10a` (the `MeshAggregationPass` sing
   include the five end-to-end verifications, pass on that commit.
 
 ### P0.4 — Go: the module has never been tagged
+
+**Status (2026-10-13): decided — `v0.1.0-beta.1`, ready to tag** (benzene-go `cbaf92e`, CI
+green). Every nested module now requires `v0.1.0-beta.1` (they named an untagged `v0.1.0`).
+**Maintainer action:** `scripts/tag-release.sh v0.1.0-beta.1` from a clean `main`, then the one
+`git push` it prints (19 tags).
 
 `git tag` returns nothing. A consumer can only pin a commit SHA. That may well be deliberate
 pre-1.0, and it is why last night's `Result.Errors` type change was safe to make — but it is worth
