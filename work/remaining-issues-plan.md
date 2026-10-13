@@ -260,8 +260,11 @@ retire without losing their remainders. Each notes its source.
   `work/archive/mesh-ui-improvement-plan.md`).
 - schemaMismatch **full fix**: the aggregator publishes the differing paths, feeding the existing
   `SchemaTree` annotations machinery (from `work/archive/mesh-ui-improvement-plan.md` §2.6).
-- Repo split **Phase 5**: wire real Go/TypeScript doc sources into the website build (placeholder
-  section, switcher UX pass, per-language "edit this page" links, cross-repo release/verify loop
-  docs) (from `work/archive/repo-split-plan.md`).
+- ~~Repo split **Phase 5**: wire real Go/TypeScript doc sources into the website build~~ — done.
+  All four languages build into benzene.app (each port notifies the site when its docs change).
+  2026-10-13 (Benzene `68f21ab`): every docs page has an "Edit this page on GitHub" link into its
+  own repo, the header's GitHub link follows the page's repo, and the ports' repo-file links no
+  longer drop the branch (live benzene.app linked `.../benzene-go/blob/ROADMAP.md`). Live after the
+  next dev → live promote.
 - **CancellationToken on message handlers** — now a per-port API question (from
   `work/archive/spec-review-2026-07-25.md`, item 1).
