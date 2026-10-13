@@ -26,7 +26,13 @@ moved out to `benzene-dotnet`, so that fallback is gone.) See `work/archive/repo
 - `DocSource` - one documentation source: `Id`/`Label`/`UrlPrefix`/`DocsRootDisk`/`NavFile`/
   `IsLanguage`/excludes. The spec is a source with `IsLanguage=false` (leads the hub, not in the
   switcher); each language port is `IsLanguage=true`. Built in `Program.cs`; extra languages can be
-  added with a repeatable `--source id=Label=urlPrefix=path[=navFile]` arg.
+  added with a repeatable `--source id::Label::urlPrefix::path[::navFile][::landing][::<repoBlobUrl>]`
+  arg. `RepoBlobUrl` is the blob URL of the source's **docs root** (`…/blob/main/docs` for a full docs
+  tree, `…/blob/main` for a landing README): links to unpublished repo files resolve against it, every
+  page gets an "Edit this page on GitHub" link built from it (`DocSource.EditUrl`), and the header's
+  GitHub link points at that source's repo (`DocSource.RepoUrl`) - so a Go page leads to benzene-go.
+  Passing the repo root for a docs tree drops the branch from every link that climbs out of `docs/`
+  (`…/blob/ROADMAP.md`, a dead link), which CI did until 2026-10-13.
 - **The marketing page advertises only the languages this run actually built.** `MarketingContent.
   Languages` is the full catalogue (id, label, install line, snippet, docs path); `SiteBuilder`
   passes the ids of the wired `DocSource`s and `Layout.RenderMarketingPage` filters the catalogue to

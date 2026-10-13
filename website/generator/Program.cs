@@ -123,6 +123,9 @@ var specSource = new DocSource
     DocsRootDisk = specRoot,
     NavFile = "index.md",   // a proper nested-list nav (README.md uses tables the nav builder can't read)
     IsLanguage = false,
+    // The spec lives in this repo: pages get an "Edit this page" link to it, and a link to a repo file
+    // that is not a published page (the VERSION file) points at that file on GitHub.
+    RepoBlobUrl = "https://github.com/daniellepelley/Benzene/blob/main/docs/specification",
 };
 
 var sources = new List<DocSource> { specSource };
@@ -140,6 +143,7 @@ if (File.Exists(Path.Combine(guidesRoot, "index.md")))
         DocsRootDisk = guidesRoot,
         NavFile = "index.md",
         IsLanguage = false,
+        RepoBlobUrl = "https://github.com/daniellepelley/Benzene/blob/main/docs/guides",
     });
 }
 
@@ -156,6 +160,7 @@ if (File.Exists(Path.Combine(patternsRoot, "index.md")))
         DocsRootDisk = patternsRoot,
         NavFile = "index.md",
         IsLanguage = false,
+        RepoBlobUrl = "https://github.com/daniellepelley/Benzene/blob/main/docs/patterns",
     });
 }
 

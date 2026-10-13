@@ -70,6 +70,29 @@ internal sealed class DocSource
     /// </summary>
     public string? RepoBlobUrl { get; init; }
 
+    /// <summary>
+    /// The repository this source's docs live in (the part of <see cref="RepoBlobUrl"/> before
+    /// <c>/blob/</c>), e.g. https://github.com/daniellepelley/benzene-go — what a page's "GitHub" link
+    /// points at, so a Go page leads to the Go port, not the cross-language repo. Null without a blob URL.
+    /// </summary>
+    public string? RepoUrl =>
+        RepoBlobUrl is { } blob && blob.IndexOf("/blob/", StringComparison.Ordinal) is var i and > 0
+            ? blob[..i]
+            : null;
+
+    /// <summary>
+    /// GitHub's edit URL for one of this source's pages (<paramref name="docRelativePath"/>, relative to
+    /// the docs root): the blob URL with <c>/blob/</c> turned into <c>/edit/</c>. Null without a blob URL.
+    /// </summary>
+    public string? EditUrl(string docRelativePath)
+    {
+        if (RepoBlobUrl is not { } blob) return null;
+        var i = blob.IndexOf("/blob/", StringComparison.Ordinal);
+        if (i <= 0) return null;
+        var edit = blob[..i] + "/edit/" + blob[(i + "/blob/".Length)..];
+        return $"{edit.TrimEnd('/')}/{docRelativePath.TrimStart('/')}";
+    }
+
     /// <summary>Output path of this source's docs home (its nav file rendered), e.g. "dotnet/docs/index.html".</summary>
     public string HomeOutputPath =>
         LandingOnly

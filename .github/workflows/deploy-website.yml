@@ -109,11 +109,14 @@ jobs:
         fi
 
         # Wire a sibling port: a full docs/ tree (docs/index.md) → full section; else a README → landing.
+        # The blob URL handed to the generator is that of the source's docs ROOT (docs/ for a full
+        # section, the repo root for a landing page): a page's "Edit this page" link and its links to
+        # unpublished repo files are resolved against it.
         wire_lang() {
           local id="$1" label="$2" dir="$3" blob="$4"
           if [ -f "$dir/docs/index.md" ]; then
             echo "Wiring the $label language section (full docs)."
-            ARGS+=(--source "$id::$label::$id/docs::$dir/docs::$blob")
+            ARGS+=(--source "$id::$label::$id/docs::$dir/docs::$blob/docs")
           elif [ -f "$dir/README.md" ]; then
             echo "Wiring the $label language section (landing page)."
             ARGS+=(--source "$id::$label::$id/docs::$dir::landing::$blob")

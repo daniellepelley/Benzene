@@ -270,7 +270,8 @@ internal static class Layout
 
     public static string RenderDocsPage(
         string title, string description, string bodyHtml, NavNode nav, string outputPath,
-        DocSource source, IReadOnlyList<DocSource> allSources, SiteOptions options)
+        DocSource source, IReadOnlyList<DocSource> allSources, SiteOptions options,
+        string? editUrl = null)
     {
         var css = RepoPaths.RelativeHref(outputPath, "site.css");
         var favicon = RepoPaths.RelativeHref(outputPath, "favicon.svg");
@@ -303,10 +304,10 @@ internal static class Layout
               <link rel="stylesheet" href="{css}">
             </head>
             <body>
-              {Header(outputPath, activeSection: "docs")}
+              {Header(outputPath, activeSection: "docs", source.RepoUrl)}
               <div class="layout">
                 <nav class="sidebar">{sidebar}</nav>
-                <main class="content">{bodyHtml}</main>
+                <main class="content">{bodyHtml}{EditLink(editUrl)}</main>
               </div>
               {Footer()}
             </body>
@@ -659,8 +660,22 @@ internal static class Layout
         "if(t==='light'||t==='dark'){document.documentElement.setAttribute('data-theme',t);}" +
         "}catch(e){}})();</script>";
 
-    private static string Header(string outputPath, string activeSection)
+    /// <summary>
+    /// "Edit this page on GitHub", under a docs page's body, pointing into the repo the page comes
+    /// from: a Go page edits benzene-go, a spec page edits this repo. Empty for a page with no source
+    /// repo (a source wired without a blob URL).
+    /// </summary>
+    private static string EditLink(string? editUrl) =>
+        editUrl is null
+            ? ""
+            : $"<p class=\"edit-link\"><a href=\"{Html(editUrl)}\">Edit this page on GitHub</a></p>";
+
+    /// <summary>The cross-language repo: the header's GitHub link everywhere but a port's own pages.</summary>
+    private const string BenzeneRepoUrl = "https://github.com/daniellepelley/Benzene";
+
+    private static string Header(string outputPath, string activeSection, string? repoUrl = null)
     {
+        var github = Html(repoUrl ?? BenzeneRepoUrl);
         var home = RepoPaths.RelativeHref(outputPath, "index.html");
         var why = RepoPaths.RelativeHref(outputPath, "why.html");
         var architecture = RepoPaths.RelativeHref(outputPath, "architecture.html");
@@ -676,7 +691,7 @@ internal static class Layout
                 <a href="{{architecture}}"{{Active("architecture")}}>Architecture</a>
                 <a href="{{operations}}"{{Active("operations")}}>Operations</a>
                 <a href="{{docs}}"{{Active("docs")}}>Docs</a>
-                <a href="https://github.com/daniellepelley/Benzene">GitHub</a>
+                <a href="{{github}}">GitHub</a>
                 <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch between light and dark">
                   <svg class="theme-toggle-icon to-dark" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
                     <path fill="currentColor" d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>

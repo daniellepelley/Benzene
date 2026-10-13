@@ -510,6 +510,14 @@ a { color: var(--accent); }
 }
 
 .content h1 { font-size: 2rem; }
+.content .edit-link {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border, rgba(127, 127, 127, 0.25));
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.content .edit-link a { color: inherit; }
 .content h1:first-child { margin-top: 0; }
 
 /* A doc-page diagram (e.g. docs/patterns/diagrams/*.svg) is authored at a fixed intrinsic size but

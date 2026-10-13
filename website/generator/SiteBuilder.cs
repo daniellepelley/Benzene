@@ -382,7 +382,8 @@ internal sealed class SiteBuilder
         var bodyHtml = writer.ToString();
 
         return Layout.RenderDocsPage(
-            page.Title, page.Description, bodyHtml, nav, page.OutputPath, page.Source, allSources, _options);
+            page.Title, page.Description, bodyHtml, nav, page.OutputPath, page.Source, allSources, _options,
+            page.Source.EditUrl(page.DocRelativePath));
     }
 
     private void WriteOutput(string outputPath, string html)
