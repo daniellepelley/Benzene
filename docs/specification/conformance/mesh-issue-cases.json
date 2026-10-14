@@ -106,6 +106,53 @@
           }
         }
       ]
+    },
+    {
+      "name": "error-detail-merges-by-field-and-code",
+      "steps": [
+        {
+          "request": { "topic": "benzene:mesh:issues", "headers": {}, "body": "{\"service\":\"orders\",\"issues\":[{\"fingerprint\":\"cccc3333cccc3333cccc3333cccc3333\",\"classification\":\"validation\",\"service\":\"orders\",\"topic\":\"order:create\",\"status\":\"validation-error\",\"count\":4,\"firstSeen\":\"2026-07-25T09:00:00Z\",\"lastSeen\":\"2026-07-25T09:05:00Z\",\"errors\":[{\"field\":\"/orderId\",\"code\":\"required\",\"count\":3},{\"field\":\"/quantity\",\"code\":\"GreaterThanValidator\",\"count\":1}]}]}" },
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": { "topic": "benzene:mesh:issues", "headers": {}, "body": "{\"service\":\"orders\",\"issues\":[{\"fingerprint\":\"cccc3333cccc3333cccc3333cccc3333\",\"classification\":\"validation\",\"service\":\"orders\",\"topic\":\"order:create\",\"status\":\"validation-error\",\"count\":4,\"firstSeen\":\"2026-07-25T09:10:00Z\",\"lastSeen\":\"2026-07-25T09:15:00Z\",\"errors\":[{\"field\":\"/quantity\",\"code\":\"GreaterThanValidator\",\"count\":3},{\"code\":\"TotalsDisagree\",\"count\":1}]}]}" },
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": { "topic": "benzene:mesh:query:fleet", "headers": {}, "body": "{}" },
+          "expected": { "statusCode": "ok", "body": { "issues": [{ "fingerprint": "cccc3333cccc3333cccc3333cccc3333", "count": 8, "errors": [{ "field": "/quantity", "code": "GreaterThanValidator", "count": 4 }, { "field": "/orderId", "code": "required", "count": 3 }, { "code": "TotalsDisagree", "count": 1 }] }] } }
+        }
+      ]
+    },
+    {
+      "name": "error-detail-is-bounded-to-ten-by-count-then-field-then-code",
+      "steps": [
+        {
+          "request": { "topic": "benzene:mesh:issues", "headers": {}, "body": "{\"service\":\"orders\",\"issues\":[{\"fingerprint\":\"cccc3333cccc3333cccc3333cccc3333\",\"classification\":\"validation\",\"service\":\"orders\",\"topic\":\"order:create\",\"status\":\"validation-error\",\"count\":6,\"firstSeen\":\"2026-07-25T09:00:00Z\",\"lastSeen\":\"2026-07-25T09:00:00Z\",\"errors\":[{\"field\":\"/j\",\"code\":\"required\",\"count\":1},{\"field\":\"/i\",\"code\":\"required\",\"count\":1},{\"field\":\"/h\",\"code\":\"required\",\"count\":1},{\"field\":\"/g\",\"code\":\"required\",\"count\":1},{\"field\":\"/f\",\"code\":\"required\",\"count\":1},{\"field\":\"/e\",\"code\":\"required\",\"count\":1}]}]}" },
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": { "topic": "benzene:mesh:issues", "headers": {}, "body": "{\"service\":\"orders\",\"issues\":[{\"fingerprint\":\"cccc3333cccc3333cccc3333cccc3333\",\"classification\":\"validation\",\"service\":\"orders\",\"topic\":\"order:create\",\"status\":\"validation-error\",\"count\":10,\"firstSeen\":\"2026-07-25T09:01:00Z\",\"lastSeen\":\"2026-07-25T09:01:00Z\",\"errors\":[{\"field\":\"/k\",\"code\":\"required\",\"count\":5},{\"code\":\"z\",\"count\":1},{\"field\":\"/d\",\"code\":\"required\",\"count\":1},{\"field\":\"/c\",\"code\":\"required\",\"count\":1},{\"field\":\"/b\",\"code\":\"required\",\"count\":1},{\"field\":\"/a\",\"code\":\"required\",\"count\":1}]}]}" },
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": { "topic": "benzene:mesh:query:fleet", "headers": {}, "body": "{}" },
+          "expected": { "statusCode": "ok", "body": { "issues": [{ "fingerprint": "cccc3333cccc3333cccc3333cccc3333", "count": 16, "errors": [{ "field": "/k", "count": 5 }, { "code": "z", "count": 1 }, { "field": "/a", "count": 1 }, { "field": "/b", "count": 1 }, { "field": "/c", "count": 1 }, { "field": "/d", "count": 1 }, { "field": "/e", "count": 1 }, { "field": "/f", "count": 1 }, { "field": "/g", "count": 1 }, { "field": "/h", "count": 1 }] }] } }
+        }
+      ]
+    },
+    {
+      "name": "invalid-error-detail-entries-are-skipped-and-the-issue-kept",
+      "steps": [
+        {
+          "request": { "topic": "benzene:mesh:issues", "headers": {}, "body": "{\"service\":\"orders\",\"issues\":[{\"fingerprint\":\"cccc3333cccc3333cccc3333cccc3333\",\"classification\":\"validation\",\"service\":\"orders\",\"topic\":\"order:create\",\"status\":\"validation-error\",\"count\":2,\"firstSeen\":\"2026-07-25T09:00:00Z\",\"lastSeen\":\"2026-07-25T09:00:00Z\",\"errors\":[\"required\",{\"count\":1},{\"field\":\"/a\",\"count\":0},{\"field\":\"/a\",\"count\":1.5},{\"field\":\"/a\",\"code\":\"required\"},{\"field\":\"/b\",\"code\":\"required\",\"count\":2}]}]}" },
+          "expected": { "statusCode": "ok", "body": { "accepted": 1 } }
+        },
+        {
+          "request": { "topic": "benzene:mesh:query:fleet", "headers": {}, "body": "{}" },
+          "expected": { "statusCode": "ok", "body": { "issues": [{ "fingerprint": "cccc3333cccc3333cccc3333cccc3333", "count": 2, "errors": [{ "field": "/b", "code": "required", "count": 2 }] }] } }
+        }
+      ]
     }
   ]
 }

@@ -146,6 +146,14 @@ and `benzene:mesh:query:topic` — which are **Provisional**: their shapes are a
 the fixtures need, and full pinning follows 1.0. Other `benzene:mesh:query:*` topics a collector
 serves are its own.
 
+A fleet view's trace summary — one recent flow — carries the flow's `status`: the status of its
+earliest-started failing event when the flow failed, otherwise of its earliest-started event. An
+event counts as failing exactly when it makes the summary `failed`. So a failed flow names the
+failure its caller saw, not the `ok` of whatever ran first, and a reader triaging flows does not
+have to open each one to learn how it ended. A collector that builds its flows from a trace store that does not hold
+the events' Benzene status (an external tracing backend) omits `status`; readers MUST tolerate its
+absence.
+
 ### 4.1 Issues (`benzene:mesh:issues`)
 
 Optional on both sides (§6 applies): a collector that does not implement it is unaffected, and a
@@ -217,6 +225,21 @@ uniquely holds the wire status and the thrown exception at the moment of failure
   (a trace names a topic absent from the caller's `events` and `sends` or the handler's
   `requests`), filed in
   this same shape by a collector or reader, so emitter implementers should not hunt for its trigger.
+- **`errors`** *(optional)* — the structured detail behind the failures an issue counts, so "which
+  field, which rule" is answerable at scale and not only by reproducing one failure:
+  `"errors": [{"field": "/orderId", "code": "required", "count": 9}]`. An emitter takes each counted
+  failure's problem-document errors (wire-contracts.md §1.3): `field` and `code` only, **never
+  `message`**, which is free text a validator may have built from the payload. An error carrying
+  neither is not counted. An entry's identity is its (`field`, `code`) pair, an absent member being
+  distinct from every string, and its `count` is a delta exactly as the issue's own is. Both sides
+  keep at most **10** entries per issue: the highest counts, ties broken by `field` and then `code`
+  in ordinal order (absent first), listed in that same order — count descending, then the
+  tie-break. A collector merges by identity (`count += delta`), then applies the same bound, and
+  reports `errors` on the issue when it holds any. An entry that is not an object, has neither
+  member, or whose `count` is not a positive integer is skipped; the issue is still accepted. Like
+  `code` and `type` above, neither member participates in the fingerprint. `field` addresses the
+  request's *structure*; a request type whose member names are themselves data (a map keyed by
+  customer id) puts that data in the pointer, and its emitter SHOULD drop `field` for such errors.
 - `exceptionType` is the language-native type name only — never a message, stack trace, payload,
   or header. `resolutionHint` is an optional key into a remediation catalog, never prose;
   registered keys so far: `no-handler` (routing genuinely matched no handler — distinguishes a

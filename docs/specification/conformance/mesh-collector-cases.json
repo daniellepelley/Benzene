@@ -342,6 +342,32 @@
           }
         }
       ]
+    },
+    {
+      "name": "a-failed-flow-names-the-earliest-failure-it-carried",
+      "steps": [
+        {
+          "request": { "topic": "benzene:mesh:traces", "headers": {}, "body": "{\"events\":[{\"traceId\":\"trace0000000000000000000000000009\",\"spanId\":\"span0000000000a1\",\"service\":\"frontdoor\",\"topic\":\"welcome\",\"status\":\"ok\",\"durationMs\":30,\"startedAt\":\"2026-07-16T09:00:00Z\"},{\"traceId\":\"trace0000000000000000000000000009\",\"spanId\":\"span0000000000a2\",\"parentSpanId\":\"span0000000000a1\",\"service\":\"greeter\",\"topic\":\"greet\",\"status\":\"validation-error\",\"durationMs\":10,\"startedAt\":\"2026-07-16T09:00:00.005Z\"},{\"traceId\":\"trace0000000000000000000000000009\",\"spanId\":\"span0000000000a3\",\"parentSpanId\":\"span0000000000a2\",\"service\":\"audit\",\"topic\":\"audit:log\",\"status\":\"service-unavailable\",\"durationMs\":10,\"startedAt\":\"2026-07-16T09:00:00.010Z\"}]}" },
+          "expected": { "statusCode": "ok", "body": { "accepted": 3 } }
+        },
+        {
+          "request": { "topic": "benzene:mesh:query:fleet", "headers": {}, "body": "{}" },
+          "expected": { "statusCode": "ok", "body": { "traces": [{ "traceId": "trace0000000000000000000000000009", "events": 3, "failed": true, "status": "validation-error" }] } }
+        }
+      ]
+    },
+    {
+      "name": "a-successful-flow-carries-its-status",
+      "steps": [
+        {
+          "request": { "topic": "benzene:mesh:traces", "headers": {}, "body": "{\"events\":[{\"traceId\":\"trace0000000000000000000000000009\",\"spanId\":\"span0000000000b1\",\"service\":\"frontdoor\",\"topic\":\"welcome\",\"status\":\"ok\",\"durationMs\":20,\"startedAt\":\"2026-07-16T09:00:00Z\"},{\"traceId\":\"trace0000000000000000000000000009\",\"spanId\":\"span0000000000b2\",\"parentSpanId\":\"span0000000000b1\",\"service\":\"greeter\",\"topic\":\"greet\",\"status\":\"created\",\"durationMs\":10,\"startedAt\":\"2026-07-16T09:00:00.005Z\"}]}" },
+          "expected": { "statusCode": "ok", "body": { "accepted": 2 } }
+        },
+        {
+          "request": { "topic": "benzene:mesh:query:fleet", "headers": {}, "body": "{}" },
+          "expected": { "statusCode": "ok", "body": { "traces": [{ "traceId": "trace0000000000000000000000000009", "failed": false, "status": "ok" }] } }
+        }
+      ]
     }
   ]
 }
