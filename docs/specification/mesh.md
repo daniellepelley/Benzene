@@ -230,8 +230,9 @@ uniquely holds the wire status and the thrown exception at the moment of failure
   `"errors": [{"field": "/orderId", "code": "required", "count": 9}]`. An emitter takes each counted
   failure's problem-document errors (wire-contracts.md §1.3): `field` and `code` only, **never
   `message`**, which is free text a validator may have built from the payload. An error carrying
-  neither is not counted. An entry's identity is its (`field`, `code`) pair, an absent member being
-  distinct from every string, and its `count` is a delta exactly as the issue's own is. Both sides
+  neither is not counted. An entry's identity is its (`field`, `code`) pair; an empty string is the
+  same as an absent member, and an absent member is distinct from every non-empty string. Its
+  `count` is a delta exactly as the issue's own is. Both sides
   keep at most **10** entries per issue: the highest counts, ties broken by `field` and then `code`
   in ordinal order (absent first), listed in that same order — count descending, then the
   tie-break. A collector merges by identity (`count += delta`), then applies the same bound, and
