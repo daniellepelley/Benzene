@@ -218,12 +218,54 @@ three groups, and only one was a defect:
   attributed to a different module's run. Writing tests here would have duplicated real ones against
   a number I had misread. **No action** — recorded so the next reader does not chase it either.
 
-### P2.3 — Re-run the persona suite against the changed error surface
+### P2.3 — Re-run the persona suite against the changed error surface — **done, 2026-10-14**
 
 The mesh personas were last exercised before structured errors landed everywhere. A failure now
-carries `field` and `code` end to end, which changes what several of those personas can see. Worth a
-round to confirm the UI actually surfaces the new information rather than continuing to render
-prose.
+carries `field` and `code` end to end, which changes what several of those personas can see.
+
+**Round run with the two personas the error surface serves:** `mesh-qa`, signing off a field-level
+validation story, and `mesh-developer`, chasing failing `orders:create` calls after a deploy.
+
+**Verdict: the error surface was not reaching the reader.** The Test Console printed the problem
+document as raw JSON. QA could not sign off without reading it, so the answer was "NO". Fixed and
+vendored into every repo:
+- benzene-ui `d4f771a`, Test Console:
+  - It lays out a failed result's `detail` and one row per error: field, code, message, and what the
+    sent body held at that pointer ("not in the body" for a missing member). The raw JSON stays below.
+  - A route-mapped HTTP failure with `benzeneStatus` is now read as the handler's result, using that
+    status (wire-contracts §4.1). It is no longer reported as a carrier failure.
+  - The `Failed` story's non-§1.3 `{"errors":["..."]}` is replaced with spec-shaped stories.
+- benzene-ui `bb5feb2`:
+  - **Bug:** arriving at the console topic-first ("test this topic") showed "null has no composable
+    topic" above the working composer. The topic list read the absent route parameter, not the
+    resolved service.
+  - Issue headlines now name their Benzene status beside the exception type.
+  - Samples and fixtures that used `internal-server-error` (not a status) now use `unexpected-error`.
+- Re-vendored: Benzene `ad6f7efc`, benzene-dotnet `086590ec`, benzene-typescript `1a4c74a`,
+  benzene-python `5ab3de6`.
+
+**Open: decisions (spec/contract changes), proposed by the developer persona**
+- **Field and code at scale: the mesh never receives them.** `TraceEvent` and `MeshIssue` (mesh.md
+  §3, §4.1) have no `field`/`code`, so "which field is failing in production" means going back to
+  logs. Proposal: an optional, bounded, non-fingerprint `errors: [{field, code, count}]` on an issue
+  (top-N, merged latest-wins). Pointers and codes are structural, not payload text, so the privacy
+  rule holds. This is a spec change for every collector.
+- **Flows carry no status.** `query:fleet` traces have no `status`, though `TraceEvent` does. Adding
+  it is cheap, and the query is Provisional (§4).
+
+**Open: UI-only follow-ups, not yet done**
+- Link an issue's exemplar trace ids to their flow. This needs trace selection in the view state and
+  routing, which doesn't exist yet.
+- The validation issue explanation says "usually the caller". It should not, when `firstSeen`
+  follows the service's own registration change.
+- An evidence copy ("copy request + response") for QA sign-off.
+- A topic page whose catalogue entry is unversioned, while the live plane carries only versioned rows
+  for it, reports "never seen traffic". Seen only with the persona's own mock data; real catalogue and
+  fleet samples agree on the version form. Say "this version: none, other versions: N" if it is seen
+  for real.
+- `npm run generate:contracts` no longer reproduces the checked-in `generated.ts`: it would make
+  `ManifestServicesItem.owningTeam` required and restamp the spec version. A sample needs adding
+  (an `owningTeam`-less manifest service) before the next regenerate.
 
 ---
 
@@ -234,7 +276,7 @@ prose.
    something a user gets. They are independent of each other and can go in any order.
 2. **P0.3 step 2–3** (patterns cleanup) immediately follows the NuGet publish — already scoped, no
    decisions left.
-3. ~~**P2.1 and P2.2**~~ — both done, 2026-08-20. P2.3 (personas) remains.
+3. ~~**P2.1, P2.2 and P2.3**~~ — done (P2.3 2026-10-14; its spec proposals await a decision).
 4. ~~**P1.1–P1.3**~~ — decided 2026-10-11 (above); the .NET/TypeScript client port work remains.
 
 ---
