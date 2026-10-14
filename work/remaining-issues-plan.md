@@ -244,8 +244,15 @@ prose.
 Live items carried out of plans archived to `work/archive/` on 2026-08-20, so those plans could
 retire without losing their remainders. Each notes its source.
 
-- Terraform for the dispatch throttle/env is **unvalidated** — no `terraform` binary was available
-  at build time (from `work/archive/mesh-mismatch-and-dispatch-plan.md`).
+- ~~Terraform for the dispatch throttle/env is **unvalidated**~~ — **validated 2026-10-14**:
+  terraform 1.9.8 `init -backend=false` + `validate` passes on all 18 Terraform roots across the
+  repos. `fmt` drift fixed in
+  benzene-dotnet `examples/AwsMesh/deploy` (12b96eb7) and benzene-python `deploy/mesh/terraform`
+  (3f70aa7). One warning remains: benzene-python `examples/azure_functions_mesh` uses the
+  `static_website` block on `azurerm_storage_account`, which is deprecated in favour of
+  `azurerm_storage_account_static_website` and removed in AzureRM v5. It was left alone because the
+  migration recreates the setting on a live deployment; do it when the provider moves to v5 (from
+  `work/archive/mesh-mismatch-and-dispatch-plan.md`).
 - **Part C: persistent changes ledger** — an accumulating change-history artifact beside the
   run-over-run diff; parked product decision (from
   `work/archive/mesh-mismatch-and-dispatch-plan.md`).
