@@ -244,14 +244,24 @@ vendored into every repo:
 - Re-vendored: Benzene `ad6f7efc`, benzene-dotnet `086590ec`, benzene-typescript `1a4c74a`,
   benzene-python `5ab3de6`.
 
-**Open: decisions (spec/contract changes), proposed by the developer persona**
-- **Field and code at scale: the mesh never receives them.** `TraceEvent` and `MeshIssue` (mesh.md
-  §3, §4.1) have no `field`/`code`, so "which field is failing in production" means going back to
-  logs. Proposal: an optional, bounded, non-fingerprint `errors: [{field, code, count}]` on an issue
-  (top-N, merged latest-wins). Pointers and codes are structural, not payload text, so the privacy
-  rule holds. This is a spec change for every collector.
-- **Flows carry no status.** `query:fleet` traces have no `status`, though `TraceEvent` does. Adding
-  it is cheap, and the query is Provisional (§4).
+**Decided and shipped as spec 1.2.0 (2026-10-14), both proposed by the developer persona:**
+- **Issue error detail.** An issue may carry `errors`: the (field, code) pairs behind the failures
+  it counts, never the message, as delta counts merged by identity and bounded to ten. An empty
+  member is an absent one, and the detail is not part of the fingerprint (mesh.md §4.1).
+  - Emitters: .NET (`UseMeshIssues`), Go (`IssueMiddleware`) and Python (`IssueAggregator`, fed by
+    hand). TypeScript has no issue emitter.
+  - Collectors: all four ports.
+  - UI: the issue page lists them.
+- **Flow status.** A fleet trace summary carries `status`: its earliest failing event's, else its
+  first event's (mesh.md §4). Every collector sets it. Jaeger and the push stores set it too; X-Ray
+  only where it fetched the spans and they agree; Tempo never. The UI names it on each flow row.
+  Python's collector gained fleet trace summaries in the process.
+- Commits:
+  - Benzene `3bfe201f` (tag `spec-1.2.0`, cut by the release workflow).
+  - Implementations: .NET `ffe5c471`, Go `b57033b`, TypeScript `26eda19`, Python `3ac0d7c`,
+    benzene-ui `b5692e7`.
+  - All re-pinned to spec-1.2.0.
+  - Side fix: TypeScript's ring grouped events in slot order once it wrapped.
 
 **Open: UI-only follow-ups, not yet done**
 - Link an issue's exemplar trace ids to their flow. This needs trace selection in the view state and
@@ -276,7 +286,7 @@ vendored into every repo:
    something a user gets. They are independent of each other and can go in any order.
 2. **P0.3 step 2–3** (patterns cleanup) immediately follows the NuGet publish — already scoped, no
    decisions left.
-3. ~~**P2.1, P2.2 and P2.3**~~ — done (P2.3 2026-10-14; its spec proposals await a decision).
+3. ~~**P2.1, P2.2 and P2.3**~~ — done (P2.3 2026-10-14; its two spec proposals shipped as spec 1.2.0).
 4. ~~**P1.1–P1.3**~~ — decided 2026-10-11 (above); the .NET/TypeScript client port work remains.
 
 ---
