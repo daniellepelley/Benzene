@@ -21,43 +21,24 @@ what has been *released*, three cross-port design questions, and some housekeepi
 This is the headline. Every port's source is in good shape; what people can actually `install` is
 not. Tonight's fixes reach nobody until a release happens.
 
-### P0.1 — TypeScript: the port is not installable at all
+### P0.1 — TypeScript: the port is not installable at all — **done, 2026-10-15**
 
-**Status (2026-10-13): ready to publish `0.1.0-beta.2`** (benzene-typescript `ba09831`, CI green).
-All 130 packages are bumped and the release workflow's verify job passes. A run from `main` on
-2026-10-13 (still at beta.1) stopped at the first new package on `EOTP`: the `NPM_TOKEN` secret
-still demands a one-time password. **Maintainer action:** replace it with a granular token that
-can publish without 2FA, then run Release. Detail in `benzene-typescript/work/npm-release-state.md`.
+**`0.1.0-beta.2` of all 130 packages is on npm.**
+- The Release workflow succeeded on run 38694481287, from benzene-typescript `13f30ee`, which
+  includes spec 1.2.
+- It went through once `NPM_TOKEN` was replaced with a granular token that bypasses two-factor.
+- Checked against the registry: every `@benzenejs/*` package has `beta` = `0.1.0-beta.2`.
+- A clean `npm install @benzenejs/core` resolves `0.1.0-beta.2`, with its dependencies at
+  `0.1.0-beta.2`.
+- The release-state note is archived (benzene-typescript `5b33167`).
 
-**Verified live against the registry, this morning:**
-
-```
-@benzenejs/abstractions   -> 200
-@benzenejs/core           -> 404
-@benzenejs/results        -> 404
-@benzenejs/http           -> 404
-@benzenejs/testing        -> 404
-@benzenejs/mesh           -> 404
-```
-
-`npm install @benzenejs/core` fails today. The `0.1.0-beta.1` publish on 14 August died partway
-through the alphabetical workspace order at `@benzenejs/azure-cosmos-db`; 25 of 129 packages are on
-the registry and 104 are not. The re-run's `404 ... PUT` error reads like a broken trusted-publisher
-setup, which is where the investigation went, so the real story — the first package is already
-out — was never reached. Full detail in `benzene-typescript/work/npm-release-state.md`.
-
-**Plan.** Do *not* publish the missing 104 at `0.1.0-beta.1`: the `@benzenejs/abstractions` on the
-registry is the 14 August build, and abstractions has changed since (`BenzeneError` moved into it,
-`IBenzeneResult.errors` widened), so consumers would get old abstractions with new dependents.
-Instead:
-
-1. Bump all 129 workspaces to `0.1.0-beta.2`.
-2. Publish the whole set in one run. `scripts/check-not-already-published.mjs` now runs in the
-   release workflow's build-and-verify job and will name any collision before anything is pushed.
-3. Verify `npm install @benzenejs/core` from a clean directory afterwards, not just that the
-   workflow exited 0.
-
-**Blocked on:** your go-ahead. npm versions cannot be reused, so this is irreversible.
+**Open: maintainer actions.**
+- **Point `latest` at `0.1.0-beta.2` on the 25 packages published in August** (`abstractions*`,
+  `ajv`, `auth-*`, `avro`, `aws-lambda*`, `aws-sqs*`, `azure-cosmos-db`). Without a tag, those still
+  install the August `0.1.0-beta.1`, whose Lambda bindings can lose a returned failure. Run
+  `npm dist-tag add <pkg>@0.1.0-beta.2 latest` for each, logged in with two-factor.
+- **Move publishing to trusted publishing before January 2027,** when npm plans to stop bypass-2FA
+  tokens publishing directly. Detail: benzene-typescript `work/remaining-items.md`.
 
 ### P0.2 — Python: the published release ships the Core conformance defect
 
