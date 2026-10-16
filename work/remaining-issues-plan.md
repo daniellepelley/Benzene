@@ -40,20 +40,20 @@ not. Tonight's fixes reach nobody until a release happens.
 - **Move publishing to trusted publishing before January 2027,** when npm plans to stop bypass-2FA
   tokens publishing directly. Detail: benzene-typescript `work/remaining-items.md`.
 
-### P0.2 — Python: the published release ships the Core conformance defect
+### P0.2 — Python: the published release ships the Core conformance defect — **done, 2026-10-16**
 
-**Status (2026-10-13): ready to publish `0.1.0b2`** (benzene-python `551f39a`, CI green). The
-inter-package floors are `>=0.1.0b2`, so no install can mix in the defective `0.1.0b1`; all 38
-artifacts pass `twine check`. **Maintainer actions:** register `benzene-codegen-client`'s pending
-trusted publisher on PyPI (new since b1, or the whole upload fails), then push tag `v0.1.0b2`.
+**`0.1.0b2` of all nineteen distributions is on PyPI.**
+- Published by the Release workflow, run by hand from benzene-python `main` at `563be93`, which
+  includes spec 1.2.
+- `benzene-codegen-client` is on PyPI for the first time.
+- Checked from a clean venv: a plain `pip install benzene-results` resolves `0.1.0b2`, and the
+  published `benzene-core` writes `isSuccessful` (the `0.1.0b1` wheel had none).
+- The Python docs are updated (benzene-python `949399b`).
 
-`benzene-core 0.1.0b1` (uploaded 14 August) is what `pip install` gives you today. I downloaded the
-wheel and checked: it contains **zero** occurrences of `isSuccessful`. So the published package is
-the one that omits a required, authoritative envelope member (§1.2), and the one whose unhealthy
-health check throws away its own per-check report. Both were fixed on `main` last night.
-
-**Plan.** Release `0.1.0b2` from current `main`. No version-collision risk here — the fix is a
-straight forward bump. **Blocked on:** your go-ahead (PyPI versions are also permanent).
+**Open:** the release was dispatched, not tagged, so no `v0.1.0b2` tag marks what was published. A
+maintainer can add one at `563be93` (`git tag v0.1.0b2 563be93 && git push origin v0.1.0b2`). That
+push re-runs Release, which fails harmlessly because PyPI refuses an upload of a version that
+exists. Alternatively, record it as a GitHub release without a tag push.
 
 ### P0.3 — .NET: alpha.3 does not contain the ergonomics it is assumed to
 
