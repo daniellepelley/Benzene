@@ -52,8 +52,8 @@ not. Tonight's fixes reach nobody until a release happens.
 
 **Open:** the release was dispatched, not tagged, so no `v0.1.0b2` tag marks what was published. A
 maintainer can add one at `563be93` (`git tag v0.1.0b2 563be93 && git push origin v0.1.0b2`). That
-push re-runs Release, which fails harmlessly because PyPI refuses an upload of a version that
-exists. Alternatively, record it as a GitHub release without a tag push.
+push re-runs Release, which uploads nothing: its publish step uses `skip-existing`, and every file is
+already on PyPI.
 
 ### P0.3 — .NET: alpha.3 does not contain the ergonomics it is assumed to
 
