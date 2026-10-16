@@ -37,7 +37,11 @@ not. Tonight's fixes reach nobody until a release happens.
   2026-10-16** by the new Promote latest workflow (benzene-typescript `a901584`). Every release now
   moves `latest` itself, and all 130 are current.
 - **Move publishing to trusted publishing before January 2027,** when npm plans to stop bypass-2FA
-  tokens publishing directly. Detail: benzene-typescript `work/remaining-items.md`.
+  tokens publishing directly. The repository side is done (benzene-typescript `39eaf16`): Release
+  no longer requires `NPM_TOKEN`, and `scripts/trust-publishers.mjs` registers the trusted
+  publishers. Left for the maintainer, since npm demands interactive 2FA: run that script (two
+  passes of npm's 5-minute window), confirm the next release goes over OIDC, delete the secret.
+  Detail: benzene-typescript `work/remaining-items.md`.
 
 ### P0.2 — Python: the published release ships the Core conformance defect — **done, 2026-10-16**
 
@@ -49,10 +53,11 @@ not. Tonight's fixes reach nobody until a release happens.
   published `benzene-core` writes `isSuccessful` (the `0.1.0b1` wheel had none).
 - The Python docs are updated (benzene-python `949399b`).
 
-**Open:** the release was dispatched, not tagged, so no `v0.1.0b2` tag marks what was published. A
-maintainer can add one at `563be93` (`git tag v0.1.0b2 563be93 && git push origin v0.1.0b2`). That
-push re-runs Release, which uploads nothing: its publish step uses `skip-existing`, and every file is
-already on PyPI.
+**Open (optional):** the release was dispatched, not tagged, so no `v0.1.0b2` tag marks what was
+published. A maintainer can add one at `563be93` (`git tag v0.1.0b2 563be93 && git push origin
+v0.1.0b2`, or GitHub → Releases → draft a release with tag `v0.1.0b2` targeting `563be93`). Either
+re-runs Release, which uploads nothing: its publish step uses `skip-existing`, and every file is
+already on PyPI. Not pushed from the agent sandbox, whose git proxy refuses tag pushes.
 
 ### P0.3 — .NET: alpha.3 does not contain the ergonomics it is assumed to
 
@@ -90,20 +95,12 @@ in any release, including that one and `aecd10a` (the `MeshAggregationPass` sing
   they now send to `/benzene/invoke` (the spec-0.2.0 path). All eight smoke workflows, which
   include the five end-to-end verifications, pass on that commit.
 
-### P0.4 — Go: the module has never been tagged
+### P0.4 — Go: the module has never been tagged — **done, 2026-10-16**
 
-**Status (2026-10-13): decided — `v0.1.0-beta.1`, ready to tag** (benzene-go `cbaf92e`, CI
-green). Every nested module now requires `v0.1.0-beta.1` (they named an untagged `v0.1.0`).
-**Maintainer action:** `scripts/tag-release.sh v0.1.0-beta.1` from a clean `main`, then the one
-`git push` it prints (19 tags).
-
-`git tag` returns nothing. A consumer can only pin a commit SHA. That may well be deliberate
-pre-1.0, and it is why last night's `Result.Errors` type change was safe to make — but it is worth
-being a decision rather than an omission, especially now that the other three ports have published
-artifacts.
-
-**Question for you:** tag `v0.1.0-beta.1` to match the others, or stay untagged until the API
-settles?
+**`v0.1.0-beta.1` is tagged.** benzene-go's new Tag release workflow ran `scripts/tag-release.sh` on
+`main` at `37d0014` and pushed all 19 tags (the root and the 18 library modules).
+`proxy.golang.org` serves them, so a consumer can `go get ...@v0.1.0-beta.1` instead of pinning a
+SHA. RELEASING.md records it (benzene-go `7808166`).
 
 ---
 
@@ -303,7 +300,7 @@ retire without losing their remainders. Each notes its source.
   All four languages build into benzene.app (each port notifies the site when its docs change).
   2026-10-13 (Benzene `68f21ab`): every docs page has an "Edit this page on GitHub" link into its
   own repo, the header's GitHub link follows the page's repo, and the ports' repo-file links no
-  longer drop the branch (live benzene.app linked `.../benzene-go/blob/ROADMAP.md`). Live after the
-  next dev → live promote.
+  longer drop the branch (live benzene.app linked `.../benzene-go/blob/ROADMAP.md`). Promoted to
+  live 2026-10-16, with spec 1.2 (live and dev serve the same pages).
 - **CancellationToken on message handlers** — now a per-port API question (from
   `work/archive/spec-review-2026-07-25.md`, item 1).
