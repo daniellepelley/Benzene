@@ -32,11 +32,10 @@ not. Tonight's fixes reach nobody until a release happens.
   `0.1.0-beta.2`.
 - The release-state note is archived (benzene-typescript `5b33167`).
 
-**Open: maintainer actions.**
-- **Point `latest` at `0.1.0-beta.2` on the 25 packages published in August** (`abstractions*`,
-  `ajv`, `auth-*`, `avro`, `aws-lambda*`, `aws-sqs*`, `azure-cosmos-db`). Without a tag, those still
-  install the August `0.1.0-beta.1`, whose Lambda bindings can lose a returned failure. Run
-  `npm dist-tag add <pkg>@0.1.0-beta.2 latest` for each, logged in with two-factor.
+**Open: maintainer action.**
+- ~~Point `latest` at `0.1.0-beta.2` on the 25 packages published in August~~ — **done
+  2026-10-16** by the new Promote latest workflow (benzene-typescript `a901584`). Every release now
+  moves `latest` itself, and all 130 are current.
 - **Move publishing to trusted publishing before January 2027,** when npm plans to stop bypass-2FA
   tokens publishing directly. Detail: benzene-typescript `work/remaining-items.md`.
 
