@@ -64,7 +64,7 @@ Benzene has more than its docs suggest. None of these is a gap, and none should 
 | ID | Request | Priority | Today | Spec change | Hosts |
 |---|---|---|---|---|---|
 | FR-1 | Repeated query keys bind as arrays | P0 | **Done 2026-11-19** (benzene-dotnet `131898d`) | No (maybe a binding note) | v1, v2, ASP.NET |
-| FR-2 | Base path stripping and the request URL | P0 | Gap on Lambda; ASP.NET strips `PathBase` | No | v1, v2 (ASP.NET: URL only) |
+| FR-2 | Base path stripping and the request URL | P0 | **Done 2026-11-19** (benzene-dotnet `81361e4`) | No | v1, v2 (ASP.NET: URL only) |
 | FR-3 | Response headers from handler results | P0 | **Done 2026-11-19** (benzene-dotnet `605225f`) | No | v1, v2, ASP.NET |
 | FR-4 | Caller identity from the API Gateway authorizer | P0 | Gap | No | v1, v2 |
 | FR-5 | Per-endpoint authorization | P0 | Gap: pipeline-wide only | No | v1, v2, ASP.NET |
@@ -160,6 +160,25 @@ ports agree.
 `?ids=a,b` (comma form) also split on v1 and ASP.NET? Recommend not: only v2 needs it.
 
 ### FR-2 — Base path stripping and the request URL
+
+**Done 2026-11-19, benzene-dotnet `81361e4`.**
+- `UseBasePath("/tasks")`, first in the HTTP pipeline, strips the prefix on API Gateway v1 and v2,
+  ASP.NET Core and Azure Functions. Azure's `/api` is now one line. A request outside the base path
+  is `not-found`.
+- `IRequestUrl` is injectable through `UseRequestUrl(...)`, which `UseBasePath` includes. It gives
+  scheme, host, base path, path and `Absolute(...)`.
+- `X-Forwarded-Host` is read only when `TrustForwardedHost` is set, and `PublicBaseUrl` pins both
+  scheme and host.
+
+The open questions were settled as follows:
+- The base path is set per pipeline.
+- API Gateway stages are not stripped automatically. No verified event shows when a stage is in the
+  path, so a stage that appears is written as part of the base path (`UseBasePath("/prod/tasks")`).
+
+Not done: folding the OIDC package's internal `RequestUrl` into `IRequestUrl`. The plan is archived
+as `benzene-dotnet/work/archive/fr-2-base-path-and-request-url-plan-2026-11.md`.
+
+The original request:
 
 **Today.**
 - On Lambda, routing matches the raw request path with nothing stripped. v1 uses
