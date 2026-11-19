@@ -446,9 +446,14 @@ status.
   - `Preconditions.CheckIfMatch` and `EntityTags`;
   - `If-Match`/`If-None-Match` bound onto `IfMatch`/`IfNoneMatch` request properties.
 
-**Still open: Go, TypeScript and Python** re-pin to `spec-1.3.0` and implement the two statuses.
-The 304 rule is a MAY, so it's optional for them. Until then they map the statuses to 500 /
-`Internal` (`docs/capabilities.md` records this as staged).
+- **The other ports**, all pinned to `spec-1.3.0` with both statuses:
+  - benzene-go (`fbcb558`..`24b3e1a`): the 304 rule in all three HTTP bindings, and
+    `httpstatus.CheckIfMatch`;
+  - benzene-typescript (`089fbfa`): `Preconditions.checkIfMatch` and `EntityTags`, but no 304 rule,
+    because a result can't carry response headers there;
+  - benzene-python (`a813abb`): no 304 rule, for the same reason, and no `If-Match` helper.
+
+  `docs/capabilities.md` records the 304 gap in TypeScript and Python as deliberate.
 
 The original request:
 
