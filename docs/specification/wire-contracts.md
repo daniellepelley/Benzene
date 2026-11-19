@@ -177,6 +177,8 @@ The closed set of framework-defined statuses. The strings below are the wire val
 | `forbidden` | no | Caller authenticated but not permitted |
 | `not-found` | no | Target not found (including: no handler registered for the topic) |
 | `conflict` | no | State conflict |
+| `precondition-failed` | no | A precondition the request set on the target's current state does not hold — e.g. an `If-Match` entity tag that is no longer current (optimistic concurrency) |
+| `precondition-required` | no | The operation requires a precondition (e.g. `If-Match`) and the request supplied none |
 | `too-many-requests` | no | Throttled / rate limited; transient — back off and retry |
 | `timeout` | no | A downstream deadline elapsed; transient, but the operation may or may not have been applied, so blind retries are only safe for idempotent operations |
 | `not-implemented` | no | Recognized but unsupported operation |
@@ -212,7 +214,9 @@ omits it.
 | `forbidden` | 403 |
 | `not-found` | 404 |
 | `conflict` | 409 |
+| `precondition-failed` | 412 |
 | `validation-error` | 422 |
+| `precondition-required` | 428 |
 | `too-many-requests` | 429 |
 | `unexpected-error`, missing | 500 |
 | unknown, `isSuccessful: true` | 200 |
@@ -226,10 +230,20 @@ envelope endpoint does not use it: it answers 200 for every envelope it processe
 envelope in the body carries the status (transport-bindings §1).
 
 Reverse (HTTP → Benzene, used by HTTP clients): 200→`ok`, 201→`created`, 202→`accepted`,
-204→`deleted`, 400→`bad-request`, 401→`unauthorized`, 403→`forbidden`, 404→`not-found`,
-408→`timeout`, 409→`conflict`, 422→`validation-error`, 429→`too-many-requests`,
-501→`not-implemented`, 502→`service-unavailable`, 503→`service-unavailable`, 504→`timeout`,
-anything else→`unexpected-error`.
+204→`deleted`, 304→`ok`, 400→`bad-request`, 401→`unauthorized`, 403→`forbidden`, 404→`not-found`,
+408→`timeout`, 409→`conflict`, 412→`precondition-failed`, 422→`validation-error`,
+428→`precondition-required`, 429→`too-many-requests`, 501→`not-implemented`,
+502→`service-unavailable`, 503→`service-unavailable`, 504→`timeout`, anything else→`unexpected-error`.
+
+**Conditional `GET` (304).** 304 Not Modified is not a Benzene status; it is an HTTP-binding rule. A
+binding MAY answer a successful result to a `GET` or `HEAD` with 304 when the result carries an
+`etag` response header and the request's `If-None-Match` matches it — weak comparison (RFC 9110
+§13.1.2), a list matching when any member does, `*` matching any entity tag. The 304 response has no
+body and keeps the result's other response headers, the entity tag included. Every other result keeps
+the table above. A 304 reaches a client only when it sent `If-None-Match` itself, so the reverse row
+reads it as `ok`: the representation the client already holds is current. `precondition-failed` and
+`precondition-required` are ordinary statuses that a handler returns when it evaluates `If-Match` (or
+another precondition) itself.
 
 **Problem details on failure.** When the negotiated response format is JSON, the HTTP response for
 an unsuccessful result has a `content-type` that MUST be `application/problem+json` (charset as for any other JSON
@@ -256,6 +270,7 @@ Forward (server):
 | `forbidden` | `PermissionDenied` |
 | `not-found` | `NotFound` |
 | `conflict` | `AlreadyExists` |
+| `precondition-failed`, `precondition-required` | `FailedPrecondition` |
 | `not-implemented` | `Unimplemented` |
 | `service-unavailable` | `Unavailable` |
 | `too-many-requests` | `ResourceExhausted` |
@@ -280,7 +295,8 @@ back into `code`, so an error's `code` survives a gRPC hop as it does an HTTP on
 
 Reverse (client): a `benzene-status` trailer, when present, wins verbatim. Otherwise: `OK`→`ok`,
 `InvalidArgument`→`bad-request`, `Unauthenticated`→`unauthorized`, `PermissionDenied`→`forbidden`,
-`NotFound`→`not-found`, `AlreadyExists`→`conflict`, `Unimplemented`→`not-implemented`,
+`NotFound`→`not-found`, `AlreadyExists`→`conflict`, `FailedPrecondition`→`precondition-failed`,
+`Unimplemented`→`not-implemented`,
 `Unavailable`/`Cancelled`→`service-unavailable`, `ResourceExhausted`→`too-many-requests`,
 `DeadlineExceeded`→`timeout`, anything else→`unexpected-error`.
 

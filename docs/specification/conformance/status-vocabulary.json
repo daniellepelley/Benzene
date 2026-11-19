@@ -13,6 +13,8 @@
     { "status": "forbidden", "isSuccess": false },
     { "status": "not-found", "isSuccess": false },
     { "status": "conflict", "isSuccess": false },
+    { "status": "precondition-failed", "isSuccess": false },
+    { "status": "precondition-required", "isSuccess": false },
     { "status": "too-many-requests", "isSuccess": false },
     { "status": "timeout", "isSuccess": false },
     { "status": "not-implemented", "isSuccess": false },
