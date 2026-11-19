@@ -63,9 +63,9 @@ Benzene has more than its docs suggest. None of these is a gap, and none should 
 
 | ID | Request | Priority | Today | Spec change | Hosts |
 |---|---|---|---|---|---|
-| FR-1 | Repeated query keys bind as arrays | P0 | Gap: first value wins | No (maybe a binding note) | v1, v2, ASP.NET |
+| FR-1 | Repeated query keys bind as arrays | P0 | **Done 2026-11-19** (benzene-dotnet `131898d`) | No (maybe a binding note) | v1, v2, ASP.NET |
 | FR-2 | Base path stripping and the request URL | P0 | Gap on Lambda; ASP.NET strips `PathBase` | No | v1, v2 (ASP.NET: URL only) |
-| FR-3 | Response headers from handler results | P0 | Gap: middleware only | No | v1, v2, ASP.NET |
+| FR-3 | Response headers from handler results | P0 | **Done 2026-11-19** (benzene-dotnet `605225f`) | No | v1, v2, ASP.NET |
 | FR-4 | Caller identity from the API Gateway authorizer | P0 | Gap | No | v1, v2 |
 | FR-5 | Per-endpoint authorization | P0 | Gap: pipeline-wide only | No | v1, v2, ASP.NET |
 | FR-6 | ETag and conditional requests (304/412/428) | P1 | Gap; **decided 2026-11-19:** extend the vocabulary | **Yes** | v1, v2, ASP.NET |
@@ -83,6 +83,26 @@ Benzene has more than its docs suggest. None of these is a gap, and none should 
 ## P0: blocks the migration
 
 ### FR-1 — Repeated query-string keys
+
+**Done 2026-11-19, benzene-dotnet `131898d`.** A repeated key binds every value to a collection
+property (`T[]`, `List<T>`, `IList<T>`, `ICollection<T>`, `IEnumerable<T>`, `IReadOnlyList<T>`,
+`IReadOnlyCollection<T>`) and its first value to a scalar, on API Gateway v1 and v2, ASP.NET Core,
+Google Cloud Functions and Azure Functions.
+
+The open questions were settled as follows:
+- An absent key leaves the property as the body set it.
+- The comma form doesn't split on v1 or ASP.NET Core.
+- A value that won't convert is `bad-request`, as a scalar already was, not a `validation-error`.
+
+Azure Functions changed behaviour: it used to bind `"a,b"` to a scalar.
+
+Still open:
+- the benchmark run;
+- the optional one-sentence binding note in `transport-bindings.md`.
+
+The plan is archived as `benzene-dotnet/work/archive/fr-1-repeated-query-keys-plan-2026-11.md`.
+
+The original request:
 
 **Today.** Every host keeps the first value of a repeated key and drops the rest, so `?id=a&id=b`
 binds only `a`:
@@ -199,6 +219,22 @@ public interface IRequestUrl
 mesh package's internal `RequestUrl`? Recommend yes, to keep one implementation.
 
 ### FR-3 — Response headers from handlers
+
+**Done 2026-11-19, benzene-dotnet `605225f`.** `BenzeneResult.Created(task).WithHeader("Location", …)`
+writes the header on every HTTP host, and into the response envelope's `headers` over
+`/benzene/invoke`. Transports with no response headers ignore it.
+
+Requirement 2's precedence was settled differently from the suggestion below: **a header the pipeline
+set wins**. CORS, written before the handler, and the rendered `content-type` are never replaced; the
+handler adds what the pipeline didn't set. The reason: CORS is the only middleware header that
+coexists with a handler result. Writing result headers over it would have replaced CORS values on
+API Gateway and the envelope, duplicated them on ASP.NET Core, and thrown on Azure Functions.
+
+`WithHeader` rejects CR, LF and NUL and non-token names. Not done: surfacing received headers on a
+Benzene client's result (optional). The plan is archived as
+`benzene-dotnet/work/archive/fr-3-response-headers-plan-2026-11.md`.
+
+The original request:
 
 **Today.** A handler result can't carry headers.
 - `src/Benzene.Abstractions/Results/IBenzeneResult.cs:7-35` has only `Status`, `IsSuccessful`,
