@@ -66,8 +66,8 @@ Benzene has more than its docs suggest. None of these is a gap, and none should 
 | FR-1 | Repeated query keys bind as arrays | P0 | **Done 2026-11-19** (benzene-dotnet `131898d`) | No (maybe a binding note) | v1, v2, ASP.NET |
 | FR-2 | Base path stripping and the request URL | P0 | **Done 2026-11-19** (benzene-dotnet `81361e4`) | No | v1, v2 (ASP.NET: URL only) |
 | FR-3 | Response headers from handler results | P0 | **Done 2026-11-19** (benzene-dotnet `605225f`) | No | v1, v2, ASP.NET |
-| FR-4 | Caller identity from the API Gateway authorizer | P0 | Gap | No | v1, v2 |
-| FR-5 | Per-endpoint authorization | P0 | Gap: pipeline-wide only | No | v1, v2, ASP.NET |
+| FR-4 | Caller identity from the API Gateway authorizer | P0 | **Done 2026-11-19** (benzene-dotnet `9d7096d`) | No | v1, v2 |
+| FR-5 | Per-endpoint authorization | P0 | **Done 2026-11-19** (benzene-dotnet `8fcf5dd`) | No | v1, v2, ASP.NET |
 | FR-6 | ETag and conditional requests (304/412/428) | P1 | Gap; **decided 2026-11-19:** extend the vocabulary | **Yes** | v1, v2, ASP.NET |
 | FR-7 | Rate and concurrency limits across instances | P1 | Partial: per-instance only | No | all |
 | FR-8 | One event per request to a durable sink | P1 | Partial: trace on the envelope route only | Maybe | all |
@@ -300,6 +300,20 @@ to `docs/specification/wire-contracts.md` §1 and needs fixtures.
 
 ### FR-4 — Caller identity from the API Gateway authorizer
 
+**Done 2026-11-19, benzene-dotnet `9d7096d`.** The new package `Benzene.Auth.Aws.ApiGateway` adds
+`UseApiGatewayAuthorizerIdentity(...)` on REST and HTTP API pipelines. It turns the authorizer
+context into the caller, so `RequireScope`, `RequireRole` and `RequirePolicy` work unchanged:
+- REST API: Cognito claims, and a Lambda authorizer's context with its `principalId`;
+- HTTP API: JWT claims and scopes, Lambda context, and IAM.
+
+Options set the name claim and the role claims (`cognito:groups`). A caller another authenticator
+already set is kept. `ScopeClaims` moved to `Benzene.Auth.Core` as a public type. The docs carry
+the trust warning (no function URL, no direct invoke).
+
+The plan is archived as `benzene-dotnet/work/archive/fr-4-authorizer-identity-plan-2026-11.md`.
+
+The original request:
+
 **Today.** A caller exists only if Benzene authenticated them itself.
 - `UseOAuth2Bearer` validates the JWT and sets the principal (`OAuth2BearerMiddleware.cs:64-107`).
 - Basic auth sets it through `IBasicAuthCredentialValidator`.
@@ -348,6 +362,21 @@ app.UseApiGatewayAuthorizerIdentity(o =>
 **Spec change.** No.
 
 ### FR-5 — Per-endpoint authorization
+
+**Done 2026-11-19, benzene-dotnet `8fcf5dd`.** Requirements are declared with `[RequireScope]`,
+`[RequireRole]`, `[RequirePolicy]` and `[AllowAnonymous]` (`Benzene.Auth.Core.Endpoints`), or with
+`options.ForTopic(...)`, and enforced by `UseEndpointAuthorization()`:
+- It is an outer middleware, so it authorizes before the body is read: a malformed body to a
+  protected endpoint is 401, not 400.
+- A handler with no attribute needs a caller by default.
+- Benzene's spec, ping and health topics are anonymous by default.
+- A topic with no handler still 404s.
+- It works on every transport it's added to.
+
+Not done: OpenAPI `security` per operation, which is part of FR-13. The plan is archived as
+`benzene-dotnet/work/archive/fr-5-endpoint-authorization-plan-2026-11.md`.
+
+The original request:
 
 **Today.** Authorization applies to the whole pipeline.
 - `RequireScope` (`src/Benzene.Auth.OAuth2/Extensions.cs:106-130`) and `RequireRole`, `RequirePolicy`
