@@ -596,6 +596,24 @@ trace's coverage rule changes (`docs/specification/mesh.md`).
 
 ### FR-9 — Keep the current error body format
 
+**Done 2026-11-19** in benzene-dotnet (`5a4e8e6`). No spec change.
+- **Early rejections (item 1).** The router already gave an unmatched route a body. The real gap was a
+  result with no handler definition, which a rate-limit rejection of an unknown topic produced. That
+  failure had no body, against §1.3. Every failure now has its problem document.
+- **The hook (item 4).** `AddProblemFormatter<TContext>(...)`, or an `IProblemFormatter<TContext>`
+  class, reshapes the problem document Benzene built (with `status` on HTTP). It has its own
+  `content-type` and an optional `applies` filter. It is registered per context, so it scopes to the
+  HTTP routes and the envelope endpoint keeps conforming (item 3).
+- **The recipe (item 2).** `docs/cookbooks/custom-error-body.md`, which states the conformance cost.
+- **Two more defects found and fixed:**
+  - HTTP rebuilt a handler-authored `BenzeneResult.Problem` document from its status, losing its own
+    `type` and `title`.
+  - A `ProblemDetails` subclass lost its extension members on every transport.
+- **Tests.** API Gateway v1 and v2 and Azure Functions; the ASP.NET Core host shares the same mapper.
+  Covered: the envelope endpoint, an unmatched route, and the `applies` filter.
+
+The original request:
+
 **Today. This mostly exists; the original request overstated the gap.**
 - Failures are RFC 9457 problem documents built by `DefaultResponsePayloadMapper`
   (`src/Benzene.Core.MessageHandlers/Response/DefaultResponsePayloadMapper.cs:41`).
