@@ -73,6 +73,8 @@ was released as `spec-1.0.0`: the October review, its plan, the self-description
 - `cloudevents-design.md` — CloudEvents as a wire format
 - `remaining-issues-plan.md` — the current worklist: release state, open cross-port questions, and
   the remainders extracted from archived plans
+- `adopter-feature-requests.md` — what an adopter moving an HTTP API on AWS Lambda onto Benzene
+  needs (FR-1 to FR-14), checked against the .NET source and ready to assess
 - `ceremony-parity-audit.md` — the cross-port ceremony/parity audit (its P1 questions are decided)
 - `mesh-ui-aims.md` — the authority on what the mesh UI is for; the rules screens are checked against
 - `mesh-ui-product-vision.md` — the shared Mesh UI: history, rulings, and dated refinement blocks

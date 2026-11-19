@@ -265,6 +265,10 @@ vendored into every repo:
    decisions left.
 3. ~~**P2.1, P2.2 and P2.3**~~ — done (P2.3 2026-10-14; its two spec proposals shipped as spec 1.2.0).
 4. ~~**P1.1–P1.3**~~ — decided 2026-10-11 (above); the .NET/TypeScript client port work remains.
+5. **Adopter feature requests** (2026-11-19): fourteen enhancements an adopter needs to move an HTTP
+   API on AWS Lambda onto Benzene, five of them blocking. Each is written up, with evidence, in
+   [`adopter-feature-requests.md`](adopter-feature-requests.md), which also gives the build order.
+   FR-6 (conditional requests) needs a spec decision before any code.
 
 ---
 
