@@ -68,7 +68,7 @@ Benzene has more than its docs suggest. None of these is a gap, and none should 
 | FR-3 | Response headers from handler results | P0 | Gap: middleware only | No | v1, v2, ASP.NET |
 | FR-4 | Caller identity from the API Gateway authorizer | P0 | Gap | No | v1, v2 |
 | FR-5 | Per-endpoint authorization | P0 | Gap: pipeline-wide only | No | v1, v2, ASP.NET |
-| FR-6 | ETag and conditional requests (304/412/428) | P1 | Gap | **Yes** | v1, v2, ASP.NET |
+| FR-6 | ETag and conditional requests (304/412/428) | P1 | Gap; **decided 2026-11-19:** extend the vocabulary | **Yes** | v1, v2, ASP.NET |
 | FR-7 | Rate and concurrency limits across instances | P1 | Partial: per-instance only | No | all |
 | FR-8 | One event per request to a durable sink | P1 | Partial: trace on the envelope route only | Maybe | all |
 | FR-9 | Keep the current error body format | P1 | **Exists** (swap point); one gap | No, but see conformance | all |
@@ -76,7 +76,7 @@ Benzene has more than its docs suggest. None of these is a gap, and none should 
 | FR-11 | Strict header versioning | P2 | Partial: selector replaceable | No | all |
 | FR-12 | Configurable JSON options | P2 | Partial: constructor only | No | all |
 | FR-13 | OpenAPI for all of the above | P2 | Partial | No | — |
-| FR-14 | Docs fixes | P2 | Docs wrong in two places | No | — |
+| FR-14 | Docs fixes | P2 | **Done 2026-11-19** (benzene-dotnet `be33941`), one follow-up after FR-7 | No | — |
 
 ---
 
@@ -371,7 +371,9 @@ None maps to 304, 412 or 428 (§4.1, lines 202-222). An inbound 304, 412 or 428 
    short-circuits. Strong comparison for `If-Match`, weak for `If-None-Match` (RFC 9110 §13).
 5. Problem types for the two new failures in the registry (wire-contracts §3.1).
 
-**Decision needed first.** Choose one:
+**Decided 2026-11-19: option (a)** for the two precondition statuses. Whether 304 is a vocabulary
+entry (`not-modified`) or an HTTP-binding rule is still open, and is the first thing to settle when
+FR-6 is planned. The options were:
 - **(a) Extend the shared vocabulary** with `precondition-failed`, `precondition-required` and
   `not-modified`. This is a spec change every port implements. `precondition-failed` is meaningful
   off HTTP as optimistic concurrency.
@@ -379,8 +381,8 @@ None maps to 304, 412 or 428 (§4.1, lines 202-222). An inbound 304, 412 or 428 
   change. Other ports and Benzene clients would then see them only as app-defined, which by default
   maps to 500 or 200 (§3, lines 186-191).
 
-Recommend (a) for the two precondition statuses. `not-modified` is open: it only means something on
-HTTP, so it could be an HTTP-binding rule instead of a vocabulary entry.
+(a) was recommended for the two precondition statuses, and agreed. `not-modified` is open: it only
+means something on HTTP, so it could be an HTTP-binding rule instead of a vocabulary entry.
 
 **Acceptance tests.**
 - `PUT` with a matching `If-Match` gives 200 with the new `ETag`. A stale one gives 412 with a problem
@@ -621,6 +623,18 @@ converter, ignore-null, custom converters) for handler bodies, and the same for 
 Do each piece alongside the FR it describes, or as one pass at the end.
 
 ### FR-14 — Docs fixes
+
+**Done 2026-11-19, benzene-dotnet `be33941`:**
+- items 1 and 2 are fixed;
+- item 3 is done for today's behaviour: `docs/rate-limiting.md` now names the AWS controls that cap
+  across instances. Update it again when FR-7 ships;
+- item 4 is a new "API Gateway" section in `docs/getting-started-aws.md`, which also lists what isn't
+  built yet. Remove each line there as its FR ships.
+
+Warm-up (`AddBenzeneWarmUp`, `IWarmUpTask`) is now in the cold-start cookbook, which no doc covered
+before.
+
+The items as raised:
 
 1. `docs/getting-started-aws.md:591-592` says `[HttpEndpoint]` must match "exactly, including case".
    Route matching ignores case:
