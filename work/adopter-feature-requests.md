@@ -68,7 +68,7 @@ Benzene has more than its docs suggest. None of these is a gap, and none should 
 | FR-3 | Response headers from handler results | P0 | **Done 2026-11-19** (benzene-dotnet `605225f`) | No | v1, v2, ASP.NET |
 | FR-4 | Caller identity from the API Gateway authorizer | P0 | **Done 2026-11-19** (benzene-dotnet `9d7096d`) | No | v1, v2 |
 | FR-5 | Per-endpoint authorization | P0 | **Done 2026-11-19** (benzene-dotnet `8fcf5dd`) | No | v1, v2, ASP.NET |
-| FR-6 | ETag and conditional requests (304/412/428) | P1 | Gap; **decided 2026-11-19:** extend the vocabulary | **Yes** | v1, v2, ASP.NET |
+| FR-6 | ETag and conditional requests (304/412/428) | P1 | **Done 2026-11-19** (spec `1.3.0`, benzene-dotnet `8236941`) | **Yes** (released) | v1, v2, ASP.NET |
 | FR-7 | Rate and concurrency limits across instances | P1 | Partial: per-instance only | No | all |
 | FR-8 | One event per request to a durable sink | P1 | Partial: trace on the envelope route only | Maybe | all |
 | FR-9 | Keep the current error body format | P1 | **Exists** (swap point); one gap | No, but see conformance | all |
@@ -434,6 +434,23 @@ app.UseEndpointAuthorization(o => o.RequireAuthenticatedByDefault = true);
 ## P1: needed to keep today's behaviour
 
 ### FR-6 — ETag, If-Match and If-None-Match
+
+**Done 2026-11-19.** Decided: two new statuses (option a), and 304 as an HTTP-binding rule, not a
+status.
+- **Spec 1.3.0** (`e5f2ac7`): `precondition-failed` (412) and `precondition-required` (428), both
+  gRPC `FailedPrecondition`, plus the 304 rule (wire-contracts §4.1). Fixtures updated.
+- **benzene-dotnet** (`8236941`), pinned to `spec-1.3.0`:
+  - both statuses everywhere;
+  - `ConditionalGetResponseHandler`: 304 when a successful `GET`'s `ETag` result header matches
+    `If-None-Match`;
+  - `Preconditions.CheckIfMatch` and `EntityTags`;
+  - `If-Match`/`If-None-Match` bound onto `IfMatch`/`IfNoneMatch` request properties.
+
+**Still open: Go, TypeScript and Python** re-pin to `spec-1.3.0` and implement the two statuses.
+The 304 rule is a MAY, so it's optional for them. Until then they map the statuses to 500 /
+`Internal` (`docs/capabilities.md` records this as staged).
+
+The original request:
 
 **Today.** There is no support. Searching `src` finds no HTTP conditional-request code, only S3
 `ETag` fields. The status vocabulary is a closed set of 17
